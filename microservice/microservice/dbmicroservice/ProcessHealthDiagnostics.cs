@@ -13,7 +13,8 @@ namespace Beamable.Server;
 /// </summary>
 internal sealed class ProcessHealthDiagnostics : IDisposable
 {
-    private sealed record Transition(ProcessHealthSnapshot Snapshot, bool Incident, bool Recovered);
+    /// <summary><paramref name="Alarm"/> is the text of an error that is not a transition, or null for a transition.</summary>
+    private sealed record Transition(ProcessHealthSnapshot Snapshot, bool Incident, bool Recovered, string Alarm = null);
     private readonly BlockingCollection<Transition> _pending = new(8);
     private readonly Action<bool, string> _write;
     private readonly object _lifetime = new();
@@ -21,6 +22,8 @@ internal sealed class ProcessHealthDiagnostics : IDisposable
     private bool _stopped;
     private long _dropped;
     private long _failed;
+    // 1 while an alarm waits in the queue.
+    private int _alarmQueued;
     private ProcessHealthSnapshot _lastIncident;
 
     internal ProcessHealthDiagnostics(Action<bool, string> write = null)
@@ -54,13 +57,41 @@ internal sealed class ProcessHealthDiagnostics : IDisposable
         var incident = next.IncidentId != null && next.IncidentId != prior.IncidentId;
         var recovered = prior.IncidentId != null && next.IncidentId == null && next.State == ProcessHealthState.Healthy;
         if (incident) Volatile.Write(ref _lastIncident, next);
-        if (Volatile.Read(ref _stopped)) return;
+        Enqueue(new Transition(next, incident, recovered));
+    }
+
+    /// <summary>
+    /// Queues an error for a condition that lasts, which the caller repeats while it does. It is bounded and dropped
+    /// like a transition record, so it can't hold the watchdog either. Only one waits in the queue at a time: behind a
+    /// slow sink the repeats would otherwise fill it, and the record of an incident would be the one that is dropped.
+    /// </summary>
+    internal void Alarm(string text, ProcessHealthSnapshot snapshot)
+    {
+        if (Interlocked.Exchange(ref _alarmQueued, 1) == 1)
+        {
+            Interlocked.Increment(ref _dropped);
+            return;
+        }
+
+        if (!Enqueue(new Transition(snapshot, false, false, text)))
+            Volatile.Write(ref _alarmQueued, 0);
+    }
+
+    /// <summary>Returns whether the record was queued. One that was not is counted as dropped, unless this has stopped.</summary>
+    private bool Enqueue(Transition record)
+    {
+        if (Volatile.Read(ref _stopped)) return false;
         try
         {
-            if (!_pending.TryAdd(new Transition(next, incident, recovered)))
-                Interlocked.Increment(ref _dropped);
+            if (_pending.TryAdd(record)) return true;
         }
-        catch (InvalidOperationException) { Interlocked.Increment(ref _dropped); }
+        catch (InvalidOperationException)
+        {
+            // the queue was completed by a concurrent stop.
+        }
+
+        Interlocked.Increment(ref _dropped);
+        return false;
     }
 
     private void Run()
@@ -71,8 +102,10 @@ internal sealed class ProcessHealthDiagnostics : IDisposable
             {
                 if (_pending.TryTake(out var transition, Timeout.Infinite))
                 {
-                    var prefix = transition.Recovered ? "Process health recovered: " : "Process health transition: ";
-                    _write(transition.Incident, prefix + Format(transition.Snapshot));
+                    if (transition.Alarm != null) Volatile.Write(ref _alarmQueued, 0);
+                    var prefix = transition.Alarm ??
+                                 (transition.Recovered ? "Process health recovered: " : "Process health transition: ");
+                    _write(transition.Incident || transition.Alarm != null, prefix + Format(transition.Snapshot));
                     if (transition.Incident)
                     {
                         // Do not confuse this worker's Environment.StackTrace with other managed threads.

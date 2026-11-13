@@ -72,6 +72,42 @@ public class ProcessHealthDiagnosticsTests
     }
 
     [Test]
+    public void RepeatedAlarms_BehindABlockedSink_LeaveRoomForAnIncident()
+    {
+        var records = new ConcurrentQueue<(bool error, string text)>();
+        using var entered = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        using var diagnostics = new ProcessHealthDiagnostics((error, text) =>
+        {
+            entered.Set();
+            release.Wait();
+            records.Enqueue((error, text));
+        });
+        diagnostics.Start();
+        try
+        {
+            // the sink blocks on the first alarm, and the condition keeps repeating behind it.
+            diagnostics.Alarm("alarm 0: ", ProcessHealthSnapshot.Starting);
+            Assert.That(entered.Wait(2000), Is.True);
+            for (var i = 1; i < 10; i++) diagnostics.Alarm($"alarm {i}: ", ProcessHealthSnapshot.Starting);
+            Assert.That(diagnostics.PendingRecords, Is.EqualTo(1), "one alarm waits; the repeats behind it are dropped");
+            Assert.That(diagnostics.DroppedRecords, Is.EqualTo(8));
+
+            diagnostics.Record(ProcessHealthSnapshot.Starting, Unhealthy("incident"));
+            Assert.That(diagnostics.DroppedRecords, Is.EqualTo(8), "the incident must still fit in the queue");
+        }
+        finally { release.Set(); }
+
+        Assert.That(SpinWait.SpinUntil(() => records.Any(x => x.text.Contains("incident incident:")), 2000), Is.True);
+        Assert.That(records.Count(x => x.text.StartsWith("alarm ", StringComparison.Ordinal)), Is.EqualTo(2));
+        Assert.That(records.Any(x => x.error && x.text.StartsWith("Process health transition: ", StringComparison.Ordinal)), Is.True);
+
+        // once the queue has drained, the next alarm is queued again.
+        diagnostics.Alarm("alarm after: ", ProcessHealthSnapshot.Starting);
+        Assert.That(SpinWait.SpinUntil(() => records.Any(x => x.text.StartsWith("alarm after: ", StringComparison.Ordinal)), 2000), Is.True);
+    }
+
+    [Test]
     public void ThrowingSink_DoesNotKillDiagnosticsWorker()
     {
         var calls = 0;

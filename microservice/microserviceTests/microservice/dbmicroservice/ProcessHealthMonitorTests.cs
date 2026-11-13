@@ -207,7 +207,54 @@ public class ProcessHealthMonitorTests
         h.Check(1);
         h.Check(500);
         Assert.That(h.Monitor.Snapshot.State, Is.EqualTo(ProcessHealthState.Degraded));
+        Assert.That(h.Monitor.Snapshot.Reason, Is.EqualTo("socket_recovery_pending"),
+            "connections that are open but stopped answering are not the same as having no connection");
+    }
+
+    [Test]
+    public void NoLiveConnections_AreReportedAgainAndAgain_UntilOneReturns()
+    {
+        var records = new ConcurrentQueue<(bool error, string text)>();
+        using var diagnostics = new ProcessHealthDiagnostics((error, text) => records.Enqueue((error, text)));
+        diagnostics.Start();
+        using var h = new Harness(diagnostics);
+        int Alarms() => records.Count(x => x.error && x.text.StartsWith("No live connections for", StringComparison.Ordinal));
+        bool AlarmsReach(int count) => SpinWait.SpinUntil(() => Alarms() >= count, 2000);
+
+        h.Check(0);
+        h.Instances[0] = Instance(0, connected: false);
+        h.Check(1);
+        Assert.That(h.Monitor.Snapshot.Reason, Is.EqualTo("socket_recovery_pending"), "one live connection is left");
+
+        h.Instances[1] = Instance(1, authenticated: false);
+        h.Check(2);
+        Assert.That(h.Monitor.Snapshot.State, Is.EqualTo(ProcessHealthState.Degraded));
+        Assert.That(h.Monitor.Snapshot.Reason, Is.EqualTo("no_live_connections"));
+        Assert.That(h.Monitor.Snapshot.IncidentId, Is.Null, "no live connections must not look like a process to replace");
+
+        h.Check(31);
+        Assert.That(Alarms(), Is.Zero, "a short loss of every connection is not reported");
+        h.Check(32);
+        Assert.That(AlarmsReach(1), Is.True);
+        Assert.That(records.Last(x => x.error).text, Does.StartWith("No live connections for 30s."));
+        h.Check(61);
+        h.Check(62);
+        Assert.That(AlarmsReach(2), Is.True, "the report repeats while it lasts");
+        h.Check(600);
+        h.Check(601);
+        Assert.That(AlarmsReach(3), Is.True);
+        Assert.That(Alarms(), Is.EqualTo(3), "a late sample reports once; it does not catch up on the ones it missed");
+
+        h.Instances[1] = Instance(1, generation: 2);
+        h.Check(602);
         Assert.That(h.Monitor.Snapshot.Reason, Is.EqualTo("socket_recovery_pending"));
+        h.Check(700);
+        h.Instances[1] = Instance(1, generation: 2, connected: false);
+        h.Check(701);
+        h.Check(730);
+        Assert.That(h.Monitor.Snapshot.Reason, Is.EqualTo("no_live_connections"));
+        Assert.That(SpinWait.SpinUntil(() => diagnostics.PendingRecords == 0, 2000), Is.True);
+        Assert.That(Alarms(), Is.EqualTo(3), "a new loss starts its own wait before the first report");
     }
 
     [Test]

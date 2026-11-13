@@ -30,6 +30,9 @@ public class ProcessHealthMonitor
     private Probe _probe;
     private long? _poolRecoverySince;
     private bool _poolUnhealthy;
+    // Set while no instance has a live connection: when that began, and when to report it next.
+    private long? _noLiveSince;
+    private long _noLiveAlarmAt;
     private ProcessHealthSnapshot _snapshot = ProcessHealthSnapshot.Starting;
     private readonly ProcessHealthDiagnostics _diagnostics;
     private readonly ProcessHealthSocketChecks _socketChecks;
@@ -50,6 +53,7 @@ public class ProcessHealthMonitor
         _options = options ?? throw new ArgumentNullException(nameof(options));
         if (options.HeartbeatTimeout <= TimeSpan.Zero || options.HeartbeatRecovery < TimeSpan.Zero ||
             options.SocketRecovery <= TimeSpan.Zero || options.SiblingProgress <= TimeSpan.Zero ||
+            options.NoLiveConnectionsAlarm <= TimeSpan.Zero ||
             options.SampleInterval <= TimeSpan.Zero || options.SampleInterval.TotalMilliseconds > int.MaxValue)
             throw new ArgumentOutOfRangeException(nameof(options));
         _queueHeartbeat = queueHeartbeat ?? (action => ThreadPool.QueueUserWorkItem(_ => action()));
@@ -164,6 +168,7 @@ public class ProcessHealthMonitor
             var heartbeatAge = CheckHeartbeat(now);
             var state = ProcessHealthState.Starting;
             var reason = "initializing";
+            var live = 0;
             if (_armed)
             {
                 state = ProcessHealthState.Healthy;
@@ -183,6 +188,8 @@ public class ProcessHealthMonitor
                         instance.Connected && instance.Authenticated && !instance.ReportedBroken;
                     if (replySinceEpisode || authenticatedReplacement || !problem)
                         _episodes[i] = episode = null;
+                    // A connection that is open but stopped answering is still a connection; its stall is handled above.
+                    if (instance.Initialized && instance.Connected && instance.Authenticated) live++;
                     if (problem)
                     {
                         episode ??= _episodes[i] = new Episode { StartedAt = now, Generation = instance.Generation };
@@ -200,6 +207,13 @@ public class ProcessHealthMonitor
                         }
                     }
                 }
+                // With no live connection the process serves nothing. It stays Degraded: this process can't tell its
+                // own failure from a platform outage, where replacing every process at once would make things worse.
+                if (live == 0)
+                {
+                    state = ProcessHealthState.Degraded;
+                    reason = "no_live_connections";
+                }
                 if (_poolUnhealthy)
                 {
                     state = ProcessHealthState.Unhealthy;
@@ -208,6 +222,34 @@ public class ProcessHealthMonitor
             }
             Publish(new ProcessHealthSnapshot(state, reason, now, heartbeatAge, ThreadPool.PendingWorkItemCount,
                 ThreadPool.CompletedWorkItemCount, ThreadPool.ThreadCount, Array.AsReadOnly(instances), null));
+            ReportNoLiveConnections(_armed && live == 0, now);
+        }
+    }
+
+    /// <summary>
+    /// Repeats an error for as long as no instance has a live connection. A transition is logged once, which is easy
+    /// to miss for a process that serves nothing until its connections come back.
+    /// </summary>
+    private void ReportNoLiveConnections(bool noneLive, long now)
+    {
+        if (!noneLive)
+        {
+            _noLiveSince = null;
+            return;
+        }
+
+        var interval = (long)(_options.NoLiveConnectionsAlarm.TotalSeconds * Stopwatch.Frequency);
+        if (_noLiveSince == null)
+        {
+            // a short loss of every connection at once, such as a gateway deploy, recovers before the first report.
+            _noLiveSince = now;
+            _noLiveAlarmAt = now + interval;
+        }
+        else if (now >= _noLiveAlarmAt)
+        {
+            _noLiveAlarmAt = now + interval;
+            _diagnostics.Alarm($"No live connections for {Seconds(_noLiveSince.Value, now):0}s. This process serves no traffic. " +
+                               "Its instances keep reconnecting, and nothing here restarts it: ", Snapshot);
         }
     }
 

@@ -33,4 +33,6 @@ internal sealed class ProcessHealthOptions
     public TimeSpan SocketRecovery { get; init; } = TimeSpan.FromSeconds(120);
     public TimeSpan SiblingProgress { get; init; } = TimeSpan.FromSeconds(30);
     public TimeSpan SampleInterval { get; init; } = TimeSpan.FromSeconds(1);
+    /// <summary>How long no instance may have a live connection before an error reports it, and how often it repeats.</summary>
+    public TimeSpan NoLiveConnectionsAlarm { get; init; } = TimeSpan.FromSeconds(30);
 }
