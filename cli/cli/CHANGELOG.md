@@ -27,9 +27,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- `beam server serve` (the CLI server the Unity editor uses) no longer leaks about 2 MB and gets slower with every command it runs. Finished commands stayed reachable through the shared global options, a per-command tracer provider and a connection heartbeat that never stopped. Memory now stays flat, and latency no longer climbs (it used to pass 120 ms after a few hundred commands).
-- Every `beam` command starts about 18 ms faster: the Java 8 search for the Scala backend (`/usr/libexec/java_home` and JDK checks) runs only when a command needs Java, not for every command. A warm command on `beam server serve` (Unity's `/execute`) now takes about 10 ms instead of 46 ms.
-- `beam server serve` streams command results to Unity about 3x faster with a third of the allocations. Events are serialized once into a buffer and sent at most 2 ms later, rather than flushed one by one. The bytes Unity receives are unchanged. A client that disconnects now cancels its command even when the server has no logger configured.
 - CLI discovery reports the executing package version, including development revisions. Fixed telemetry collector discovery and shutdown ownership to preserve unrelated commands.
 - Fixed content history pagination, watcher cleanup/cancellation, shutdown acknowledgement retries, and reconciliation recovery after partial failures.
 - Lines `beam local logs --forward` sends to Grafana carry their OTel severity number, so Loki no longer shows lines without a level keyword (Scala/Maven build output, stack traces) as unknown ("UKN").

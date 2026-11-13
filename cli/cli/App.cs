@@ -31,7 +31,6 @@ using cli.Options;
 using cli.PlayerCommands;
 using cli.Portal;
 using cli.Services;
-using cli.Services.CliInvocation;
 using cli.Services.HttpServer;
  using cli.Services.Web;
 using cli.TempCommands;
@@ -385,36 +384,6 @@ public class App
 		_meterProvider?.Shutdown();
 	}
 
-	/// <summary>
-	/// Ends one command run inside a long-lived process (`beam server serve`), which never reaches
-	/// <see cref="Flush"/>: exports and releases what this app created for the command, leaving the process's own
-	/// logger alone.
-	/// </summary>
-	public virtual void EndInvocation()
-	{
-		if (CommandProvider?.CanBuildService<RootCommand>() == true)
-		{
-			CommandTreeDetacher.Detach(CommandProvider.GetService<RootCommand>());
-		}
-		_activity?.Stop();
-		_activity?.Dispose();
-		_activity = null;
-		_invocationLoggerFactory?.Dispose();
-		_invocationLoggerFactory = null;
-		// Each app builds its own tracer provider (and with it a process-wide HttpClient listener), so it must go
-		// with the command. The meter provider is the process's (see MeterProvider) and is flushed at exit.
-		if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_SKIP_CLI_FLUSH")))
-		{
-			_traceProvider?.ForceFlush();
-		}
-		_traceProvider?.Dispose();
-		_traceProvider = null;
-		_meterProvider = null;
-	}
-
-	// The logger factory of a command run by a long-lived process; see EndInvocation.
-	private ILoggerFactory _invocationLoggerFactory;
-
 	public virtual void Configure(
 		Action<IDependencyBuilder> serviceConfigurator = null,
 		Action<IDependencyBuilder> commandConfigurator = null,
@@ -475,9 +444,7 @@ public class App
 				var appCtx = provider.GetService<IAppContext>();
 				if (appCtx.ShouldEmitLogs)
 				{
-					// This command shares the process with others, so its logger only lives in its own async
-					// context; the process-wide loggers stay the host's.
-					var factory = _invocationLoggerFactory = LoggerFactory.Create(builder =>
+					var factory = GlobalLoggerFactory = LoggerFactory.Create(builder =>
 					{
 						builder.SetMinimumLevel(LogLevel.Trace);
 						builder.AddZLoggerLogProcessor(new ReporterSink(provider));
@@ -487,7 +454,7 @@ public class App
 					{
 						_queuedLogger.Flush(logger);
 					}
-					BeamableZLoggerProvider.LogContext.Value = logger;
+					BeamableZLoggerProvider.GlobalLogger = BeamableZLoggerProvider.LogContext.Value = logger;
 				}
 			};
 		}
@@ -1311,7 +1278,7 @@ public class App
 				
 				if (Directory.Exists(otelDirectory))
 				{
-					var dirResult = DirectoryUtils.CalculateDirectorySizeCached(otelDirectory, TimeSpan.FromMinutes(1));
+					var dirResult = DirectoryUtils.CalculateDirectorySize(otelDirectory);
 
 					var maxSize = configService.LoadOtelConfigFromFile().BeamCliTelemetryMaxSize;
 
