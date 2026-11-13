@@ -271,6 +271,14 @@ public static class MicroserviceStartupUtil
 			var _ = beamableService.RunForever();
 		}
 
+		// one thread watches every instance's connection, whichever instance it belongs to.
+		var healthMonitor = new ProcessHealthMonitor(startupCtx.services);
+		if (startupCtx.services.Count > 0 && startupCtx.services[0] is BeamableMicroService first)
+		{
+			first.HealthMonitor = healthMonitor;
+		}
+		healthMonitor.Start();
+
 		startupCtx.result.Success = true;
 		return startupCtx.result;
 
@@ -586,7 +594,20 @@ public static class MicroserviceStartupUtil
 
 			ctx.logger.ZLogCritical($"Unhandled exception. type=[{args.ExceptionObject?.GetType()?.Name}]");
 		};
+
+		// A faulted task nobody awaits, such as a background loop, otherwise fails without a trace.
+		if (Interlocked.Exchange(ref _unobservedTaskHandlerInstalled, 1) == 0)
+		{
+			TaskScheduler.UnobservedTaskException += (sender, args) =>
+			{
+				args.SetObserved();
+				var ex = args.Exception?.GetBaseException();
+				ctx.logger.ZLogError($"Unobserved task exception. {ex?.GetType().Name}: {ex?.Message}\n{ex?.StackTrace}");
+			};
+		}
 	}
+
+	private static int _unobservedTaskHandlerInstalled;
 
 	public static ReflectionCache ConfigureReflectionCache(StartupContext ctx)
 	{
@@ -708,7 +729,9 @@ public static class MicroserviceStartupUtil
 				new MicroserviceRequester(
 					provider.GetService<IMicroserviceArgs>(),
 					provider.GetService<RequestContext>(),
-					provider.GetService<SocketRequesterContext>(),
+					// Prefer this scope's connection, but don't wait on one a health check judged broken: realm-wide
+					// singletons resolve this at the root, where the connection is the first instance's.
+					SocketContextSelector.PreferHealthy(provider.GetService<SocketRequesterContext>(), startupContext.services),
 					true,
 					provider.GetService<IActivityProvider>()))
 			.AddScoped<IUserContext>(provider => provider.GetService<RequestContext>())
@@ -788,7 +811,9 @@ public static class MicroserviceStartupUtil
 				new MicroserviceRequester(
 					provider.GetService<IMicroserviceArgs>(),
 					provider.GetService<RequestContext>(),
-					provider.GetService<SocketRequesterContext>(),
+					// Prefer this scope's connection, but don't wait on one a health check judged broken: realm-wide
+					// singletons resolve this at the root, where the connection is the first instance's.
+					SocketContextSelector.PreferHealthy(provider.GetService<SocketRequesterContext>(), startupContext.services),
 					true,
 					provider.GetService<IActivityProvider>()))
 			.AddScoped<IBeamableRequester>(p => p.GetService<MicroserviceRequester>())

@@ -31,8 +31,8 @@ namespace microserviceTests.microservice
 
 		public async Task Start<T>(TestArgs dudArgs=null, Action<IDependencyBuilder> configurator=null) where T : Microservice
 		{
-			var args = new TestArgs();
-		
+			var args = dudArgs ?? new TestArgs();
+
 
 			var attr = typeof(T).GetCustomAttribute<MicroserviceAttribute>();
 			_instances = await new BeamServiceConfigBuilder(attr)
@@ -210,8 +210,15 @@ namespace microserviceTests.microservice
       public int RateLimitCPUOffset => 0;
       public int ReceiveChunkSize => 1024;
       public int SendChunkSize { get; set; } = 1024;
-      public int BeamInstanceCount => 1;
+      public int BeamInstanceCount { get; set; } = 1;
       public int RequestCancellationTimeoutSeconds => 10;
+      // Socket reliability settings. Tests default to the production defaults; tests of the
+      // reliability features opt into enforcement with short timeouts.
+      public int OutboundRequestTimeoutSeconds { get; set; } = 30;
+      public int SocketSendTimeoutSeconds { get; set; } = 30;
+      public int SocketStallTimeoutSeconds { get; set; } = 60;
+      public int WebSocketKeepAliveTimeoutSeconds { get; set; } = 0;
+      public bool EnforceSocketReliability { get; set; } = false;
       public LogOutputType LogOutputType => LogOutputType.DEFAULT;
       public string LogOutputPath { get; }
       public bool EnableDangerousDeflateOptions => false;
