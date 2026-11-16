@@ -28,15 +28,30 @@ export interface BundleTag { tag: string; version: number }
 
 export interface BundleNotice {
   id: string
+  /** "deprecation", "security-advisory", "known-issue", "retirement" or "announcement". */
+  kind: string
+  /** "publisher", or "beamable" when Beamable staff wrote it. */
+  source: string
+  /** Both 0 when the notice covers the whole bundle. */
   minVersion: number
   maxVersion: number
-  endOfSupport: string
-  endOfLife: string
+  endOfSupport: string | null
+  endOfLife: string | null
+  /** Security advisories: "low", "medium", "high" or "critical". */
+  severity: string | null
+  advisoryId: string | null
+  updateBy: string | null
+  acquisitionsEnd: string | null
+  resolvedAt: string | null
   message: string
   link: string | null
   replacement: string | null
-  /** "supported", "deprecated", "unsupported" or "endoflife". */
+  /** Where a deprecation leaves its versions: "supported", "deprecated", "unsupported" or "endoflife". */
   status: string
+  /** Unresolved, and not an announcement. */
+  warns: boolean
+  /** One line saying what the notice is. */
+  description: string
 }
 
 export interface PublishedBundle {

@@ -124,16 +124,25 @@ function StatusBadge({ status }: { status: string }) {
   )
 }
 
+/** A notice that doesn't warn (an announcement, or a resolved one) stays neutral. */
+const NOTICE_KIND_VARIANT: Record<string, Variant> = {
+  'security-advisory': 'danger',
+  'known-issue': 'warning',
+  retirement: 'warning',
+}
+
 function NoticeLine({ notice }: { notice: BundleNotice }) {
+  const variant = !notice.warns
+    ? 'neutral'
+    : notice.kind === 'deprecation'
+      ? SUPPORT_VARIANT[notice.status] ?? 'warning'
+      : NOTICE_KIND_VARIANT[notice.kind] ?? 'neutral'
   return (
     <div style={ROW}>
-      <BeamBadge variant={SUPPORT_VARIANT[notice.status] ?? 'neutral'} appearance="filled" pill>{notice.status}</BeamBadge>
-      <span style={QUIET}>
-        v{notice.minVersion}–v{notice.maxVersion}: end of support {notice.endOfSupport.slice(0, 10)}, end of life{' '}
-        {notice.endOfLife.slice(0, 10)}
-        {notice.replacement ? `, use ${notice.replacement}` : ''}
-        {notice.message ? `. ${notice.message}` : ''}
-      </span>
+      <BeamBadge variant={variant} appearance="filled" pill>
+        {notice.kind === 'deprecation' ? notice.status : notice.kind}
+      </BeamBadge>
+      <span style={QUIET}>{notice.description}</span>
     </div>
   )
 }
@@ -1224,7 +1233,7 @@ export default function App() {
               </BeamTable>
               {(releases?.notices.length ?? 0) > 0 && (
                 <div style={STACK}>
-                  <span style={{ ...text, fontWeight: 600 }}>Deprecation notices</span>
+                  <span style={{ ...text, fontWeight: 600 }}>Notices</span>
                   {releases!.notices.map((n) => <NoticeLine key={n.id} notice={n} />)}
                 </div>
               )}
