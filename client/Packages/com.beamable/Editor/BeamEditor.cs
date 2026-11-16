@@ -160,6 +160,7 @@ namespace Beamable
 		public static CoreConfiguration CoreConfiguration { get; private set; }
 		public static ReflectionCache EditorReflectionCache { get; private set; }
 		public static bool IsInitialized { get; private set; }
+		internal static bool IsReloading { get; private set; }
 
 		public static IDependencyBuilder BeamEditorContextDependencies;
 
@@ -186,6 +187,7 @@ namespace Beamable
 			
 			AssemblyReloadEvents.beforeAssemblyReload += () =>
 			{
+				IsReloading = true;
 				BeamEditorContext.StopAll().Wait();
 			};
 			

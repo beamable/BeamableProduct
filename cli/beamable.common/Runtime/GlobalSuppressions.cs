@@ -80,9 +80,6 @@ using System.Diagnostics.CodeAnalysis;
 	Justification = "Reflection JSON requires this field.", Scope = "member", Target = "~F:Beamable.Common.BeamCli.Contracts.CliOtelLogRecord.Attributes")]
 
 [assembly: SuppressMessage("Serialization", "UAC1015",
-	Justification = "Federation JSON requires this field.", Scope = "member", Target = "~F:Beamable.Common.CampaignOfferRedeemRequest.params")]
-
-[assembly: SuppressMessage("Serialization", "UAC1015",
 	Justification = "Reflection JSON requires this field.", Scope = "member", Target = "~F:Beamable.Common.FederatedInventoryProxyState.currencies")]
 
 [assembly: SuppressMessage("Serialization", "UAC1015",
@@ -123,3 +120,33 @@ using System.Diagnostics.CodeAnalysis;
 
 [assembly: SuppressMessage("Serialization", "UAC1018",
 	Justification = "Keep the legacy alias for existing content assets.", Scope = "member", Target = "~F:Beamable.Common.Shop.SKUProductIds.itunes")]
+
+[assembly: SuppressMessage("Serialization", "UAC1015",
+	Justification = "Federation JSON requires this field; preserve its existing dictionary contract.", Scope = "member", Target = "~F:Beamable.Common.OfferAmount.properties")]
+
+[assembly: SuppressMessage("Serialization", "UAC1015",
+	Justification = "Federation JSON requires this field; preserve its existing dictionary contract.", Scope = "member", Target = "~F:Beamable.Common.OfferItem.properties")]
+
+[assembly: SuppressMessage("Serialization", "UAC1015",
+	Justification = "Federation JSON requires this field; preserve its existing dictionary contract.", Scope = "member", Target = "~F:Beamable.Common.OfferReason.properties")]
+
+[assembly: SuppressMessage("Serialization", "UAC1015",
+	Justification = "Federation JSON requires this field; preserve its existing dictionary contract.", Scope = "member", Target = "~F:Beamable.Common.OfferAvailability.publicProperties")]
+
+[assembly: SuppressMessage("Serialization", "UAC1015",
+	Justification = "Federation JSON requires this field; preserve its existing dictionary contract.", Scope = "member", Target = "~F:Beamable.Common.OfferGrantItem.metadata")]
+
+[assembly: SuppressMessage("Serialization", "UAC1015",
+	Justification = "Federation JSON requires this field; preserve its existing dictionary contract.", Scope = "member", Target = "~F:Beamable.Common.OfferGrantResponse.publicProperties")]
+
+[assembly: SuppressMessage("Serialization", "UAC1015",
+	Justification = "Federation JSON requires this field; preserve its existing dictionary contract.", Scope = "member", Target = "~F:Beamable.Common.OfferGrantResponse.serverProperties")]
+
+[assembly: SuppressMessage("Serialization", "UAC1015",
+	Justification = "Federation JSON requires this field; preserve its existing dictionary contract.", Scope = "member", Target = "~F:Beamable.Common.OfferGrantRef.metadata")]
+
+[assembly: SuppressMessage("Serialization", "UAC1015",
+	Justification = "Federation JSON requires this field; preserve its existing dictionary contract.", Scope = "member", Target = "~F:Beamable.Common.OfferGrantRef.publicProperties")]
+
+[assembly: SuppressMessage("Serialization", "UAC1015",
+	Justification = "Federation JSON requires this field; preserve its existing dictionary contract.", Scope = "member", Target = "~F:Beamable.Common.OfferGrantRef.serverProperties")]

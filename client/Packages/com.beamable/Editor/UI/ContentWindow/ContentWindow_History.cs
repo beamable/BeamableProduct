@@ -794,7 +794,7 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private void RetryContentHistory()
 		{
-			_contentService.RestartContentHistory();
+			_ = _contentService.RestartContentHistory().Error(error => Debug.LogException(error));
 			Repaint();
 		}
 

@@ -1263,6 +1263,21 @@ public class LocalStackToolchainTests
 		Assert.That((forward.beam, forward.arguments, forward.tags.Single()), Is.EqualTo((true, "local logs --forward http://localhost:4318", "observability")));
 		Assert.That(StepNames(LocalStackStacks.BuiltIn().Resolve("csharp-portal", config)), Does.Contain(LocalStackTemplate.LogsForwardStepName));
 
+		// Grafana runs in every stack, those without the backend's docker step too; :no-logs still leaves it out.
+		forward.dependsOn = new List<string> { "docker: api deps + caddy" }; // as settings written before the step had it
+		LocalStackTemplate.AddObservabilityStep(config.steps);
+		Assert.That(StepNames(LocalStackStacks.BuiltIn().Resolve("portal-extensions", config)), Does.Not.Contain(LocalStackTemplate.ObservabilityStepName),
+			"not without BeamableAPI on disk");
+		var observability = config.steps.Single(s => s.name == LocalStackTemplate.ObservabilityStepName);
+		observability.workingDirectory = Path.GetTempPath(); // a BeamableAPI that exists
+		Assert.That(observability.arguments, Is.EqualTo("compose up -d --wait otel-collector loki tempo prometheus grafana"));
+		Assert.That(forward.dependsOn, Is.EqualTo(new[] { LocalStackTemplate.ObservabilityStepName }));
+		var portalOnly = StepNames(LocalStackStacks.BuiltIn().Resolve("portal-extensions", config));
+		Assert.That(portalOnly, Does.Contain(LocalStackTemplate.ObservabilityStepName).And.Contain(LocalStackTemplate.LogsForwardStepName));
+		Assert.That(portalOnly, Does.Not.Contain("docker: api deps + caddy"));
+		Assert.That(StepNames(LocalStackStacks.BuiltIn().Resolve("portal-extensions:no-logs", config)),
+			Does.Not.Contain(LocalStackTemplate.ObservabilityStepName).And.Not.Contain(LocalStackTemplate.LogsForwardStepName));
+
 		var payload = LogForwarder.Payload(new[] { ("scala: auth", "2026 ERROR boom"), ("scala: auth", "started"), ("c# gateway", "WARN slow") },
 			"full", "agentic-portal", new DateTime(2026, 10, 26, 12, 0, 0, DateTimeKind.Utc));
 		var resources = payload["resourceLogs"]!;
@@ -1272,6 +1287,7 @@ public class LocalStackToolchainTests
 		Assert.That((Attr("beam.step"), Attr("beam.stack"), Attr("beam.workspace"), Attr("beam.kind")), Is.EqualTo(("scala: auth", "full", "agentic-portal", "scala")));
 		var records = auth["scopeLogs"]![0]!["logRecords"]!;
 		Assert.That(records.Select(r => (string)r["severityText"]), Is.EqualTo(new[] { "ERROR", "INFO" }));
+		Assert.That(records.Select(r => (int)r["severityNumber"]), Is.EqualTo(new[] { 17, 9 }), "Loki's detected_level comes from the number");
 		Assert.That((string)records[0]!["timeUnixNano"], Is.EqualTo("1793016000000000000"));
 		Assert.That(LogForwarder.SeverityOf("[main] WARNING disk"), Is.EqualTo("WARN"));
 		Assert.That((LogForwarder.SeverityOf("TRACE tick"), LogForwarder.SeverityOf("[VERBOSE] x"), LogForwarder.SeverityOf("DEBUG y")), Is.EqualTo(("TRACE", "TRACE", "DEBUG")));

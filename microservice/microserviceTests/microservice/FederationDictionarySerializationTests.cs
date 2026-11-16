@@ -14,21 +14,31 @@ public class FederationDictionarySerializationTests
 	{
 		var fields = new[]
 		{
-			(typeof(MessageRailRecipient), "data"),
-			(typeof(CampaignOfferRedeemRequest), "params")
+			(typeof(MessageRailRecipient), "data", false),
+			(typeof(OfferAmount), "properties", false),
+			(typeof(OfferItem), "properties", false),
+			(typeof(OfferReason), "properties", false),
+			(typeof(OfferAvailability), "publicProperties", true),
+			(typeof(OfferGrantItem), "metadata", false),
+			(typeof(OfferGrantResponse), "publicProperties", false),
+			(typeof(OfferGrantResponse), "serverProperties", false),
+			(typeof(OfferGrantRef), "metadata", false),
+			(typeof(OfferGrantRef), "publicProperties", false),
+			(typeof(OfferGrantRef), "serverProperties", false)
 		};
-		foreach (var (type, field) in fields)
+		foreach (var (type, field, missingIsNull) in fields)
 		foreach (var state in new[] { "missing", "null", "empty", "populated" })
-			yield return new TestCaseData(type, field, state)
+			yield return new TestCaseData(type, field, state, missingIsNull)
 				.SetName($"{type.Name}_{field}_{state}");
 	}
 
 	[TestCaseSource(nameof(DictionaryCases))]
-	public void FederationJsonPreservesDictionary(Type type, string name, string state)
+	public void FederationJsonPreservesDictionary(Type type, string name, string state, bool missingIsNull)
 	{
 		var value = state switch
 		{
 			"null" => "null",
+			"missing" when missingIsNull => "null",
 			"populated" => "{\"beam_offer_grants\":\"g1\",\"empty\":\"\"}",
 			_ => "{}"
 		};
@@ -38,7 +48,7 @@ public class FederationDictionarySerializationTests
 		var field = type.GetField(name);
 		Assert.That(field, Is.Not.Null, "The public field is part of the federation API.");
 		var dictionary = (IDictionary)field.GetValue(instance);
-		if (state == "null")
+		if (value == "null")
 			Assert.That(dictionary, Is.Null);
 		else
 			Assert.That(dictionary, Has.Count.EqualTo(state == "populated" ? 2 : 0));

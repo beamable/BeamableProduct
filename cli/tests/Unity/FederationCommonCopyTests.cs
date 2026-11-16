@@ -10,7 +10,8 @@ namespace tests.Unity;
 public class FederationCommonCopyTests
 {
 	[TestCase("FederatedMessageRail.cs")]
-	[TestCase("FederatedCampaignVirtualOffer.cs")]
+	[TestCase("FederatedVirtualOffer.cs")]
+	[TestCase("GlobalSuppressions.cs", "")]
 	[TestCase("AssemblyDiscovery.cs", "ReflectionCache")]
 	[TestCase("ReflectionCache.cs", "ReflectionCache")]
 	public void CommittedUnityContractMatchesCommonCopy(string fileName, string sourceDirectory = "Federation")

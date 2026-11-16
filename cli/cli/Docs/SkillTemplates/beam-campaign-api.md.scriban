@@ -5,7 +5,7 @@ description: Use the Campaign HTTP API — author and publish a campaign graph, 
 
 # Campaign API
 
-> For the rail a send node delivers on, load `beam-message-rail-federation`.
+> For the rail a send node delivers on, load `beam-message-rail-federation`. For the offer providers a send node grants from, and the player's offer routes, load `beam-offer-federation`.
 
 ## High-Level Architecture
 
@@ -40,7 +40,9 @@ BeamableAPI repo:
 | Lifecycle state machine | `BeamableShared/Services/Campaigns/Runtime/CampaignLifecycleMachine.cs` |
 | Graph walk / node behaviour | `BeamableShared/Services/Campaigns/Engine/` |
 | Send queueing (lease, pace) | `BeamableShared/Services/Campaigns/Runtime/Nodes/Send/CampaignSendDirectorHost.cs` |
-| Send dispatch to rails, offer grants | `BeamableShared/Services/Campaigns/Runtime/Nodes/Send/CampaignSendDispatcher.cs` |
+| Send dispatch to rails | `BeamableShared/Services/Campaigns/Runtime/Nodes/Send/CampaignSendDispatcher.cs` |
+| Offer grants of a send (origin, confirm, abandon) | `BeamableShared/Services/Campaigns/Runtime/CampaignOfferStep.cs` |
+| Closing a version's offers | `BeamableShared/Services/Campaigns/Runtime/CampaignDrainMonitor.cs` |
 | Rail backpressure | `BeamableShared/Services/Campaigns/Runtime/Nodes/Send/CampaignRailBreaker.cs` |
 | Dispatch throttle, write budget | `BeamableShared/Services/Campaigns/Runtime/CampaignDispatchThrottle.cs`, `CampaignWriteBudget.cs` |
 | Funnel model | `BeamableShared/Services/Campaigns/Model/Funnel.cs` |
@@ -176,15 +178,17 @@ body:   { kind: "Entry"|"Segment"|"Schedule"|"Send"|"AnalyticsGate", entry?|segm
   schedule    { kind: "DelayFor"|"SendNow"|"AtDateTime", delayMs?, when? }
   send        { railFederationId, targetPid, message, goals[], maxWaitMs, deliveryMaxWaitMs?,
                 campaignOffers?[], campaignOfferGroups?[] }
-    offer     { entryId, offerId, federationId, label?, invalidatesEntryIds?[], condition?, extraData? }
+    offer     { entryId, offerId, federationId, label?, invalidatesEntryIds?[], condition?, extraData?, durationMs? }
       condition { payload (segmentation rule, flat REST encoding), lockedMessage? }
-    group     { id, memberEntryIds[], mode: "All"|"Exclusive", invalidation: "None"|"Single"|"Group", label? }
+    group     { id, memberEntryIds[], mode: "All"|"Exclusive", label? }
   analyticsGate { filter: GoalPredicate, observePid, maxWaitMs? }
 edge:   { id, from, outcome, to, decorators[] }
 ```
 
-- Every recipient of a send is granted every offer of the node, on the store federation named by `federationId`. A `condition` is a gate, not a filter: the offer reports itself unavailable until the player qualifies.
-- A group's `mode`: `All` = members stack, `Exclusive` = members are alternatives. `invalidation` = what a purchase forfeits: `None` (the only value valid for `All`), `Single` (each member forfeits the entries in its `invalidatesEntryIds`), `Group` (buying any member forfeits every other member).
+- Every recipient of a send is granted every offer of the node through Beamable's offer registry, on the provider federation named by `federationId`. A grant becomes visible only once the message carrying it is staged; a send that gives up, or a version that ended while it was granting, fails its grants instead. A `condition` is a gate, not a filter: the offer reports itself unavailable until the player qualifies.
+- `durationMs`: how long each grant lasts, counted from when the send was due; null = `Campaigns:Send:DefaultOfferDurationMs` (30 days). `extraData` goes to the provider as the grant's metadata, together with the campaign's attribution keys (`beam_campaign`, `beam_campaign_version`, `beam_node`, `beam_outreach`), which overwrite an authored key of the same name.
+- A group's `mode`: `All` = members stack, `Exclusive` = members are alternatives, and redeeming one forfeits every other member. An offer's `invalidatesEntryIds` are the entries it forfeits when it is redeemed, in a group or not ("the premium forfeits the starter, the starter forfeits nothing"); a member of an `All` group may not forfeit another member. Unlike an `Exclusive` group, nothing arbitrates them: two redeems at the same time can both deliver.
+- When a version ends (Drain or Halt reaches Inactive), its grants still open in every realm expire; a reactivation grants under a new activation, so its grants are new ones.
 - Limits per graph: 500 nodes, 2000 edges; per send node: 32 goals, 48 offers, 48 offer groups.
 
 - `kind` must match the populated branch, else `400 InvalidCampaignGraph`.
@@ -202,7 +206,7 @@ edge:   { id, from, outcome, to, decorators[] }
 - Goals: `GoalPredicateEmpty`, `GoalAbsenceWindowInvalid`, `GoalTimerExceedsMaxWait`, `GoalPropertyBoundInvalid`, `DuplicateGoalLabel`, `InvalidGoalLabel`, `ReservedEventName`
 - Windows: `SendDeliveryWindowInvalid`, `SendConversionWindowInvalid`
 - Analytics gate: `AnalyticsGateInvalid` (an absence leaf, a leaf window, or a non-positive `maxWaitMs`)
-- Offers: `OfferEntryIdDuplicate`, `OfferReferenceIncomplete`, `OfferGroupMemberUnknown`, `OfferGroupTooSmall`, `OfferGroupModeConflictsWithInvalidation`, `OfferGroupInvalidationUnconfigured`, `OfferInMultipleGroups`, `OfferSelfInvalidation`, `OfferForfeitsAcrossFederations`, `OfferConditionRuleInvalid`
+- Offers: `OfferEntryIdDuplicate`, `OfferReferenceIncomplete`, `OfferGroupMemberUnknown`, `OfferGroupTooSmall`, `OfferGroupModeConflictsWithInvalidation`, `OfferInMultipleGroups`, `OfferSelfInvalidation`, `OfferForfeitsAcrossFederations`, `OfferConditionRuleInvalid`, `OfferDurationInvalid`
 - Size: `GraphTooLarge`, `SendNodeTooLarge`, `PropertyTooLarge`
 - Publish only: `RailNotConfigured` (names every missing key), `OfferFederationNotRegistered`
 - HTTP: `400 InvalidCampaignGraph`, `400 InvalidCampaignPageLimit`/`InvalidCampaignPageSkip`, 401, 403, 404, 409

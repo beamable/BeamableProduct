@@ -132,7 +132,8 @@ step change (`label`, `state`, `elapsedSeconds`), `ps --json` prints only the JS
 timestamped lines instead.
 
 ## Logs in Grafana
-Stacks with the `observability` tag (`full`, `backend`, `csharp-portal`) run `logs: forward`, which sends every step's
+Every stack runs `docker: observability` (the collector, Loki, Tempo, Prometheus and Grafana from BeamableAPI's compose)
+and `logs: forward`, unless it uses `:no-logs` or BeamableAPI is not on disk. The forwarder sends every step's
 lines to the local Loki with labels `beam_workspace`, `beam_stack`, `beam_step`, `beam_kind` and the line's level.
 On the local backend, microservices and extensions also send their own logs, metrics and failed-request traces.
 Grafana: `http://localhost:3001` → Dashboards → "Local stack" (one dashboard per kind). `L` on the board opens it.
@@ -218,7 +219,9 @@ role's trust policy). `AWS_PROFILE` set to an empty string fails as "config prof
 3. `beam local run <stack> --dry-run`: check the step's folder against the repositories you expect.
 4. A readiness timeout usually means a missing dependency, not a slow service: C# hosts need the docker step, every
    beam step needs a login to the backend (on `local`, the Scala `scala-core` services).
-5. "Port already in use" is reported before launch: something outside the stack holds the port.
+5. A taken port moves the step to the next free one (a warning names the holder): the portal, the C# hosts and the
+   Scala gateways, with Caddy and the services that call them repointed. Docker ports, Caddy's 8080 and a holder that
+   is a leftover of a previous stack are still reported as "port already in use" before launch.
 6. A C# host runs from its build output; after a change in BeamableAPI the next run rebuilds it, or force it with
    `:build`.
 7. **Under load**, ActiveMQ runs with a 1 GB heap; tens of thousands of unconsumed messages (locally,

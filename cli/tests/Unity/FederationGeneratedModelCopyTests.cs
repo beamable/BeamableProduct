@@ -8,16 +8,12 @@ namespace tests.Unity;
 
 public class FederationGeneratedModelCopyTests
 {
-	[TestCase("CampaignOffer")]
-	[TestCase("CampaignOfferAmount")]
-	[TestCase("CampaignOfferGrantContext")]
-	[TestCase("CampaignOfferGrantResponse")]
-	[TestCase("CampaignOfferItem")]
-	[TestCase("CampaignOfferReason")]
-	[TestCase("CampaignOfferRedeemResponse")]
-	[TestCase("CampaignOfferState")]
-	[TestCase("CampaignOfferText")]
-	[TestCase("CampaignOffersResponse")]
+	[TestCase("OfferAmount")]
+	[TestCase("OfferItem")]
+	[TestCase("OfferReason")]
+	[TestCase("OfferGrantState")]
+	[TestCase("PlayerOffer")]
+	[TestCase("PlayerOffersPage")]
 	[TestCase("MessageRailRegistrationResponse")]
 	public void UnityModelAndGeneratedDependenciesMatchCanonicalOutput(string rootType)
 	{

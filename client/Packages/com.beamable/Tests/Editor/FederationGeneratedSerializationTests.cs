@@ -12,7 +12,7 @@ namespace Beamable.Editor.Tests
         [TestCase("{\"properties\":{\"key\":\"value\"}}", true)]
         public void OptionalMapPreservesPresenceAndValue(string json, bool present)
         {
-            var model = JsonSerializable.FromJson<CampaignOfferAmount>(json, true);
+            var model = JsonSerializable.FromJson<OfferAmount>(json, true);
             Assert.That(model.properties.HasValue, Is.EqualTo(present));
             var output = JsonSerializable.Serialize(model);
             Assert.That(output.ContainsKey("properties"), Is.EqualTo(present));
@@ -24,15 +24,15 @@ namespace Beamable.Editor.Tests
         }
 
         [Test]
-        public void NestedOfferPreservesLocalizationZeroAndFalse()
+        public void NestedOfferPreservesTitleZeroAndFalse()
         {
-            const string json = "{\"offers\":[{\"grantId\":\"g1\",\"offerId\":\"o1\",\"state\":\"Granted\",\"available\":false,\"offer\":{\"offerId\":\"o1\",\"localizations\":{\"en\":{\"title\":\"Bundle\"}},\"cost\":[{\"symbol\":\"coin\",\"type\":\"currency\",\"amount\":0}]}}]}";
-            var model = JsonSerializable.FromJson<CampaignOffersResponse>(json, true);
+            const string json = "{\"offers\":[{\"grantId\":\"g1\",\"offerId\":\"o1\",\"state\":\"Granted\",\"available\":false,\"offer\":{\"offerId\":\"o1\",\"title\":\"Bundle\",\"cost\":[{\"symbol\":\"coin\",\"type\":\"currency\",\"amount\":0}]}}]}";
+            var model = JsonSerializable.FromJson<PlayerOffersPage>(json, true);
             var offer = model.offers.Value[0];
             Assert.That(offer.available.HasValue, Is.True);
             Assert.That(offer.available.Value, Is.False);
-            Assert.That(offer.state.Value, Is.EqualTo(CampaignOfferState.Granted));
-            Assert.That(offer.offer.Value.localizations.Value["en"].title, Is.EqualTo("Bundle"));
+            Assert.That(offer.state, Is.EqualTo(OfferGrantState.Granted));
+            Assert.That(offer.offer.Value.title.Value, Is.EqualTo("Bundle"));
             Assert.That(offer.offer.Value.cost.Value[0].amount.HasValue, Is.True);
             Assert.That(offer.offer.Value.cost.Value[0].amount.Value, Is.Zero);
             var output = JsonSerializable.ToJson(model);

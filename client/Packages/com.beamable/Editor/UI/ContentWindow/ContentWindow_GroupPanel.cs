@@ -33,13 +33,15 @@ namespace Beamable.Editor.UI.ContentWindow
 		private readonly Dictionary<string, List<string>> _contentTypeHierarchy = new();
 		private readonly Dictionary<string, bool> _groupExpandedStates = new();
 
+		private static IEnumerable<string> GetVisibleContentTypes(IEnumerable<string> reflectedTypes, IEnumerable<string> cachedTypes) =>
+			reflectedTypes.Concat(cachedTypes).Where(type => !string.IsNullOrEmpty(type)).Distinct().OrderBy(type => type);
+
 		private void BuildContentTypeHierarchy()
 		{
 			_contentTypeHierarchy.Clear();
 
-			var allContentTypes = _contentTypeReflectionCache.GetAll()
-			                                                 .OrderBy(item => item.Name)
-			                                                 .Select(item => item.Name);
+			var allContentTypes = GetVisibleContentTypes(_contentTypeReflectionCache.GetAll().Select(item => item.Name),
+				_contentService.TypeContentCache.Where(pair => pair.Value.Count > 0).Select(pair => pair.Key));
 
 			foreach (string contentType in allContentTypes)
 			{

@@ -1,5 +1,6 @@
 using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
+using Beamable.Common.Util;
 using Beamable.Server;
 using Beamable.Server.Common;
 using cli.CliServerCommand;
@@ -17,6 +18,7 @@ namespace cli.Services.HttpServer;
 public class ServerRequest
 {
 	public string commandLine;
+	public string requestId;
 }
 
 [Serializable]
@@ -290,6 +292,10 @@ public class ServerService
 					await resp.OutputStream.WriteAsync(data, 0, data.Length);
 					resp.StatusCode = status;
 					break;
+				case "stop":
+					await HandleStop(req.InputStream);
+					resp.StatusCode = 204;
+					break;
 				case EXEC_ROUTE:
 					await HandleExec(args, req.InputStream, resp, app);
 					break;
@@ -333,7 +339,9 @@ public class ServerService
 
 	static Task<ServerInfoResponse> HandleInfo(ServeCliCommandArgs args, ulong inflightRequests)
 	{
-		var version = VersionService.GetNugetPackagesForExecutingCliVersion();
+		// Discovery compares the executing package identity, including development revisions.
+		// Dependency normalization (for example 0.0.123.1 -> 0.0.123) belongs to package resolution.
+		var version = BeamAssemblyVersionUtil.GetVersion<ServerService>();
 
 		List<string> invocationSnapshot;
 		lock (_cliInvocationsLock)
@@ -343,7 +351,7 @@ public class ServerService
 
 		return Task.FromResult(new ServerInfoResponse
 		{
-			version = version.ToString(),
+			version = version,
 			owner = args.owner,
 			inflightRequests = (long)inflightRequests,
 			pid = Environment.ProcessId,
@@ -354,6 +362,28 @@ public class ServerService
 	private static readonly object _cliInvocationsLock = new object();
 	private static readonly List<string> cliInvocations = new List<string>();
 
+	private sealed class Invocation
+	{
+		public readonly AppLifecycle Lifecycle = new();
+		public readonly TaskCompletionSource Completed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+	}
+	private static readonly Dictionary<string, Invocation> _stoppableInvocations = new();
+
+	static async Task HandleStop(Stream request)
+	{
+		using var reader = new StreamReader(request);
+		var requestId = JsonConvert.DeserializeObject<ServerRequest>(await reader.ReadToEndAsync())?.requestId;
+		if (string.IsNullOrEmpty(requestId)) throw new ArgumentException("A stop request must include requestId.");
+		Invocation invocation;
+		lock (_cliInvocationsLock) _stoppableInvocations.TryGetValue(requestId, out invocation);
+		if (invocation == null) return; // Already completed. Clients wait for registration before stopping.
+		lock (invocation)
+		{
+			if (!invocation.Completed.Task.IsCompleted) invocation.Lifecycle.Cancel();
+		}
+		await invocation.Completed.Task;
+	}
+
 	static async Task HandleExec(ServeCliCommandArgs args, Stream networkRequestStream, HttpListenerResponse response, App app)
 	{
 		using var inputStream = new StreamReader(networkRequestStream);
@@ -362,22 +392,33 @@ public class ServerService
 		string commandLine = null;
 		IDataReporterService reporter = null;
 		var registered = false;
+		Invocation invocation = null;
+		string requestId = null;
 		int exitCode = -1;
 		try
 		{
 			input = await inputStream.ReadToEndAsync();
 			Log.Trace("Raw input received: " + input);
-			commandLine = JsonConvert.DeserializeObject<ServerRequest>(input)?.commandLine;
+			var request = JsonConvert.DeserializeObject<ServerRequest>(input);
+			commandLine = request?.commandLine;
+			requestId = request?.requestId;
 			if (string.IsNullOrWhiteSpace(commandLine))
 			{
 				throw new ArgumentException("An execute request must include a non-empty commandLine.");
 			}
 			Log.Trace("virtualizing " + commandLine);
 			app ??= new App();
+			if (!string.IsNullOrEmpty(requestId)) invocation = new Invocation();
 
 			var sw = Stopwatch.StartNew();
 			app.Configure(builder =>
 			{
+				// ConfigureServices reruns this callback for the actual invocation scope.
+				if (invocation != null)
+				{
+					builder.Remove<AppLifecycle>();
+					builder.AddSingleton(invocation.Lifecycle);
+				}
 				builder.Remove<IDataReporterService>();
 				builder.AddSingleton<IDataReporterService, ServerReporterService>(provider =>
 				{
@@ -392,8 +433,16 @@ public class ServerService
 
 			lock (_cliInvocationsLock)
 			{
+				if (invocation != null) _stoppableInvocations.Add(requestId, invocation);
 				cliInvocations.Add(input);
 				registered = true;
+			}
+			if (invocation != null)
+			{
+				// Flush only after registration, so a client can safely stop even before command startup.
+				response.Headers.Set("X-Beam-Request-Id", requestId);
+				await response.OutputStream.WriteAsync(Encoding.UTF8.GetBytes(": ready\n"));
+				await response.OutputStream.FlushAsync();
 			}
 			exitCode = await app.RunWithSingleString(
 				commandLine,
@@ -434,6 +483,29 @@ public class ServerService
 				}
 			}
 
+			if (invocation != null)
+			{
+				try
+				{
+					try { lock (invocation) invocation.Lifecycle.Cancel(); }
+					finally
+					{
+						if (reporter is ServerReporterService serverReporter)
+							await serverReporter.Completion;
+					}
+				}
+				finally
+				{
+					lock (invocation)
+					{
+						invocation.Lifecycle.Source.Dispose();
+						invocation.Completed.TrySetResult();
+					}
+					if (registered)
+						lock (_cliInvocationsLock) _stoppableInvocations.Remove(requestId);
+				}
+			}
+
 			Log.Trace($"CLI EXEC FINISHED WITH EXIT=[{exitCode}] REQ=[{commandLine}]");
 		}
 	}
@@ -448,6 +520,7 @@ public class ServerReporterService : IDataReporterService
 	private StreamWriter _streamWriter;
 	private IDependencyProvider _provider;
 	private Task _connectionMonitorTask;
+	internal Task Completion => _connectionMonitorTask;
 	private AppLifecycle _lifecycle;
 
 	public ServerReporterService(IDependencyProvider provider, HttpListenerResponse resp)
@@ -456,13 +529,14 @@ public class ServerReporterService : IDataReporterService
 		_resp = resp;
 		_streamWriter = new StreamWriter(_resp.OutputStream);
 		_lifecycle = _provider.GetService<AppLifecycle>();
+		var cancellationToken = _lifecycle.CancellationToken;
 		_connectionMonitorTask = Task.Run(async () =>
 		{
 			try
 			{
-				while (!_lifecycle.IsCancelled)
+				while (!cancellationToken.IsCancellationRequested)
 				{
-					await Task.Delay(1000);
+					await Task.Delay(1000, cancellationToken);
 
 					// check if the pipe is still open, because if it isn't, the invocation should cancel.
 					try
@@ -483,6 +557,7 @@ public class ServerReporterService : IDataReporterService
 					}
 				}
 			}
+			catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
 			catch (Exception ex)
 			{
 				// remember, async void methods don't report exceptions automatically, so always log it to save brain later.

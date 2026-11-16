@@ -78,3 +78,7 @@ export const accountIdPlaceholder = "{accountId}";
 export const segmentIdPlaceholder = "{segmentId}";
 
 export const objectIdPlaceholder = "{objectId}";
+
+export const grantIdPlaceholder = "{grantId}";
+
+export const originIdPlaceholder = "{originId}";
