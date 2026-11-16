@@ -5,12 +5,15 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Beamable.Common.Content;
+using Beamable.Common.Content.Serialization;
 using cli;
 using cli.Content;
 using NUnit.Framework;
 
 namespace tests;
 
+[NonParallelizable]
 public class ContentSchemaSaveTests
 {
     private string root = null!, path = null!;
@@ -36,6 +39,45 @@ public class ContentSchemaSaveTests
         service.BulkSaveLocalContent(Cache, new[] { Id }, new[] { proposed },
             originalFiles: original == null ? null : new[] { original }, modelProperties: model == null ? null : new[] { model },
             expectedFileHashes: hash == null ? null : new[] { hash });
+
+    [ContentType("schemaSaveOld")]
+    public class OldModel : ContentObject { public int damage; }
+    [ContentType("schemaSaveNew")]
+    public class NewModel : ContentObject { public int damage; public int future; }
+
+    [Test] public async Task Serializer_produced_new_model_round_trips_through_old_model_edit()
+    {
+        var instanceField = typeof(ContentTypeReflectionCache).GetField("Instance", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!;
+        var previous = instanceField.GetValue(null);
+        try
+        {
+            const string producerId = "schemaSaveNew.sword";
+            var cache = new ContentTypeReflectionCache();
+            cache.OnSetupForCacheGeneration();
+            cache.OnBaseTypeOfInterestFound(cache.BaseTypesOfInterest[0], new[] { typeof(OldModel), typeof(NewModel) });
+            var newer = new NewModel { damage = 20, future = 37 };
+            newer.SetIdAndVersion(producerId, "v1");
+            var older = new OldModel();
+            // Produce both the model properties and the working-file envelope through their owning serializers.
+            await service.SaveContentFile(Path.GetDirectoryName(path)!, new ContentFile
+            {
+                Id = Id, Properties = JsonSerializer.Deserialize<JsonElement>(ClientContentSerializer.SerializeProperties(newer)),
+                Tags = JsonSerializer.SerializeToElement(new[] { "mine" }), FetchedFromManifestUid = "publication"
+            });
+            var original = File.ReadAllText(path);
+            ClientContentSerializer.DeserializeContentFromCli(original, older, producerId, out var difference);
+            Assert.That(difference.HasFlag(SchemaDifference.UnknownFieldsInJson), Is.True);
+            var before = ClientContentSerializer.SerializeProperties(older);
+            older.damage = 21;
+            await File.WriteAllTextAsync(path, original);
+            await Save(ClientContentSerializer.SerializeProperties(older), original, before);
+            var readBack = new NewModel();
+            ClientContentSerializer.DeserializeContentFromCli(File.ReadAllText(path), readBack, producerId, out _);
+            Assert.That(readBack.damage, Is.EqualTo(21));
+            Assert.That(readBack.future, Is.EqualTo(37));
+        }
+        finally { instanceField.SetValue(null, previous); }
+    }
 
     [Test] public async Task Edit_preserves_unknown_numbers_missing_defaults_tags_and_baseline()
     {
