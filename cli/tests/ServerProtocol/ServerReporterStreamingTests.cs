@@ -4,6 +4,7 @@ using cli.Services.HttpServer;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
+using UnityEngine;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,7 +16,7 @@ using System.Threading.Tasks;
 namespace tests.ServerProtocol;
 
 /// <summary>
-/// The /execute reporter buffers events and serializes them with a shared serializer. Unity parses the bytes, so
+/// The /execute reporter buffers events and serializes them with one serializer per response. Unity parses the bytes, so
 /// they must stay exactly what JsonConvert.SerializeObject produced, in order, and still arrive promptly.
 /// </summary>
 [NonParallelizable]
@@ -40,6 +41,44 @@ public class ServerReporterStreamingTests
 	public class Indexed
 	{
 		public int index;
+	}
+
+	/// <summary>Only serializes correctly when UnitySerializationCallbackInvoker runs its OnBeforeSerialize.</summary>
+	public class Callback : ISerializationCallbackReceiver
+	{
+		public int Value;
+		public void OnBeforeSerialize() => Value = 7;
+		public void OnAfterDeserialize() { }
+	}
+
+	/// <summary>
+	/// A callback type whose serialization pauses at <see cref="GateConverter"/>, which is after the invoker has taken
+	/// itself out of the serializer's converters.
+	/// </summary>
+	public class SlowCallback : ISerializationCallbackReceiver
+	{
+		public Gated gate = new();
+		public void OnBeforeSerialize() { }
+		public void OnAfterDeserialize() { }
+	}
+
+	[JsonConverter(typeof(GateConverter))]
+	public class Gated { }
+
+	public class GateConverter : JsonConverter<Gated>
+	{
+		public static TaskCompletionSource? Entered;
+		public static TaskCompletionSource? Release;
+
+		public override void WriteJson(JsonWriter writer, Gated? value, JsonSerializer serializer)
+		{
+			Entered?.TrySetResult();
+			Release?.Task.Wait(TimeSpan.FromSeconds(10));
+			writer.WriteValue(1);
+		}
+
+		public override Gated ReadJson(JsonReader reader, Type objectType, Gated? existingValue, bool hasExistingValue,
+			JsonSerializer serializer) => throw new NotSupportedException();
 	}
 
 	private static readonly Awkward[] AwkwardPayloads =
@@ -94,6 +133,49 @@ public class ServerReporterStreamingTests
 		}
 		Assert.That(body, Is.EqualTo(expected.ToString()));
 		server.AssertNoErrors();
+	}
+
+	[Test]
+	public async Task Concurrent_streams_keep_serialization_callbacks()
+	{
+		GateConverter.Entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+		GateConverter.Release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+		try
+		{
+			await using var server = new ServerServiceTests.TestServer(() => new ServerServiceTests.ControlledApp((command, reporter) =>
+			{
+				if (command == "slow")
+				{
+					reporter.Report("stream", new SlowCallback());
+				}
+				else
+				{
+					reporter.Report("stream", new Callback());
+				}
+				return Task.FromResult(0);
+			}));
+
+			// The first stream is paused in the middle of writing a callback type...
+			var slow = server.Execute("slow");
+			await GateConverter.Entered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+			// ...while a second stream writes one of its own.
+			var body = await server.Execute("callback");
+			GateConverter.Release.TrySetResult();
+			await slow;
+
+			var line = body.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).Single();
+			var ts = (long)JObject.Parse(line["data: ".Length..])["ts"]!;
+			var expected = JsonConvert.SerializeObject(
+				new ReportDataPoint<Callback> { ts = ts, type = "stream", data = new Callback() }, UnitySerializationSettings.Instance);
+			Assert.That(line, Is.EqualTo("data: " + expected), "A concurrent stream must not change how this one serializes.");
+			server.AssertNoErrors();
+		}
+		finally
+		{
+			GateConverter.Release.TrySetResult();
+			GateConverter.Entered = null;
+			GateConverter.Release = null;
+		}
 	}
 
 	[Test]

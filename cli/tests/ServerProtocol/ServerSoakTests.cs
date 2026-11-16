@@ -1,7 +1,10 @@
+using Beamable.Common;
 using Beamable.Common.Dependencies;
+using Beamable.Server;
 using cli;
 using cli.Services;
 using cli.Services.CliInvocation;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using NUnit.Framework;
 using System;
@@ -139,6 +142,72 @@ public class ServerSoakTests
 		var growthMb = (GC.GetTotalMemory(true) - before) / (1024.0 * 1024);
 		Assert.That(growthMb, Is.LessThan(25), $"40 finished requests left {growthMb:F1} MB on the heap.");
 		server.AssertNoErrors();
+	}
+
+	[Test]
+	public async Task Execute_requests_leave_the_host_logger_in_place()
+	{
+		// The host (`server serve`) owns the process-wide logger; Log.Global, used by the Ctrl+C handler among
+		// others, must not end up on a request's startup buffer.
+		var previousLogger = BeamableZLoggerProvider.GlobalLogger;
+		var previousProvider = BeamableLogProvider.Provider;
+		var hostLogger = new HostLogger();
+		var hostProvider = new BeamableZLoggerProvider();
+		BeamableZLoggerProvider.GlobalLogger = hostLogger;
+		BeamableLogProvider.Provider = hostProvider;
+		try
+		{
+			await using var server = new ServerServiceTests.TestServer(null);
+			for (var i = 0; i < 3; i++)
+			{
+				(await server.Send(System.Net.Http.HttpMethod.Post, "execute", "{\"commandLine\":\"config\"}")).Dispose();
+			}
+			Assert.That(BeamableZLoggerProvider.GlobalLogger, Is.SameAs(hostLogger), "A request replaced the host's global logger.");
+			Assert.That(BeamableLogProvider.Provider, Is.SameAs(hostProvider), "A request replaced the host's log provider.");
+			server.AssertNoErrors();
+		}
+		finally
+		{
+			BeamableZLoggerProvider.GlobalLogger = previousLogger;
+			BeamableLogProvider.Provider = previousProvider;
+		}
+	}
+
+	private sealed class HostLogger : ILogger
+	{
+		public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+		public bool IsEnabled(LogLevel level) => false;
+		public void Log<TState>(LogLevel level, EventId id, TState state, Exception? exception, Func<TState, Exception?, string> formatter) { }
+	}
+
+	[Test]
+	public async Task Finished_requests_leave_no_activity_sources_behind()
+	{
+		await Run(new CountingReporter()); // warm-up: the process's own sources exist from here on
+
+		// The CLI's activity provider creates its ActivitySource and its Meter together, so counting new sources also
+		// counts new meters (a meter without instruments is invisible to a MeterListener).
+		var created = 0;
+		using var listener = new ActivityListener
+		{
+			ShouldListenTo = source =>
+			{
+				if (source.Name == Beamable.Common.Constants.Features.Otel.METER_CLI_NAME)
+				{
+					System.Threading.Interlocked.Increment(ref created);
+				}
+				return false;
+			}
+		};
+		ActivitySource.AddActivityListener(listener); // also reports the sources that already exist
+		var existing = created;
+
+		for (var i = 0; i < 10; i++)
+		{
+			await Run(new CountingReporter());
+		}
+
+		Assert.That(created - existing, Is.EqualTo(0), "Every finished request left an ActivitySource (and a Meter) registered.");
 	}
 
 	[Test]

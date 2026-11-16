@@ -22,12 +22,12 @@ public class JavaPathOption : Option<string>
 		             $"will attempt to resolve Java through its usual install locations. You can also use the {ConfigService.ENV_VAR_JAVA_HOME} " +
 		             "environment variable to specify.")
 	{
-		if (TryGetJavaHome(out _, out _))
-			Description += "\nCurrently, a Java 8 home has been automatically identified.";
-		else if (!string.IsNullOrEmpty(ConfigService.CustomJavaHome))
+		// No Java search here: this option is built for every `beam` command, and the search runs processes. Commands
+		// that run Java resolve it when they need it (IAppContext.JavaPath).
+		if (!string.IsNullOrEmpty(ConfigService.CustomJavaHome))
+		{
 			Description += $"\nCurrently, BEAM_JAVA_HOME is set to {ConfigService.CustomJavaHome}.";
-		else
-			Description += "\nCurrently, no Java 8 home is available; set this option (or install a JDK 8) to run the Scala backend.";
+		}
 	}
 
 	/// <summary>

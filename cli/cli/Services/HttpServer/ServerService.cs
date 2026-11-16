@@ -544,8 +544,6 @@ public class ServerReporterService : IDataReporterService
 	/// </summary>
 	public static readonly TimeSpan MaxFlushDelay = TimeSpan.FromMilliseconds(2);
 
-	// Built once: JsonConvert.SerializeObject creates a serializer from the settings on every call.
-	private static readonly JsonSerializer Serializer = JsonSerializer.CreateDefault(UnitySerializationSettings.Instance);
 	private static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);
 	private static readonly byte[] DataPrefix = Utf8.GetBytes("data: ");
 	private static readonly byte[] LineEnd = Utf8.GetBytes(Environment.NewLine);
@@ -563,6 +561,9 @@ public class ServerReporterService : IDataReporterService
 	private readonly object _lock = new object();
 	private readonly MemoryStream _pending = new MemoryStream();
 	private StreamWriter _pendingWriter;
+	// One per response, built once (JsonConvert.SerializeObject builds one per call). Never shared between responses:
+	// UnitySerializationCallbackInvoker edits the serializer's converter list while it writes.
+	private JsonSerializer _serializer = CreateSerializer();
 	private readonly Timer _flushTimer;
 	private bool _flushScheduled;
 	private bool _isComplete;
@@ -677,21 +678,25 @@ public class ServerReporterService : IDataReporterService
 			{
 				_pending.Write(DataPrefix, 0, DataPrefix.Length);
 				// The same writer setup as JsonConvert.SerializeObject, so the bytes are identical.
-				var json = new JsonTextWriter(_pendingWriter) { Formatting = Serializer.Formatting, CloseOutput = false };
-				Serializer.Serialize(json, pt);
+				var json = new JsonTextWriter(_pendingWriter) { Formatting = _serializer.Formatting, CloseOutput = false };
+				_serializer.Serialize(json, pt);
 				json.Flush();
 				_pending.Write(LineEnd, 0, LineEnd.Length);
 			}
 			catch
 			{
-				// Drop the half-written event, including anything the writer still holds.
+				// Drop the half-written event, including anything the writer still holds, and start the next event
+				// with a serializer that a failed converter cannot have left in a changed state.
 				_pending.SetLength(start);
 				_pendingWriter = CreatePendingWriter();
+				_serializer = CreateSerializer();
 				throw;
 			}
 			ScheduleFlushLocked();
 		}
 	}
+
+	private static JsonSerializer CreateSerializer() => JsonSerializer.CreateDefault(UnitySerializationSettings.Instance);
 
 	private StreamWriter CreatePendingWriter() => new StreamWriter(_pending, Utf8, 1024, leaveOpen: true);
 
