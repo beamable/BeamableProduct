@@ -147,21 +147,13 @@ namespace Beamable.Editor.ContentService
 		internal void UpdateSchemaDifference(LocalContentManifestEntry entry, SchemaDifference difference)
 		{
 			if (entry.StatusEnum == ContentStatus.Deleted) { RemoveSchemaNotice(entry.FullId); return; }
-			// Disabling validation hides notices, but replacements must still clear obsolete evidence.
+			// The preference controls presentation only. Evidence always follows the current file.
 			LoadSchemaNotices();
 			var key = GetContentWriteKey(entry.FullId);
-			var hadPrevious = _schemaDifferences.TryGetValue(key, out var previous);
-			if (_contentConfiguration.validateSchemaDifference && difference != SchemaDifference.None)
-			{
-				if (hadPrevious && previous.Difference == difference && previous.Reference == entry.ReferenceManifestUid) return;
-				_schemaDifferences[key] = (difference, entry.ReferenceManifestUid);
-				SaveSchemaNotices();
-			}
-			else if (entry.StatusEnum is not (ContentStatus.Modified or ContentStatus.Created) ||
-			         !hadPrevious || previous.Reference != entry.ReferenceManifestUid)
-				RemoveSchemaNotice(entry.FullId);
-			// A reload cannot rediscover fields already removed by normalization. Keep the notice until
-			// this scoped item is deleted or replaced by a reconciled/published version.
+			if (difference == SchemaDifference.None) { RemoveSchemaNotice(entry.FullId); return; }
+			if (_schemaDifferences.TryGetValue(key, out var previous) && previous.Difference == difference && previous.Reference == entry.ReferenceManifestUid) return;
+			_schemaDifferences[key] = (difference, entry.ReferenceManifestUid);
+			SaveSchemaNotices();
 		}
 
 		[Serializable]
@@ -297,6 +289,10 @@ namespace Beamable.Editor.ContentService
 
 			string contentId = selectedContentObject.Id;
 			string propertiesJson = ClientContentSerializer.SerializeProperties(selectedContentObject);
+			_loadedContent.TryGetValue(GetContentWriteKey(contentId), out var loaded);
+			if ((_loadedObjectKeys != null && _loadedObjectKeys.TryGetValue(selectedContentObject, out var loadedKey) &&
+				(loadedKey != GetContentWriteKey(contentId) || loaded == null)) ||
+				(loaded != null && loaded.Content != selectedContentObject)) throw new InvalidOperationException("Content was reloaded. Select the current item before editing.");
 			// Keep this edit's tags, but discard them if a newer edit supersedes this save.
 			string[] tags = (selectedContentObject.Tags ?? Array.Empty<string>()).ToArray();
 			string scopeKey = GetContentScopeKey();
@@ -306,7 +302,8 @@ namespace Beamable.Editor.ContentService
 			// This prevents save storms when the debounce fires for rapid-fire edits where
 			// the final serialised value is the same as what was already written.
 			if (!_contentWrites.HasWrites(writeKey) && _lastSavedPropertiesCache.TryGetValue(writeKey, out var lastSave)
-			    && lastSave.IsSaved && lastSave.PropertiesJson == propertiesJson)
+			    && lastSave.IsSaved && lastSave.PropertiesJson == propertiesJson &&
+				_contentIdTagsCache.TryGetValue(contentId, out var savedTags) && savedTags.SequenceEqual(tags))
 			{
 				return;
 			}
@@ -320,7 +317,8 @@ namespace Beamable.Editor.ContentService
 			_pendingTagSaves[writeKey] = snapshot;
 			try
 			{
-				await SaveContentPropertiesAsync(contentId, propertiesJson);
+				if (loaded == null || loaded.ModelProperties != propertiesJson || _contentWrites.HasWrites(writeKey))
+					await SaveContentPropertiesAsync(contentId, propertiesJson, loaded: loaded);
 
 				// The properties command may finish after deletion has tombstoned this object.
 				if (selectedContentObject == null || selectedContentObject.ContentStatus == ContentStatus.Deleted)
@@ -336,7 +334,8 @@ namespace Beamable.Editor.ContentService
 
 				// Direct tag edits and newer saves own the tags now; an older properties completion must not overwrite them.
 				if (!_pendingTagSaves.TryGetValue(writeKey, out var pending) || !ReferenceEquals(pending, snapshot)) return;
-				await SetContentTagsAsync(contentId, tags);
+				if (loaded == null || !_contentIdTagsCache.TryGetValue(contentId, out var currentTags) || !currentTags.SequenceEqual(tags))
+					await SetContentTagsAsync(contentId, tags);
 				if (selectedContentObject != null && selectedContentObject.ContentStatus != ContentStatus.Deleted &&
 				    scopeKey == GetContentScopeKey() && CanWriteContent(contentId) &&
 				    _lastSavedPropertiesCache.TryGetValue(writeKey, out var currentSave) && ReferenceEquals(currentSave, snapshot))
@@ -357,23 +356,27 @@ namespace Beamable.Editor.ContentService
 			SaveContentPropertiesAsync(contentId, contentPropertiesJson, onCompleted).Error(Debug.LogException);
 		}
 
-		private Promise SaveContentPropertiesAsync(string contentId, string contentPropertiesJson, Action onCompleted = null)
+		private Promise SaveContentPropertiesAsync(string contentId, string contentPropertiesJson, Action onCompleted = null, LoadedContent loaded = null)
 		{
 			if (!CanWriteContent(contentId)) return Promise.Success;
 			return _contentWrites.Run(GetContentWriteKey(contentId), async () =>
 			{
-				await WriteContentProperties(contentId, contentPropertiesJson);
+				if (loaded == null) await WriteContentProperties(contentId, contentPropertiesJson);
+				else await WriteLoadedContentProperties(contentId, contentPropertiesJson, loaded);
 				onCompleted?.Invoke();
 			});
 		}
 
-		private async Promise WriteContentProperties(string contentId, string contentPropertiesJson)
+		private async Promise WriteContentProperties(string contentId, string contentPropertiesJson, LoadedContent loaded = null, string expectedFileHash = null)
 		{
 			var saveCommand = _cli.ContentSave(new ContentSaveArgs()
 			{
 				manifestIds = GetSelectedManifestIdsCliOption(),
 				contentIds = new[] {contentId},
-				contentProperties = new[] {contentPropertiesJson}
+				contentProperties = new[] {contentPropertiesJson},
+				originalFiles = loaded == null ? null : new[] { Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(loaded.FileJson)) },
+				modelProperties = loaded == null ? null : new[] { loaded.ModelProperties },
+				expectedFileHashes = expectedFileHash == null ? null : new[] { expectedFileHash }
 			});
 			Exception reportedError = null;
 			saveCommand.OnError(report => reportedError ??= new InvalidOperationException(report.data.message));
@@ -529,6 +532,7 @@ namespace Beamable.Editor.ContentService
 
 		private async Promise WriteContentTags(string contentId, string[] tags)
 		{
+			var scope = GetContentScopeKey();
 			tags = (tags ?? Array.Empty<string>()).ToArray();
 			if (EntriesCache.TryGetValue(contentId, out var entry))
 			{
@@ -549,6 +553,7 @@ namespace Beamable.Editor.ContentService
 			setContentTagCommand.OnError(report => reportedError ??= new InvalidOperationException(report.data.message));
 			await setContentTagCommand.Run();
 			if (reportedError != null) throw reportedError;
+			if (scope == GetContentScopeKey() && CanWriteContent(contentId)) _contentIdTagsCache[contentId] = tags.ToList();
 		}
 
 		public bool DuplicateContent(LocalContentManifestEntry entry, out ContentObject duplicatedObject)
@@ -1177,6 +1182,7 @@ namespace Beamable.Editor.ContentService
 			_conflictedContentCache.Clear();
 			_contentIdTagsCache.Clear();
 			_lastSavedPropertiesCache.Clear();
+			_loadedContent.Clear();
 			_renameRegistry.Clear();
 		}
 
@@ -1504,8 +1510,15 @@ namespace Beamable.Editor.ContentService
 			{
 				fileContent = streamReader.ReadToEnd();
 			}
+			contentObject.CancelPendingEditorChangeNotification();
+			contentObject.OnEditorChanged = null;
 			try
 			{
+				// Reset serialized fields to their declared defaults before reusing a selected object.
+				// Missing JSON fields must not retain values from a previous load or unsaved edit.
+				var defaults = ScriptableObject.CreateInstance(contentObject.GetType()) as ContentObject;
+				try { EditorUtility.CopySerialized(defaults, contentObject); }
+				finally { defaults.CancelPendingEditorChangeNotification(); Object.DestroyImmediate(defaults); }
 				contentObject =
 					ClientContentSerializer.DeserializeContentFromCli(fileContent, contentObject, entry.FullId, out SchemaDifference schemaDifference,
 					                                                  disableExceptions: true) as ContentObject;
@@ -1513,19 +1526,22 @@ namespace Beamable.Editor.ContentService
 				{
 					UpdateSchemaDifference(entry, schemaDifference);
 					contentObject.Tags = entry.Tags.ToArray();
+					_contentIdTagsCache[entry.FullId] = entry.Tags.ToList();
 					contentObject.ContentStatus = entry.StatusEnum;
 					contentObject.IsInConflict = entry.IsInConflict;
 					contentObject.ResetEditorChangeTracking();
+					_lastSavedPropertiesCache.Remove(GetContentWriteKey(entry.FullId));
+					_loadedContent[GetContentWriteKey(entry.FullId)] = new LoadedContent(contentObject, entry.JsonFilePath, fileContent, ClientContentSerializer.SerializeProperties(contentObject));
+					_loadedObjectKeys ??= new System.Runtime.CompilerServices.ConditionalWeakTable<ContentObject, string>();
+					_loadedObjectKeys.Remove(contentObject);
+					_loadedObjectKeys.Add(contentObject, GetContentWriteKey(entry.FullId));
 					contentObject.OnEditorChanged = () => { SaveContent(contentObject); };
-					if (_contentConfiguration.validateSchemaDifference && schemaDifference != SchemaDifference.None)
-					{
-						Debug.LogWarning($"Schema for content with id=[{entry.FullId}] is different from content JSON. reason=[{schemaDifference}]\nPlease update the scriptable object to Match the JSON or Publish the local content.\nJson: {fileContent}");
-						SaveContent(contentObject);
-					}
+
 				}
 			}
 			catch
 			{
+				contentObject?.CancelPendingEditorChangeNotification();
 				Debug.LogError($"Could not load content from json file. id=[{entry.FullId}] path=[{entry.JsonFilePath}]");
 				throw;
 			}

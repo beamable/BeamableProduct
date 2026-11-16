@@ -901,7 +901,7 @@ public partial class ContentService
                 var properties = contentProperties[i];
                 if (patch)
                 {
-                    var original = System.Text.Json.Nodes.JsonNode.Parse(originalFiles[i]);
+                    var original = System.Text.Json.Nodes.JsonNode.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(originalFiles[i])));
                     properties = ContentPropertyEdits.Apply(original["properties"],
                         System.Text.Json.Nodes.JsonNode.Parse(modelProperties[i]),
                         System.Text.Json.Nodes.JsonNode.Parse(properties),

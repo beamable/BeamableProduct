@@ -37,8 +37,17 @@ public class ContentSchemaSaveTests
     [TearDown] public void TearDown() => Directory.Delete(root, true);
     private Task Save(string proposed, string? original = null, string? model = null, string? hash = null) =>
         service.BulkSaveLocalContent(Cache, new[] { Id }, new[] { proposed },
-            originalFiles: original == null ? null : new[] { original }, modelProperties: model == null ? null : new[] { model },
+            originalFiles: original == null ? null : new[] { Convert.ToBase64String(Encoding.UTF8.GetBytes(original)) }, modelProperties: model == null ? null : new[] { model },
             expectedFileHashes: hash == null ? null : new[] { hash });
+
+    [Test] public void Formatted_original_file_survives_the_server_command_splitter()
+    {
+        var original = "{\n  \"properties\": {\"text\": {\"data\": \"quote \\\" and space\"}},\n  \"tags\": []\n}";
+        var encoded = Convert.ToBase64String(Encoding.UTF8.GetBytes(original));
+        var arguments = System.Linq.Enumerable.ToArray(App.ServerCLIStringSplitter.Instance.Split("content save --original-files=" + encoded + " --model-properties={} --content-properties={}"));
+        Assert.That(arguments.Length, Is.EqualTo(5));
+        Assert.That(Encoding.UTF8.GetString(Convert.FromBase64String(arguments[2].Substring("--original-files=".Length))), Is.EqualTo(original));
+    }
 
     [ContentType("schemaSaveOld")]
     public class OldModel : ContentObject { public int damage; }

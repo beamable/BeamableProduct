@@ -561,7 +561,7 @@ namespace Beamable.Editor.Tests
                     .SetValue(service, new ContentPsWrapper { Command = new ResolveCommand() });
                 typeof(CliContentService).GetField("_contentWatcherCompletion", fields).SetValue(service, shutdown.Task);
                 var method = typeof(CliContentService).GetMethod(tags ? "SetContentTagsAsync" : "SaveContentPropertiesAsync", fields);
-                var args = tags ? new object[] { "currency.test", new[] { "new" } } : new object[] { "currency.test", "{}", null };
+                var args = tags ? new object[] { "currency.test", new[] { "new" } } : new object[] { "currency.test", "{}", null, null };
                 var write = (Promise)method.Invoke(service, args);
                 write.Error(_ => { });
                 var operation = service.ReconcileContentWithProgress("currency.test", false);
@@ -636,7 +636,7 @@ namespace Beamable.Editor.Tests
             var service = CreateService(commands);
             var method = typeof(CliContentService).GetMethod(tags ? "SetContentTagsAsync" : "SaveContentPropertiesAsync",
                 BindingFlags.Instance | BindingFlags.NonPublic);
-            var args = tags ? new object[] { "currency.test", new[] { "new" } } : new object[] { "currency.test", "{}", null };
+            var args = tags ? new object[] { "currency.test", new[] { "new" } } : new object[] { "currency.test", "{}", null, null };
             var write = (Promise)method.Invoke(service, args);
             write.Error(_ => { });
             var operation = service.ReconcileContentWithProgress("currency.test", false);
@@ -962,6 +962,7 @@ namespace Beamable.Editor.Tests
                 .SetValue(context, new DependencyBuilder().AddSingleton(cli).Build());
             Set("_beamContext", context);
             Set("_contentWrites", new ContentWriteTracker());
+            Set("_contentIdTagsCache", new Dictionary<string, List<string>>());
             Set("_invalidContents", new Dictionary<string, LocalContentManifestEntry>());
             Set("_schemaDifferences", Activator.CreateInstance(typeof(CliContentService).GetField("_schemaDifferences", fields).FieldType));
             Set("_contentScriptableCache", new Dictionary<string, ContentObject>());

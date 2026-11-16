@@ -29,7 +29,7 @@ public class ContentSaveCommand : AppCommand<ContentSaveCommandArgs>, IEmptyResu
 		AddOption(CONTENT_ID_OPTION, (args, s) => args.ContentIds = s);
 		AddOption(CONTENT_PROPERTIES_ID_OPTION, (args, s) => args.ContentProperties = s);
 		AddOption(FORCE_OPTION, (args, b) => args.Force = b);
-        AddOption(new Option<string[]>("--original-files", "Loaded JSON files, parallel to content ids, for lossless model edits"), (args, s) => args.OriginalFiles = s);
+        AddOption(new Option<string[]>("--original-files", "Base64 UTF8 loaded JSON files, parallel to content ids, for lossless model edits"), (args, s) => args.OriginalFiles = s);
         AddOption(new Option<string[]>("--model-properties", "Loaded model properties, parallel to content ids"), (args, s) => args.ModelProperties = s);
         AddOption(new Option<string[]>("--expected-file-hashes", "SHA256 file-text hashes for explicitly reviewed replacements"), (args, s) => args.ExpectedFileHashes = s);
 	}

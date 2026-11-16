@@ -14,7 +14,7 @@ namespace Beamable.Editor.BeamCli.Commands
         public string[] contentProperties;
         /// <summary>When this is set, this will ignore your local state and save the properties directly to disk</summary>
         public bool force;
-        /// <summary>Loaded JSON files, parallel to content ids, for lossless model edits</summary>
+        /// <summary>Base64 UTF8 loaded JSON files, parallel to content ids, for lossless model edits</summary>
         public string[] originalFiles;
         /// <summary>Loaded model properties, parallel to content ids</summary>
         public string[] modelProperties;

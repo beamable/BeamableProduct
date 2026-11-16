@@ -306,7 +306,9 @@ namespace Beamable.Editor.Tests
 		[TestCase(true, SchemaDifference.MissingFieldsInJson)]
 		[TestCase(true, SchemaDifference.UnknownFieldsInJson | SchemaDifference.MissingFieldsInJson)]
 		[TestCase(false, SchemaDifference.UnknownFieldsInJson)]
-		public void Schema_notice_comes_from_real_deserialization_and_survives_normalization(bool enabled, SchemaDifference difference)
+        [TestCase(false, SchemaDifference.MissingFieldsInJson)]
+        [TestCase(false, SchemaDifference.UnknownFieldsInJson | SchemaDifference.MissingFieldsInJson)]
+		public void Schema_notice_tracks_current_file_without_normalization(bool enabled, SchemaDifference difference)
 		{
 			PrepareFile();
 			var config = ScriptableObject.CreateInstance<global::Beamable.Content.ContentConfiguration>();
@@ -325,13 +327,13 @@ namespace Beamable.Editor.Tests
 				var loader = typeof(CliContentService).GetMethod("LoadContentObject", Fields);
 				loader.Invoke(_service, new object[] { entry, _content });
 				Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(enabled ? difference : SchemaDifference.None));
-				Assert.That(_commands.Properties.Count, Is.EqualTo(enabled ? 1 : 0), "Existing schema normalization behavior is unchanged.");
+				Assert.That(_commands.Properties, Is.Empty);
 				Assert.That(File.ReadAllText(_path), Is.EqualTo(json), "The controlled save command must not write the test file.");
-				// Simulate the watcher report for the properties emitted by the existing automatic save.
+				// An external schema alignment clears the notice, even for modified content.
 				File.WriteAllText(_path, "{\"properties\":" + properties + ",\"tags\":[]}");
 				entry.CurrentStatus = (int)ContentStatus.Modified;
 				loader.Invoke(_service, new object[] { entry, _content });
-				Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(enabled ? difference : SchemaDifference.None));
+				Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(SchemaDifference.None));
 				entry.CurrentStatus = (int)ContentStatus.UpToDate;
 				loader.Invoke(_service, new object[] { entry, _content });
 				Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(SchemaDifference.None));
@@ -340,7 +342,7 @@ namespace Beamable.Editor.Tests
 		}
 
 		[Test]
-		public void Schema_notice_survives_cache_reload_after_the_loader_normalizes_the_file()
+		public void Schema_notice_survives_cache_reload_without_writing_the_file()
 		{
 			PrepareFile();
 			var config = ScriptableObject.CreateInstance<global::Beamable.Content.ContentConfiguration>();
@@ -354,12 +356,14 @@ namespace Beamable.Editor.Tests
 				entry.ReferenceManifestUid = "publication-a";
 				var loader = typeof(CliContentService).GetMethod("LoadContentObject", Fields);
 				loader.Invoke(_service, new object[] { entry, _content });
-				Assert.That(_commands.Properties.Count, Is.EqualTo(1));
-				File.WriteAllText(_path, "{\"properties\":" + properties + ",\"tags\":[]}");
+				Assert.That(_commands.Properties, Is.Empty);
+				var original = File.ReadAllText(_path);
 				entry.CurrentStatus = (int)ContentStatus.Modified;
 				typeof(CliContentService).GetMethod("ClearCaches", Fields).Invoke(_service, null);
 				loader.Invoke(_service, new object[] { entry, _content });
 				Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(SchemaDifference.UnknownFieldsInJson));
+                Assert.That(File.ReadAllText(_path), Is.EqualTo(original));
+                Assert.That(_commands.Properties, Is.Empty);
 			}
 			finally { UnityEngine.Object.DestroyImmediate(config); }
 		}
@@ -443,7 +447,6 @@ namespace Beamable.Editor.Tests
 				// Reconstruct the in-memory state from the file written by the actual cache producer.
 				((Dictionary<string, (SchemaDifference, string)>)Get(_service, "_schemaDifferences")).Clear();
 				Set(_service, "_schemaNoticesLoaded", false);
-				_service.UpdateSchemaDifference(entry, SchemaDifference.None);
 				Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(SchemaDifference.UnknownFieldsInJson));
 				_service.manifestIdOverride = "seasonal";
 				Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(SchemaDifference.None));
@@ -479,7 +482,7 @@ namespace Beamable.Editor.Tests
 				config.validateSchemaDifference = false;
 				_service.UpdateSchemaDifference(entry, SchemaDifference.None);
 				config.validateSchemaDifference = true;
-				Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(SchemaDifference.UnknownFieldsInJson));
+				Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(SchemaDifference.None));
 				config.validateSchemaDifference = false;
 				if (newReference) entry.ReferenceManifestUid = "new";
 				else entry.CurrentStatus = (int)ContentStatus.UpToDate;
@@ -523,6 +526,199 @@ namespace Beamable.Editor.Tests
 			finally { UnityEngine.Object.DestroyImmediate(config); }
 		}
 
+        [TestCase(false)]
+        [TestCase(true)]
+        public void Loaded_content_edits_send_lossless_baselines_regardless_of_notice_setting(bool enabled)
+        {
+            PrepareFile();
+            var config = ScriptableObject.CreateInstance<global::Beamable.Content.ContentConfiguration>();
+            try
+            {
+                config.validateSchemaDifference = enabled; Set(_service, "_contentConfiguration", config);
+                var original = "{\"properties\":{\"amount\":{\"data\":2},\"future\":{\"data\":37}},\"tags\":[\"old\"]}";
+                File.WriteAllText(_path, original);
+                typeof(CliContentService).GetMethod("LoadContentObject", Fields).Invoke(_service, new object[] { _service.EntriesCache[_content.Id], _content });
+                Save().GetResult(); // A delayed validation callback with no edit is harmless.
+                Assert.That(_commands.Properties, Is.Empty);
+                Assert.That(_commands.Tags, Is.Empty);
+                _content.amount = 3;
+                Save();
+                var args = _commands.PropertyArgs.Single();
+                Assert.That(System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(args.originalFiles.Single())), Is.EqualTo(original));
+                Assert.That(args.modelProperties.Single(), Does.Contain("2"));
+                Assert.That(args.contentProperties.Single(), Does.Contain("3"));
+                Assert.That(args.expectedFileHashes, Is.Null);
+                Assert.That(File.ReadAllText(_path), Is.EqualTo(original));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(config); }
+        }
+
+        [Test]
+        public void Loaded_tag_only_edit_does_not_submit_properties()
+        {
+            PrepareFile();
+            var config = ScriptableObject.CreateInstance<global::Beamable.Content.ContentConfiguration>();
+            try
+            {
+                Set(_service, "_contentConfiguration", config);
+                File.WriteAllText(_path, ClientContentSerializer.SerializeContent(_content));
+                typeof(CliContentService).GetMethod("LoadContentObject", Fields).Invoke(_service, new object[] { _service.EntriesCache[_content.Id], _content });
+                _content.Tags = new[] { "changed" };
+                Save();
+                Assert.That(_commands.Properties, Is.Empty);
+                Assert.That(_commands.TagValues, Is.EqualTo(new[] { "changed" }));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(config); }
+        }
+
+        [TestCase("file")]
+        [TestCase("scope")]
+        [TestCase("pending")]
+        public void Migration_preview_is_read_only_and_rejects_stale_or_pending_changes(string change)
+        {
+            PrepareFile();
+            var original = ClientContentSerializer.SerializeContent(_content).Replace("\"properties\":{", "\"properties\":{\"future\":{\"data\":37},");
+            File.WriteAllText(_path, original);
+            var preview = _service.PreviewSchemaMigration(_content.Id);
+            Assert.That(preview.OriginalJson, Is.EqualTo(original));
+            Assert.That(preview.ProposedProperties, Does.Not.Contain("future"));
+            Assert.That(_commands.Properties, Is.Empty);
+            Assert.That(File.ReadAllText(_path), Is.EqualTo(original), "Closing/cancelling a preview requires no write.");
+            if (change == "file") File.AppendAllText(_path, " ");
+            if (change == "scope") _service.manifestIdOverride = "other";
+            if (change == "pending") { _content.amount++; _content.CheckForNonDetectedChanges(); }
+            Exception error = null;
+            _service.ApplySchemaMigration(preview).Error(e => error = e);
+            Assert.That(error, Is.Not.Null);
+            Assert.That(_commands.Properties, Is.Empty);
+        }
+
+        [Test]
+        public void Migration_submits_only_reviewed_item_and_hash_without_publishing()
+        {
+            PrepareFile();
+            var config = ScriptableObject.CreateInstance<global::Beamable.Content.ContentConfiguration>();
+            try
+            {
+                Set(_service, "_contentConfiguration", config);
+                var original = ClientContentSerializer.SerializeContent(_content).Replace("\"properties\":{", "\"properties\":{\"future\":{\"data\":37},");
+                File.WriteAllText(_path, original);
+                var preview = _service.PreviewSchemaMigration(_content.Id);
+                var completion = _service.ApplySchemaMigration(preview);
+                var args = _commands.PropertyArgs.Single();
+                Assert.That(args.contentIds, Is.EqualTo(new[] { _content.Id }));
+                Assert.That(args.contentProperties.Single(), Is.EqualTo(preview.ProposedProperties));
+                Assert.That(args.expectedFileHashes.Single(), Has.Length.EqualTo(64));
+                Assert.That(args.originalFiles, Is.Null);
+                File.WriteAllText(_path, "{\"properties\":" + preview.ProposedProperties + ",\"tags\":[\"old\"]}");
+                _commands.Properties.Single().Completion.CompleteSuccess();
+                completion.GetResult();
+                Assert.That(_commands.Tags, Is.Empty);
+                Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(SchemaDifference.None));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(config); }
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void Reload_missing_field_uses_defaults_and_stale_objects_cannot_save(bool changeScope)
+        {
+            PrepareFile();
+            var config = ScriptableObject.CreateInstance<global::Beamable.Content.ContentConfiguration>();
+            try
+            {
+                Set(_service, "_contentConfiguration", config);
+                _content.amount = 99;
+                File.WriteAllText(_path, "{\"properties\":{},\"tags\":[]}");
+                typeof(CliContentService).GetMethod("LoadContentObject", Fields).Invoke(_service, new object[] { _service.EntriesCache[_content.Id], _content });
+                Assert.That(_content.amount, Is.Zero);
+                Assert.That(_content.HasPendingEditorChangeNotification, Is.False);
+                if (changeScope) _service.manifestIdOverride = "other";
+                else typeof(CliContentService).GetMethod("ClearCaches", Fields).Invoke(_service, null);
+                _content.amount = 5;
+                Exception error = null;
+                Save().Error(e => error = e);
+                Assert.That(error, Is.Not.Null);
+                Assert.That(_commands.Properties, Is.Empty);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(config); }
+        }
+
+        [Test]
+        public void Failed_reload_cannot_leave_a_save_callback_for_reset_defaults()
+        {
+            PrepareFile();
+            File.WriteAllText(_path, "[]");
+            _content.OnEditorChanged = () => _service.SaveContent(_content);
+            _content.amount = 42;
+            _content.CheckForNonDetectedChanges();
+            UnityEngine.TestTools.LogAssert.Expect(LogType.Error,
+                new System.Text.RegularExpressions.Regex("Could not load content from json file.*"));
+            Assert.Throws<TargetInvocationException>(() => typeof(CliContentService).GetMethod("LoadContentObject", Fields)
+                .Invoke(_service, new object[] { _service.EntriesCache[_content.Id], _content }));
+            Assert.That(_content.HasPendingEditorChangeNotification, Is.False);
+            Assert.That(_content.OnEditorChanged, Is.Null);
+            Assert.That(_commands.Properties, Is.Empty);
+            Assert.That(File.ReadAllText(_path), Is.EqualTo("[]"));
+        }
+
+        [TestCase(4)]
+        [TestCase(2)]
+        public void Overlapping_loaded_edits_use_the_last_completed_baseline(int lastValue)
+        {
+            PrepareFile();
+            var config = ScriptableObject.CreateInstance<global::Beamable.Content.ContentConfiguration>();
+            try
+            {
+                Set(_service, "_contentConfiguration", config);
+                _content.amount = 2;
+                File.WriteAllText(_path, ClientContentSerializer.SerializeContent(_content));
+                typeof(CliContentService).GetMethod("LoadContentObject", Fields).Invoke(_service, new object[] { _service.EntriesCache[_content.Id], _content });
+                _content.amount = 3;
+                var first = Save();
+                _content.amount = lastValue;
+                var second = Save();
+                Assert.That(_commands.Properties.Count, Is.EqualTo(1));
+                File.WriteAllText(_path, "{\"properties\":" + _commands.PropertyArgs[0].contentProperties[0] + ",\"tags\":[\"old\"]}");
+                _commands.Properties[0].Completion.CompleteSuccess();
+                first.GetResult();
+                Assert.That(_commands.Properties.Count, Is.EqualTo(2));
+                Assert.That(_commands.PropertyArgs[1].modelProperties[0], Is.EqualTo(_commands.PropertyArgs[0].contentProperties[0]));
+                Assert.That(_commands.PropertyArgs[1].contentProperties[0], Is.EqualTo(ClientContentSerializer.SerializeProperties(_content)));
+                File.WriteAllText(_path, "{\"properties\":" + _commands.PropertyArgs[1].contentProperties[0] + ",\"tags\":[\"old\"]}");
+                _commands.Properties[1].Completion.CompleteSuccess();
+                second.GetResult();
+                Assert.That(_commands.Tags, Is.Empty);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(config); }
+        }
+
+        [Test]
+        public void Failed_loaded_tag_edit_is_retried_and_successful_repeat_is_a_no_op()
+        {
+            PrepareFile();
+            var config = ScriptableObject.CreateInstance<global::Beamable.Content.ContentConfiguration>();
+            try
+            {
+                Set(_service, "_contentConfiguration", config);
+                File.WriteAllText(_path, ClientContentSerializer.SerializeContent(_content));
+                typeof(CliContentService).GetMethod("LoadContentObject", Fields).Invoke(_service, new object[] { _service.EntriesCache[_content.Id], _content });
+                _content.Tags = new[] { "changed" };
+                Exception failure = null;
+                Save().Error(e => failure = e);
+                _commands.Tags[0].Completion.CompleteError(new InvalidOperationException("Tag write failed"));
+                Assert.That(failure, Is.Not.Null);
+                var retry = Save();
+                Assert.That(_commands.Tags.Count, Is.EqualTo(2));
+                _commands.Tags[1].Completion.CompleteSuccess();
+                retry.GetResult();
+                Save().GetResult();
+                Assert.That(_commands.Tags.Count, Is.EqualTo(2));
+                Assert.That(_commands.Properties, Is.Empty);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(config); }
+        }
+
 		private void PrepareFile()
 		{
 			_path = Path.Combine(Path.GetTempPath(), "beam-content-" + Guid.NewGuid().ToString("N"));
@@ -539,12 +735,13 @@ namespace Beamable.Editor.Tests
 		private class HeldCommands : BeamCommands
 		{
 			public readonly List<HeldCommand> Properties = new();
+            public readonly List<ContentSaveArgs> PropertyArgs = new();
 			public readonly List<HeldCommand> Tags = new();
 			public readonly List<string> TagValues = new();
 			public HeldCommands() : base(null, null) { }
 			public override ContentSaveWrapper ContentSave(ContentSaveArgs args)
 			{
-				var command = new HeldCommand(); Properties.Add(command);
+				var command = new HeldCommand(); Properties.Add(command); PropertyArgs.Add(args);
 				return new ContentSaveWrapper { Command = command };
 			}
 			public override ContentTagSetWrapper ContentTagSet(ContentTagSetArgs args)
