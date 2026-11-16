@@ -24,13 +24,17 @@ public class FederationCommonCopyTests
 		var output = Path.Combine(Path.GetTempPath(), "beam-federation-copy-tests", Guid.NewGuid().ToString("N"));
 		try
 		{
-			// release-shared-code preserves the existing Common directories.
-			Directory.CreateDirectory(output);
-			// Exercise the same producer as release-shared-code.
-			UnityProjectUtil.CopyProject(source, output);
+			var input = Path.Combine(output, "source");
+			var generated = Path.Combine(output, "generated");
+			Directory.CreateDirectory(input);
+			Directory.CreateDirectory(generated);
+			// Exercise the real producer on the canonical file under test. Copying all of
+			// Runtime here also creates unrelated, read-only subdirectories on Linux.
+			File.Copy(Path.Combine(source, fileName), Path.Combine(input, fileName));
+			UnityProjectUtil.CopyProject(input, generated);
 			Assert.That(File.Exists(committed), Is.True, $"Missing Unity copy: {fileName}");
 			Assert.That(File.ReadAllText(committed).ReplaceLineEndings("\n"),
-				Is.EqualTo(File.ReadAllText(Path.Combine(output, fileName)).ReplaceLineEndings("\n")),
+				Is.EqualTo(File.ReadAllText(Path.Combine(generated, fileName)).ReplaceLineEndings("\n")),
 				$"Refresh {fileName} with release-shared-code.");
 		}
 		finally
