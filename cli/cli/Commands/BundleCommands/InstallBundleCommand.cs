@@ -171,7 +171,7 @@ public class InstallBundleCommand : AtomicCommand<InstallBundleCommandArgs, Inst
 				Log.Error($"The plan is refused, so nothing was applied:\n - {string.Join("\n - ", plan.refusals)}");
 				return output;
 			}
-			if (plan.sites.All(s => s.changes.Length == 0) && plan.change != "AutoUpdate")
+			if (plan.sites.Length == 0 && plan.change != "AutoUpdate")
 			{
 				Log.Information("Nothing to change.");
 				return output;
