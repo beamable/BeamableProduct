@@ -23,7 +23,7 @@ public class JavaPathOption : Option<string>
 		             "environment variable to specify.")
 	{
 		// No Java search here: this option is built for every `beam` command, and the search runs processes. Commands
-		// that run Java resolve it when they need it (IAppContext.JavaPath).
+		// that run Java call TryGetJavaHome when they need it.
 		if (!string.IsNullOrEmpty(ConfigService.CustomJavaHome))
 		{
 			Description += $"\nCurrently, BEAM_JAVA_HOME is set to {ConfigService.CustomJavaHome}.";

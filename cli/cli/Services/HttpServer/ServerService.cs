@@ -4,7 +4,6 @@ using Beamable.Common.Util;
 using Beamable.Server;
 using Beamable.Server.Common;
 using cli.CliServerCommand;
-using cli.Services.CliInvocation;
 using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Net;
@@ -391,7 +390,7 @@ public class ServerService
 		response.Headers.Set(HttpResponseHeader.ContentType, "text/event-stream; charset=utf-8");
 		string input = null;
 		string commandLine = null;
-		IDataReporterService reporter = null;
+		ServerReporterService reporter = null;
 		var registered = false;
 		Invocation invocation = null;
 		string requestId = null;
@@ -412,27 +411,23 @@ public class ServerService
 			if (!string.IsNullOrEmpty(requestId)) invocation = new Invocation();
 
 			var sw = Stopwatch.StartNew();
-			// Building attaches shared static options to this app's commands; see CommandTreeDetacher.
-			lock (CommandTreeDetacher.TreeLock)
+			app.Configure(builder =>
 			{
-				app.Configure(builder =>
+				// ConfigureServices reruns this callback for the actual invocation scope.
+				if (invocation != null)
 				{
-					// ConfigureServices reruns this callback for the actual invocation scope.
-					if (invocation != null)
-					{
-						builder.Remove<AppLifecycle>();
-						builder.AddSingleton(invocation.Lifecycle);
-					}
-					builder.Remove<IDataReporterService>();
-					builder.AddSingleton<IDataReporterService, ServerReporterService>(provider =>
-					{
-						var serverReporter = new ServerReporterService(provider, response);
-						reporter = serverReporter;
-						return serverReporter;
-					});
-				}, overwriteLogger: false);
-				app.Build();
-			}
+					builder.Remove<AppLifecycle>();
+					builder.AddSingleton(invocation.Lifecycle);
+				}
+				builder.Remove<IDataReporterService>();
+				builder.AddSingleton<IDataReporterService, ServerReporterService>(provider =>
+				{
+					var serverReporter = new ServerReporterService(provider, response);
+					reporter = serverReporter;
+					return serverReporter;
+				});
+			}, overwriteLogger: false);
+			app.Build();
 			sw.Stop();
 			Log.Trace("build virtual app in " + sw.ElapsedMilliseconds);
 
@@ -482,7 +477,7 @@ public class ServerService
 		{
 			// The command is over: send what is still buffered and stop the heartbeat, which must not outlive it
 			// (see ServerReporterService.Complete).
-			(reporter as ServerReporterService)?.Complete();
+			reporter?.Complete();
 
 			try
 			{
@@ -547,11 +542,9 @@ public class ServerReporterService : IDataReporterService
 	private static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);
 	private static readonly byte[] DataPrefix = Utf8.GetBytes("data: ");
 	private static readonly byte[] LineEnd = Utf8.GetBytes(Environment.NewLine);
-	private static readonly byte[] Heartbeat = Utf8.GetBytes("​"); // a zero-width character that tests the connection
+	private static readonly byte[] Heartbeat = Utf8.GetBytes("\u200b"); // a zero-width character that tests the connection
 
-	private readonly HttpListenerResponse _resp;
 	private readonly Stream _output;
-	private IDependencyProvider _provider;
 	private Task _connectionMonitorTask;
 	internal Task Completion => _connectionMonitorTask;
 	private AppLifecycle _lifecycle;
@@ -560,22 +553,20 @@ public class ServerReporterService : IDataReporterService
 	// Everything below is guarded by _lock: the events waiting to be sent, and the writer that encodes into them.
 	private readonly object _lock = new object();
 	private readonly MemoryStream _pending = new MemoryStream();
-	private StreamWriter _pendingWriter;
+	private readonly StreamWriter _pendingWriter;
 	// One per response, built once (JsonConvert.SerializeObject builds one per call). Never shared between responses:
 	// UnitySerializationCallbackInvoker edits the serializer's converter list while it writes.
-	private JsonSerializer _serializer = CreateSerializer();
+	private readonly JsonSerializer _serializer = JsonSerializer.CreateDefault(UnitySerializationSettings.Instance);
 	private readonly Timer _flushTimer;
 	private bool _flushScheduled;
 	private bool _isComplete;
 
 	public ServerReporterService(IDependencyProvider provider, HttpListenerResponse resp)
 	{
-		_provider = provider;
-		_resp = resp;
-		_output = _resp.OutputStream;
-		_pendingWriter = CreatePendingWriter();
+		_output = resp.OutputStream;
+		_pendingWriter = new StreamWriter(_pending, Utf8, 1024, leaveOpen: true);
 		_flushTimer = new Timer(_ => FlushFromTimer(), null, Timeout.Infinite, Timeout.Infinite);
-		_lifecycle = _provider.GetService<AppLifecycle>();
+		_lifecycle = provider.GetService<AppLifecycle>();
 		// The heartbeat stops when the command is cancelled (a client hang-up or a /stop request) or once it has
 		// finished (Complete).
 		var stopMonitor = CancellationTokenSource.CreateLinkedTokenSource(_lifecycle.CancellationToken, _completed.Token);
@@ -685,20 +676,14 @@ public class ServerReporterService : IDataReporterService
 			}
 			catch
 			{
-				// Drop the half-written event, including anything the writer still holds, and start the next event
-				// with a serializer that a failed converter cannot have left in a changed state.
+				// Drop the half-written event, including anything the writer still holds.
+				_pendingWriter.Flush();
 				_pending.SetLength(start);
-				_pendingWriter = CreatePendingWriter();
-				_serializer = CreateSerializer();
 				throw;
 			}
 			ScheduleFlushLocked();
 		}
 	}
-
-	private static JsonSerializer CreateSerializer() => JsonSerializer.CreateDefault(UnitySerializationSettings.Instance);
-
-	private StreamWriter CreatePendingWriter() => new StreamWriter(_pending, Utf8, 1024, leaveOpen: true);
 
 	private void ScheduleFlushLocked()
 	{

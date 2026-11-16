@@ -15,10 +15,10 @@ namespace cli.Services.CliInvocation;
 public static class CommandTreeDetacher
 {
 	/// <summary>
-	/// Held while an app inside a long-lived process builds its command tree or detaches it, because
+	/// Held while an app creates its command tree (<see cref="App.Build"/>) or detaches it, because
 	/// System.CommandLine appends parents without synchronisation.
 	/// </summary>
-	public static readonly object TreeLock = new object();
+	internal static readonly object TreeLock = new object();
 
 	private static readonly FieldInfo FirstParentField =
 		typeof(Symbol).GetField("_firstParent", BindingFlags.Instance | BindingFlags.NonPublic);

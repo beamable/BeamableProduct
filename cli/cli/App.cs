@@ -92,13 +92,9 @@ public class App
 
 	public static MeterProvider MeterProvider;
 
-	/// <summary>
-	/// The CLI's activity provider, shared by every app in the process. Its ActivitySource and Meter register
-	/// process-wide and are never released, so one per command would pile up in `beam server serve`. Tracer providers
-	/// find the source by name, so sharing it changes nothing for a command.
-	/// </summary>
-	private static readonly Lazy<DefaultActivityProvider> CliActivityProvider =
-		new Lazy<DefaultActivityProvider>(DefaultActivityProvider.CreateCliServiceProvider);
+	// One for the process: its ActivitySource and Meter register process-wide and are never released, so one per
+	// app would pile up in `beam server serve`. Tracer providers find the source by name.
+	private static readonly DefaultActivityProvider CliActivityProvider = DefaultActivityProvider.CreateCliServiceProvider();
 
 	public IDependencyBuilder Commands { get; set; }
 	public IDependencyProviderScope CommandProvider { get; set; }
@@ -277,7 +273,7 @@ public class App
 		services.AddSingleton<ProcessFileLocker>();
 		services.AddSingleton<IRemotePortalConfigService, RemotePortalConfigService>();
 
-		services.AddSingleton<DefaultActivityProvider>(_ => CliActivityProvider.Value);
+		services.AddSingleton<DefaultActivityProvider>(CliActivityProvider);
 		services.AddSingleton<ResourceBuilder>(p =>
 		{
 			var activityProvider = p.GetService<DefaultActivityProvider>();
@@ -423,8 +419,21 @@ public class App
 	// The logger factory of a command run by a long-lived process; see EndInvocation.
 	private ILoggerFactory _invocationLoggerFactory;
 
-	// False for an app that runs one command inside a long-lived process: it must not replace the host's loggers.
+	// False for an app that runs one command inside a long-lived process (`beam server serve`).
 	private bool _overwriteLogger = true;
+
+	/// <summary>
+	/// Makes this the logger of the app's own async context. Only an app that owns the process also makes it the
+	/// process-wide logger: a command run inside a long-lived process must leave that one to its host.
+	/// </summary>
+	private void UseLogger(ILogger logger)
+	{
+		BeamableZLoggerProvider.LogContext.Value = logger;
+		if (_overwriteLogger)
+		{
+			BeamableZLoggerProvider.GlobalLogger = logger;
+		}
+	}
 
 	public virtual void Configure(
 		Action<IDependencyBuilder> serviceConfigurator = null,
@@ -436,6 +445,8 @@ public class App
 		if (IsBuilt)
 			throw new InvalidOperationException("The app has already been built, and cannot be configured anymore");
 		
+		_overwriteLogger = overwriteLogger;
+
 		// The LoggingLevelSwitch _could_ be controlled at runtime, if we ever wanted to do that.
 		LogSwitch = new BeamLogSwitch { Level = LogLevel.Information };
 
@@ -476,7 +487,7 @@ public class App
 					_queuedLogger.Flush(logger);
 				}
 				
-				BeamableZLoggerProvider.GlobalLogger = BeamableZLoggerProvider.LogContext.Value = logger;
+				UseLogger(logger);
 			};
 		}
 		else
@@ -486,8 +497,6 @@ public class App
 				var appCtx = provider.GetService<IAppContext>();
 				if (appCtx.ShouldEmitLogs)
 				{
-					// This command shares the process with others, so its logger only lives in its own async
-					// context; the process-wide loggers stay the host's.
 					var factory = _invocationLoggerFactory = LoggerFactory.Create(builder =>
 					{
 						builder.SetMinimumLevel(LogLevel.Trace);
@@ -498,19 +507,14 @@ public class App
 					{
 						_queuedLogger.Flush(logger);
 					}
-					BeamableZLoggerProvider.LogContext.Value = logger;
+					UseLogger(logger);
 				}
 			};
 		}
 
-		_overwriteLogger = overwriteLogger;
 		if (BeamableZLoggerProvider.LogContext.Value == null)
 		{
-			BeamableZLoggerProvider.LogContext.Value = _queuedLogger = new QueuedLogger();
-			if (overwriteLogger)
-			{
-				BeamableZLoggerProvider.GlobalLogger = _queuedLogger;
-			}
+			UseLogger(_queuedLogger = new QueuedLogger());
 		}
 
 		Commands.AddSingleton(new ArgValidator<ServiceName>(arg => new ServiceName(arg)));
@@ -943,35 +947,34 @@ public class App
 		CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 		CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 
-		// An app that runs one command inside a long-lived process (overwriteLogger: false) leaves the process-wide
-		// logger and provider to the host; its startup logs only go to its own async context.
-		if (_overwriteLogger || BeamableLogProvider.Provider == null)
+		// The provider has no state of its own, so the process keeps one however many apps it builds.
+		if (BeamableLogProvider.Provider is not BeamableZLoggerProvider)
 		{
 			BeamableLogProvider.Provider = new BeamableZLoggerProvider();
 		}
 		var logBuffer = new ZLoggerBufferedProcessor();
-		{ // construct some fake log setup so that we can log before the actual logs are initilaized.
+		{ // construct some fake log setup so that we can log before the actual logs are initilaized. 
 			var factory = LoggerFactory.Create(builder => { builder.AddZLoggerLogProcessor(logBuffer); });
 			var logger = factory.CreateLogger<App>();
-			BeamableZLoggerProvider.LogContext.Value = logger;
-			if (_overwriteLogger)
-			{
-				BeamableZLoggerProvider.GlobalLogger = logger;
-			}
+			UseLogger(logger);
 		}
 		Commands.AddSingleton(logBuffer);
 		
 		CommandProvider = Commands.Build();
 
-		var sw = new Stopwatch();
-		sw.Start();
-		var _ = InstantiateAllCommands();
-		sw.Stop();
-		Log.Verbose("BUILD ALL COMMANDS TOOK : " + sw.ElapsedMilliseconds);
+		// Creating the commands attaches the shared static options to them; see CommandTreeDetacher.
+		lock (CommandTreeDetacher.TreeLock)
+		{
+			var sw = new Stopwatch();
+			sw.Start();
+			var _ = InstantiateAllCommands();
+			sw.Stop();
+			Log.Verbose("BUILD ALL COMMANDS TOOK : " + sw.ElapsedMilliseconds);
 
-		// sort the commands
-		var root = CommandProvider.GetService<RootCommand>();
-		SortCommands(root);
+			// sort the commands
+			var root = CommandProvider.GetService<RootCommand>();
+			SortCommands(root);
+		}
 	}
 
 	void SortCommands(Command root)

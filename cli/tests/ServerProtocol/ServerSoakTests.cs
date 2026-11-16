@@ -3,7 +3,6 @@ using Beamable.Common.Dependencies;
 using Beamable.Server;
 using cli;
 using cli.Services;
-using cli.Services.CliInvocation;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using NUnit.Framework;
@@ -65,21 +64,18 @@ public class ServerSoakTests
 		}
 	}
 
-	/// <summary>Runs one command the way the /execute handler (ServerService.HandleExec) does, with this reporter.</summary>
+	/// <summary>Runs one command as an app inside this process, the way the /execute handler does, with this reporter.</summary>
 	private static async Task<int> Run(IDataReporterService reporter, string command = "config --emit-log-streams")
 	{
 		var app = new App();
 		try
 		{
-			lock (CommandTreeDetacher.TreeLock)
+			app.Configure(builder =>
 			{
-				app.Configure(builder =>
-				{
-					builder.Remove<IDataReporterService>();
-					builder.AddSingleton<IDataReporterService>(_ => reporter);
-				}, overwriteLogger: false);
-				app.Build();
-			}
+				builder.Remove<IDataReporterService>();
+				builder.AddSingleton<IDataReporterService>(_ => reporter);
+			}, overwriteLogger: false);
+			app.Build();
 			return await app.RunWithSingleString(command, useCustomSplitter: true);
 		}
 		catch (Exception ex)

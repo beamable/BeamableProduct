@@ -40,7 +40,6 @@ public interface IAppContext : IRealmInfo, IRequesterInfo
 	public bool ShowRawOutput { get; }
 	public bool ShowPrettyOutput { get; }
 	public string DotnetPath { get; }
-	public string JavaPath { get; }
 	/// <summary>Non-null only when <c>--java-path</c> was explicitly passed on the command line (not auto-detected).</summary>
 	string ExplicitJavaPath { get; }
 	public HashSet<string> IgnoreBeamoIds { get; }
@@ -115,13 +114,6 @@ public class DefaultAppContext : IAppContext
 	public bool ShowPrettyOutput { get; private set; }
 
 	public string DotnetPath { get; private set; }
-	/// <summary>
-	/// The Java 8 home for the Scala backend: --java-path, or one found on this machine. Finding one runs
-	/// processes, so it only happens when a command asks, not for every command.
-	/// </summary>
-	[Newtonsoft.Json.JsonIgnore] // the verbose app-context dump runs for every command
-	public string JavaPath => _javaPath.Value;
-	private Lazy<string> _javaPath;
 	public string ExplicitJavaPath { get; private set; }
 		public string DockerPath { get; private set; }
 	public HashSet<string> IgnoreBeamoIds { get; private set; }
@@ -224,10 +216,6 @@ public class DefaultAppContext : IAppContext
 		_dotnetPathOption = dotnetPathOption;
 		DockerPath = consoleContext.ParseResult.GetValueForOption(dockerPathOption);
 			ExplicitJavaPath = consoleContext.ParseResult.GetValueForOption(JavaPathOption.Instance);
-			_javaPath = new Lazy<string>(() =>
-				!string.IsNullOrEmpty(ExplicitJavaPath) ? ExplicitJavaPath
-				: JavaPathOption.TryGetJavaHome(out var resolvedJavaHome, out _) ? resolvedJavaHome
-				: null);
 		IgnoreBeamoIds =
 			new HashSet<string>(consoleContext.ParseResult.GetValueForOption(IgnoreBeamoIdsOption.Instance));
 	}

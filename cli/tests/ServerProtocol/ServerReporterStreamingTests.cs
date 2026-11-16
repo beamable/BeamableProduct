@@ -65,6 +65,25 @@ public class ServerReporterStreamingTests
 	[JsonConverter(typeof(GateConverter))]
 	public class Gated { }
 
+	/// <summary>Fails halfway through being written, after more text than the reporter's writer holds back.</summary>
+	public class Broken
+	{
+		public string padding = new string('x', 5000);
+		public Failing failing = new();
+	}
+
+	[JsonConverter(typeof(FailingConverter))]
+	public class Failing { }
+
+	public class FailingConverter : JsonConverter<Failing>
+	{
+		public override void WriteJson(JsonWriter writer, Failing? value, JsonSerializer serializer) =>
+			throw new InvalidOperationException("write failed");
+
+		public override Failing ReadJson(JsonReader reader, Type objectType, Failing? existingValue, bool hasExistingValue,
+			JsonSerializer serializer) => throw new NotSupportedException();
+	}
+
 	public class GateConverter : JsonConverter<Gated>
 	{
 		public static TaskCompletionSource? Entered;
@@ -176,6 +195,31 @@ public class ServerReporterStreamingTests
 			GateConverter.Entered = null;
 			GateConverter.Release = null;
 		}
+	}
+
+	[Test]
+	public async Task A_failed_event_is_dropped_and_the_next_one_is_intact()
+	{
+		await using var server = new ServerServiceTests.TestServer(() => new ServerServiceTests.ControlledApp((_, reporter) =>
+		{
+			reporter.Report("stream", new Indexed { index = 1 });
+			try
+			{
+				reporter.Report("stream", new Broken());
+			}
+			catch (Exception)
+			{
+				// The command carries on after an event it could not report.
+			}
+			reporter.Report("stream", new Indexed { index = 2 });
+			return Task.FromResult(0);
+		}));
+		var body = await server.Execute("broken");
+
+		Assert.That(body, Does.Not.Contain("padding"), "Nothing of the failed event may reach the client.");
+		var events = ParseEvents(body);
+		Assert.That(events.Select(e => (int)e["data"]!["index"]!), Is.EqualTo(new[] { 1, 2 }));
+		server.AssertNoErrors();
 	}
 
 	[Test]
