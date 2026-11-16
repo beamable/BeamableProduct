@@ -994,6 +994,15 @@ namespace Beamable.Microservice.Tests.Socket
             _onDisconnectionCallbacks?.Invoke(this, false);
         }
 
+        /// <summary>Why the service aborted this connection, or null if it didn't.</summary>
+        public string AbortReason;
+
+        public void Abort(string reason)
+        {
+	        AbortReason = reason;
+	        Fault();
+        }
+
         public bool MockIsConnectionOpen = true;
         public async Task SendMessage(string message, Stopwatch sw=null)
         {

@@ -1,0 +1,12 @@
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+export type GrantOfferResult = { 
+  grantId: string; 
+  message?: string | null; 
+  retriable?: boolean; 
+  status?: string | null; 
+  success?: boolean; 
+};

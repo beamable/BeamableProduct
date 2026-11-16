@@ -28,6 +28,10 @@ public class LocalStackRunState
 	/// it. Kept while any of the steps it changes runs, so a later run can't mix modes or names with them.</summary>
 	public string remoteMsHost;
 
+	/// <summary>The steps that run on another port than their settings say (theirs was taken), by name: a later run
+	/// that carries them over points what it launches at them again (see <c>LocalStackPorts</c>).</summary>
+	public Dictionary<string, int> ports;
+
 	/// <summary>The launched steps, in start order.</summary>
 	public List<LocalStackRunEntry> steps = new List<LocalStackRunEntry>();
 }

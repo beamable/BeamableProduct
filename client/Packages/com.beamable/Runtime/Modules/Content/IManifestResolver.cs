@@ -11,7 +11,8 @@ namespace Beamable.Content
 		/// <summary>
 		/// Produces a <see cref="ClientManifest"/>
 		/// Based on the implementation, this could fetch the manifest from the remote Realm, or use local content.
-		/// See <see cref="DefaultManifestResolver.ResolveManifest"/> and <see cref="LocalManifestResolver.ResolveManifest"/>
+		/// See <see cref="DefaultManifestResolver.ResolveManifest"/>. Editor local content is
+		/// selected through <see cref="ILocalContentSource"/> before remote resolution and caching.
 		/// </summary>
 		Promise<ClientManifest> ResolveManifest(IBeamableRequester requester,
 													  string url,

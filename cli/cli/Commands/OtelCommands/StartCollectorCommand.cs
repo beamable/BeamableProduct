@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Server;
 using System.CommandLine;
+using System.Diagnostics;
 
 namespace cli.OtelCommands;
 using Otel = Beamable.Common.Constants.Features.Otel;
@@ -40,13 +41,29 @@ public class StartCollectorCommand : AppCommand<StartCollectorCommandArgs>
 			
 			if (!args.Detach)
 			{
-				await Task.Delay(-1);
+				await WaitForCollectorExit(status.pid, args.Lifecycle.CancellationToken);
 			}
 		}
 		else
 		{
 			Log.Information($"The collector process is already running. Please stop the collector process and try again.");
 		}
+	}
+
+	private static async Task WaitForCollectorExit(int processId, CancellationToken cancellationToken)
+	{
+		cancellationToken.ThrowIfCancellationRequested();
+		try
+		{
+			using var collector = Process.GetProcessById(processId);
+			await collector.WaitForExitAsync(cancellationToken);
+		}
+		catch (ArgumentException)
+		{
+			// The collector can exit between its readiness announcement and this lookup.
+		}
+		cancellationToken.ThrowIfCancellationRequested();
+		throw new CliException($"Collector with process id [{processId}] exited while running in attached mode.");
 	}
 
 	private async Promise AssertEnvironmentVars(StartCollectorCommandArgs args)

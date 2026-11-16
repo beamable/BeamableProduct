@@ -526,6 +526,18 @@ public class LocalStackStacks
 				selected.Add(build);
 		}
 
+		// Every stack sends its logs to Grafana, so no stack has to ask for it; `:no-logs` or an exclude takes it out.
+		// Only where BeamableAPI (which runs Grafana) is on disk: elsewhere the step could only fail the stack.
+		var grafana = catalogue.FirstOrDefault(s => string.Equals(s.name, LocalStackTemplate.ObservabilityStepName, StringComparison.OrdinalIgnoreCase));
+		if (grafana != null && Directory.Exists(LocalStackConfigIO.Substitute(grafana.workingDirectory, config)))
+		{
+			foreach (var step in catalogue.Where(s => s.enabled && !excluded.Contains(s)
+			                                          && TagsOf(s).Contains(LocalStackTemplate.ObservabilityTag, StringComparer.OrdinalIgnoreCase)))
+			{
+				selected.Add(step);
+			}
+		}
+
 		var resolved = new LocalStackResolvedStack
 		{
 			name = fullName,

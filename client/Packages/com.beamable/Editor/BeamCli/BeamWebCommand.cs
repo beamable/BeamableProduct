@@ -38,6 +38,7 @@ namespace Beamable.Editor.BeamCli
 		/// some other Unity-client, or a user mode.
 		/// </summary>
 		public string owner;
+		public int pid;
 	}
 
 	public class BeamWebCommandFactoryOptions : ScriptableObject
@@ -92,6 +93,11 @@ namespace Beamable.Editor.BeamCli
 
 		public Promise onReady = null;
 		private ServerServeWrapper _serverCommand;
+		// Keep ownership until the command drains; a rejected /info response is not process exit.
+		private Promise _ownedServerRun;
+		private int _ownedServerPort;
+		private bool HasPendingServerLaunch => _ownedServerRun != null && !_ownedServerRun.IsCompleted;
+		internal Process ServerProcess { get; private set; }
 
 		public BeamWebCommandFactory(
 			BeamableDispatcher dispatcher,
@@ -115,19 +121,39 @@ namespace Beamable.Editor.BeamCli
 		}
 
 
-		private List<Action> serverReadyCallbacks = new List<Action>();
+		private List<Action<Exception>> serverReadyCallbacks = new List<Action<Exception>>();
 
 		public async Promise EnsureServerIsRunning()
 		{
 			var p = new Promise();
 			discoveryRequest++;
-			serverReadyCallbacks.Add(() =>
+			serverReadyCallbacks.Add(error =>
 			{
-				p.CompleteSuccess();
+				if (error == null) p.CompleteSuccess();
+				else p.CompleteError(error);
 			});
 			await p;
 		}
 		
+
+		private void CompleteDiscovery(Exception error = null)
+		{
+			// Clear the batch before invoking callers: an error callback may request discovery again.
+			discoveryRequest = 0;
+			var callbacks = serverReadyCallbacks.ToArray();
+			serverReadyCallbacks.Clear();
+			foreach (var callback in callbacks) callback?.Invoke(error);
+		}
+
+		private void RejectOwnedServer(PingResult result)
+		{
+			port = _ownedServerPort;
+			var error = new InvalidOperationException(
+				$"CLI server launched at port=[{port}] failed discovery ({result}); expected version=[{Version}] owner=[{Owner}]. " +
+				"The existing launch is still running. Check its /info response and CLI server logs before retrying.");
+			_history.AddServerEvent(error.Message);
+			CompleteDiscovery(error);
+		}
 
 		public void KillServer()
 		{
@@ -226,21 +252,25 @@ namespace Beamable.Editor.BeamCli
 					case PingResult.Match:
 						_history.AddServerEvent($"Found existing server at port=[{port}]. Resolving callbacks");
 
-						discoveryRequest = 0;
-						var callbacks = serverReadyCallbacks.ToList();
-						serverReadyCallbacks.Clear();
-						foreach (var cb in callbacks)
-						{
-							cb?.Invoke();
-						}
+						CompleteDiscovery();
 						
 						// this is the happy case where the server is already running!
 						break;
 					case PingResult.Mismatch:
+						if (HasPendingServerLaunch && port == _ownedServerPort)
+						{
+							RejectOwnedServer(pingResult);
+							break;
+						}
 						_history.AddServerEvent($"Found mismatch server at port=[{port}], trying again");
 						port++;
 						break;
 					case PingResult.NoServer:
+						if (HasPendingServerLaunch)
+						{
+							RejectOwnedServer(pingResult);
+							break;
+						}
 						startServer = true;
 						break;
 				}
@@ -288,7 +318,7 @@ namespace Beamable.Editor.BeamCli
 			});
 			_serverCommand.OnStreamServeCliCommandOutput(data =>
 			{
-				port = data.data.port;
+				port = _ownedServerPort = data.data.port;
 							
 				_history.AddServerEvent(new BeamCliServerEvent
 				{
@@ -309,7 +339,8 @@ namespace Beamable.Editor.BeamCli
 			{
 				message = $"starting server on port=[{args.port}]"
 			});
-			var _ = _serverCommand.Run();
+			_ownedServerPort = port;
+			_ownedServerRun = _serverCommand.Run();
 			await waitForResult;
 		}
 
@@ -321,7 +352,7 @@ namespace Beamable.Editor.BeamCli
 			var p = new Promise();
 			PingResult pingResult = PingResult.NoServer;
 			
-			op.completed += _ =>
+			op.completed += operation =>
 			{
 				if (req.responseCode != 200)
 				{
@@ -334,7 +365,8 @@ namespace Beamable.Editor.BeamCli
 				var res = JsonUtility.FromJson<ServerInfoResponse>(json);
 
 				var ownerMatches = String.Equals(res.owner, Owner, StringComparison.OrdinalIgnoreCase);
-				var versionMatches = EditorConfiguration.Instance.IgnoreCliVersionRequirement || res.version == Version;
+				var versionMatches = EditorConfiguration.Instance.IgnoreCliVersionRequirement ||
+				                     BeamCliUtil.MatchesInstalledVersionConstraint(Version, res.version);
 
 				_history.SetLatestServerPing(port, InfoUrl, res, ownerMatches, versionMatches);
 
@@ -347,6 +379,28 @@ namespace Beamable.Editor.BeamCli
 					return;
 				}
 
+				try
+				{
+					if (ServerProcess == null || ServerProcess.HasExited || ServerProcess.Id != res.pid)
+					{
+						var process = Process.GetProcessById(res.pid);
+						_ = process.Handle; // Retain this process identity, not a PID that can be reused.
+						ServerProcess = process;
+					}
+				}
+				catch (Exception error) when (error is ArgumentException || error is InvalidOperationException)
+				{
+					pingResult = PingResult.NoServer;
+					p.CompleteSuccess();
+					return;
+				}
+				catch (Exception error)
+				{
+					_history.AddServerEvent($"Cannot own CLI process at port=[{port}]: {error.Message}");
+					pingResult = PingResult.Mismatch;
+					p.CompleteSuccess();
+					return;
+				}
 				pingResult = PingResult.Match;
 				p.CompleteSuccess();
 			};
@@ -367,6 +421,7 @@ namespace Beamable.Editor.BeamCli
 	public class BeamWebCommandRequest
 	{
 		public string commandLine;
+		public string requestId;
 	}
 	
 	public class BeamWebCommand : IBeamCommand
@@ -381,6 +436,11 @@ namespace Beamable.Editor.BeamCli
 		private CancellationTokenSource _cts;
 		private BeamWebCliCommandHistory _history;
 		private Promise _runPromise;
+		private Promise _stopPromise;
+		private readonly TaskCompletionSource<string> _stopUrl = new TaskCompletionSource<string>();
+		private Task<HttpResponseMessage> _responseTask;
+		private Process _requestServer;
+		private string _requestUrl;
 		private const int MaxPreResponseTransportRetries = 2;
 
 		public BeamWebCommand(BeamWebCommandFactory factory, BeamWebCliCommandHistory history)
@@ -401,6 +461,7 @@ namespace Beamable.Editor.BeamCli
 		
 		public Promise Run()
 		{
+			if (_stopPromise != null) return _stopPromise;
 			_runPromise = RunImpl();
 			return _runPromise;
 		}
@@ -409,29 +470,37 @@ namespace Beamable.Editor.BeamCli
 		{
 			_history.UpdateResolvingHostTime(id);
 
-			for (var attempt = 0;; attempt++)
+			try
 			{
-				try
+				for (var attempt = 0;; attempt++)
 				{
-					await RunHttpRequestOnce();
-					return;
-				}
-				catch (PreResponseTransportException ex) when (attempt < MaxPreResponseTransportRetries)
-				{
-					if (attempt == 0)
+					try
 					{
-						_history.AddCustomLog(id,
-							$"[Unity] local CLI transport failed before response; confirming server before retry. attempt=[{attempt + 1}]");
-						await _factory.EnsureServerIsRunning();
+						await RunHttpRequestOnce();
+						return;
 					}
-					else
+					catch (PreResponseTransportException ex) when (attempt < MaxPreResponseTransportRetries)
 					{
-						_history.AddCustomLog(id,
-							$"[Unity] local CLI transport failed before response; invalidating server before retry. attempt=[{attempt + 1}]");
-						await _factory.InvalidateServer(ex.InnerException ?? ex);
+						if (attempt == 0)
+						{
+							_history.AddCustomLog(id,
+								$"[Unity] local CLI transport failed before response; confirming server before retry. attempt=[{attempt + 1}]");
+							await _factory.EnsureServerIsRunning();
+						}
+						else
+						{
+							_history.AddCustomLog(id,
+								$"[Unity] local CLI transport failed before response; invalidating server before retry. attempt=[{attempt + 1}]");
+							await _factory.InvalidateServer(ex.InnerException ?? ex);
+						}
 					}
 				}
 			}
+			finally
+			{
+				_stopUrl.TrySetResult(null);
+			}
+
 		}
 
 		private async Promise RunHttpRequestOnce()
@@ -441,8 +510,9 @@ namespace Beamable.Editor.BeamCli
 			_history.UpdateStartTime(id, _factory.ExecuteUrl);
 			_history.AddCustomLog(id, "[Unity] starting request...");
 
-			var req = new HttpRequestMessage(HttpMethod.Post, _factory.ExecuteUrl);
-			var json = JsonUtility.ToJson(new BeamWebCommandRequest {commandLine = commandString});
+			var executeUrl = _factory.ExecuteUrl;
+			var req = new HttpRequestMessage(HttpMethod.Post, executeUrl);
+			var json = JsonUtility.ToJson(new BeamWebCommandRequest {commandLine = commandString, requestId = id});
 			req.Content = new StringContent(json, Encoding.UTF8, "application/json");
 			CliLogger.Log("Sending cli web request, " + json);
 			var dispatchedIds = new List<long>();
@@ -457,11 +527,15 @@ namespace Beamable.Editor.BeamCli
 				// poisoned half-closed socket); a fresh client per command
 				// avoids that.
 				using var client = new HttpClient { Timeout = TimeSpan.FromDays(7) };
-				var sendTask = client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, _cts.Token);
+				_requestServer = _factory.ServerProcess;
+				_requestUrl = executeUrl;
+				var sendTask = _responseTask = client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, _cts.Token);
 				_history.AddCustomLog(id, "[Unity] sent request...");
 
 				using HttpResponseMessage response = await sendTask;
 				responseStarted = true;
+				_stopUrl.TrySetResult(response.Headers.TryGetValues("X-Beam-Request-Id", out var requestIds) && requestIds.Contains(id)
+					? new Uri(new Uri(executeUrl), "stop").ToString() : "");
 				_history.AddCustomLog(id, "[Unity] opened response...");
 
 				using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync();
@@ -507,6 +581,7 @@ namespace Beamable.Editor.BeamCli
 
 					// remove life-cycle zero-width character
 					line = line.Replace("\u200b", "");
+					if (line.StartsWith(":")) continue; // SSE registration/keepalive comments.
 					if (!line.StartsWith("data: "))
 					{
 						Debug.LogWarning(
@@ -548,6 +623,96 @@ namespace Beamable.Editor.BeamCli
 
 			
 			await p;
+		}
+
+		/// <summary>Cancel this server invocation and wait for its workers and dispatched callbacks to finish.</summary>
+		public Promise StopAsync()
+		{
+			// Share an in-flight or acknowledged stop, but let the caller retry a failed acknowledgement.
+			if (_stopPromise?.IsFailed == true) _stopPromise = null;
+			return _stopPromise ??= _runPromise == null ? Promise.Success : StopImpl();
+		}
+
+		internal void StopForAssemblyReload()
+		{
+			using var timeout = new CancellationTokenSource(3000);
+			try
+			{
+				if (_responseTask == null) return; // Still waiting for discovery; no request was sent.
+				var body = JsonUtility.ToJson(new BeamWebCommandRequest { requestId = id });
+				var stop = StopTransportForReload(_responseTask, _requestUrl, id, body, timeout.Token);
+				_ = stop.ContinueWith(task => { _ = task.Exception; }, CancellationToken.None,
+					TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+				if (!stop.Wait(3000)) throw new TimeoutException("CLI reload shutdown timed out.");
+			}
+			catch
+			{
+				// A broken transport cannot acknowledge cleanup. Stop the verified server that
+				// received this request (the Windows launcher may only be a cmd.exe parent).
+				if (_requestServer == null) throw;
+				if (!_requestServer.HasExited)
+				{
+					_requestServer.Kill();
+					if (!_requestServer.WaitForExit(1000))
+						throw new TimeoutException("The CLI process did not exit during assembly reload.");
+				}
+			}
+			finally { timeout.Cancel(); Cancel(); }
+		}
+
+		private static async Task StopTransportForReload(Task<HttpResponseMessage> responseTask,
+			string executeUrl, string requestId, string body, CancellationToken cancellationToken)
+		{
+			// This path must not capture Unity's synchronization context or wait for its dispatcher.
+			var response = await responseTask.ConfigureAwait(false);
+			if (!response.Headers.TryGetValues("X-Beam-Request-Id", out var ids) || !ids.Contains(requestId))
+				throw new InvalidOperationException("The CLI did not acknowledge request registration.");
+			using var client = new HttpClient();
+			using var content = new StringContent(body, Encoding.UTF8, "application/json");
+			using var stopped = await client.PostAsync(new Uri(new Uri(executeUrl), "stop"), content,
+				cancellationToken).ConfigureAwait(false);
+			stopped.EnsureSuccessStatusCode();
+		}
+
+		private async Promise StopImpl()
+		{
+			if (_requestServer?.HasExited == true && _stopUrl.Task.IsCompleted)
+			{
+				// Registration has settled, so no discovery retry remains. Process exit proves its workers are gone.
+				Cancel();
+				try { await _runPromise; }
+				catch (Exception) { }
+				return;
+			}
+			// Registration is acknowledged before the response headers are sent. Never race /execute with /stop.
+			string url;
+			using (var timeout = new CancellationTokenSource())
+			{
+				timeout.CancelAfter(10000);
+				try
+				{
+					var deadline = Task.Delay(Timeout.Infinite, timeout.Token);
+					if (await Task.WhenAny(_stopUrl.Task, deadline) != _stopUrl.Task)
+						throw new TimeoutException("CLI command registration timed out during shutdown. Retry shutdown before restarting the watcher.");
+					url = await _stopUrl.Task;
+					if (url == "") throw new InvalidOperationException("The CLI server does not support acknowledged command shutdown. Update the CLI before switching content modes.");
+					if (url != null)
+					{
+						using var client = new HttpClient();
+						using var body = new StringContent(JsonUtility.ToJson(new BeamWebCommandRequest { requestId = id }), Encoding.UTF8, "application/json");
+						using var response = await client.PostAsync(url, body, timeout.Token);
+						response.EnsureSuccessStatusCode();
+					}
+				}
+				finally { timeout.Cancel(); }
+			}
+			// Run already drains the dispatcher in its finally block.
+			try { await _runPromise; }
+			catch (Exception) when (url != null)
+			{
+				// The server acknowledged cleanup. Keep the run failed for its callers,
+				// but do not turn that original failure into a shutdown failure.
+			}
 		}
 
 		public void Cancel()

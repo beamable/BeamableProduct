@@ -7,10 +7,12 @@ import type { CampaignConditionDto } from './CampaignConditionDto';
 
 export type CampaignOfferDto = { 
   condition?: CampaignConditionDto; 
+  durationMs?: bigint | string | null; 
   entryId?: string; 
   extraData?: Record<string, string> | null; 
   federationId?: string; 
   invalidatesEntryIds?: string[] | null; 
   label?: string | null; 
   offerId?: string; 
+  required?: boolean; 
 };
