@@ -183,7 +183,7 @@ public class DeployArgs
 		}
 
 		var cid = args.AppContext.Cid;
-		var zid = await ZoneScope.ResolveRequiredZid(args);
+		var zid = string.IsNullOrEmpty(zidOverride) ? await ZoneScope.ResolveRequiredZid(args) : zidOverride;
 
 		Log.Information($"Deploying against zone [{zid}] with scope [{cid}.{zid}]");
 		var requester = args.DependencyProvider.GetService<CliRequester>();
