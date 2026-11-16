@@ -29,6 +29,9 @@ public class ContentSaveCommand : AppCommand<ContentSaveCommandArgs>, IEmptyResu
 		AddOption(CONTENT_ID_OPTION, (args, s) => args.ContentIds = s);
 		AddOption(CONTENT_PROPERTIES_ID_OPTION, (args, s) => args.ContentProperties = s);
 		AddOption(FORCE_OPTION, (args, b) => args.Force = b);
+        AddOption(new Option<string[]>("--original-files", "Loaded JSON files, parallel to content ids, for lossless model edits"), (args, s) => args.OriginalFiles = s);
+        AddOption(new Option<string[]>("--model-properties", "Loaded model properties, parallel to content ids"), (args, s) => args.ModelProperties = s);
+        AddOption(new Option<string[]>("--expected-file-hashes", "SHA256 file-text hashes for explicitly reviewed replacements"), (args, s) => args.ExpectedFileHashes = s);
 	}
 
 	public override async Task Handle(ContentSaveCommandArgs args)
@@ -64,7 +67,7 @@ public class ContentSaveCommand : AppCommand<ContentSaveCommandArgs>, IEmptyResu
 			string.Join("\n", args.ContentIds.Zip(args.ContentProperties).Select((id, props) => $"({id}, {props})")));
 
 		// Save the new contentId/contentProperties pairs
-		await _contentService.BulkSaveLocalContent(localCache, args.ContentIds, args.ContentProperties, tokenSource.Token);
+		await _contentService.BulkSaveLocalContent(localCache, args.ContentIds, args.ContentProperties, tokenSource.Token, args.OriginalFiles, args.ModelProperties, args.ExpectedFileHashes);
 
 		Log.Verbose("Saved Content.\nMANIFEST_ID={0}.\nIDS_PROPS={1}",
 			manifestId,
@@ -77,4 +80,7 @@ public class ContentSaveCommandArgs : ContentCommandArgs
 	public string[] ContentIds;
 	public string[] ContentProperties;
 	public bool Force;
+    public string[] OriginalFiles;
+    public string[] ModelProperties;
+    public string[] ExpectedFileHashes;
 }
