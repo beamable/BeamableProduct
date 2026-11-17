@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `beam project open` works with the .NET 11 SDK. It re-added every service to the solution on each run, and from SDK 11 on `dotnet sln add` fails for a project the solution already has. It now adds only the projects that are missing.
 - `beam server serve` (the CLI server the Unity editor uses) no longer leaks about 2 MB and gets slower with every command it runs. Finished commands stayed reachable through the shared global options, a per-command tracer provider, a per-command telemetry source and meter, and a connection heartbeat that never stopped. Commands also no longer replace the server's own logger. Memory now stays flat, and latency no longer climbs (it used to pass 120 ms after a few hundred commands).
 - Every `beam` command starts about 18 ms faster: the Java 8 search for the Scala backend (`/usr/libexec/java_home` and JDK checks) runs only when a command needs Java, not for every command. The `--java-path` help no longer says whether a Java 8 home was found, since working that out was the search. A warm command on `beam server serve` (Unity's `/execute`) now takes about 10 ms instead of 46 ms.
 - `beam server serve` streams command results to Unity about 3x faster with a third of the allocations. Events are serialized once into a buffer and sent at most 2 ms later, rather than flushed one by one. The bytes Unity receives are unchanged. A client that disconnects now cancels its command even when the server has no logger configured.
