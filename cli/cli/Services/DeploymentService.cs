@@ -1484,7 +1484,7 @@ public partial class DeployUtil
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.addedPortalExtensions, "Adding", "portal extension");
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.changedPortalExtensions, "Updating", "portal extension");
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.removedPortalExtensions, "Removing", "portal extension");
-		detectedChangeCount += PrintChangesAndNoticeChange(
+		PrintChangesAndNoticeChange(
 			plan.overrides.Select(o => $"{o.component}: your build, in place of {o.bundle}'s (from v{o.version}), from {o.remote}").ToList(),
 			"Overriding", "bundle component");
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.endOverrides, "Giving back", "overridden component");

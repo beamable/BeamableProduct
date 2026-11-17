@@ -1,4 +1,7 @@
+using Beamable.Common.Api;
 using Beamable.Server;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Threading.Tasks;
 
@@ -90,4 +93,38 @@ public static class BundleNamespace
 
 	/// <summary>The catalog's fully-qualified bundle name, <c>@&lt;alias&gt;/&lt;short-name&gt;</c>.</summary>
 	public static string Qualify(string ns, string shortName) => $"{ns}/{shortName}";
+
+	/// <summary>
+	/// Runs a bundle request, turning the server's refusal into a CLI error with its reason. The gateway's
+	/// bundle errors carry the reason in <c>description</c>, which the CLI's generic request error doesn't show.
+	/// </summary>
+	public static async Task<T> Send<T>(Func<Task<T>> call)
+	{
+		try
+		{
+			return await call();
+		}
+		catch (RequesterException e) when (e.Status >= 400 && e.Status < 500)
+		{
+			throw new CliException(RefusalOf(e));
+		}
+	}
+
+	private static string RefusalOf(RequesterException e)
+	{
+		try
+		{
+			var body = JObject.Parse(e.Payload ?? "");
+			var reason = body.Value<string>("description") ?? body.Value<string>("message");
+			if (!string.IsNullOrWhiteSpace(reason))
+			{
+				return reason;
+			}
+		}
+		catch (JsonReaderException)
+		{
+		}
+
+		return $"The server refused the request (status {e.Status}).";
+	}
 }

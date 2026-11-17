@@ -113,7 +113,7 @@ public class RemoveBundleCommand : AtomicCommand<LibraryBundleCommandArgs, Remov
 	{
 		var api = args.Provider.GetService<IBeamBeamoinstallationApi>();
 		var fullName = await BundleNamespace.FullName(args, args.bundleName);
-		await api.DeleteAcquisitions(fullName);
+		await BundleNamespace.Send(async () => await api.DeleteAcquisitions(fullName));
 		Log.Information($"Removed [{fullName}] from your org's library.");
 		return new RemoveBundleCommandOutput { name = fullName };
 	}

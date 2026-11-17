@@ -114,7 +114,7 @@ public class RequestSourceCommand : AtomicCommand<RequestSourceCommandArgs, Requ
 		if (args.version > 0) request.version = args.version;
 		if (!string.IsNullOrEmpty(args.workspace)) request.workspace = args.workspace;
 
-		var delivery = SourceDeliveryInfo.From(await api.PostSourceDeliveries(request));
+		var delivery = SourceDeliveryInfo.From(await BundleNamespace.Send(async () => await api.PostSourceDeliveries(request)));
 		Log.Information($"Requested the source of {string.Join(", ", delivery.components)} from [{fullName}] v{delivery.version} (delivery {delivery.id}). " +
 		                "`beam bundles source list` shows when its pull request is open.");
 		return new RequestSourceCommandOutput { delivery = delivery };

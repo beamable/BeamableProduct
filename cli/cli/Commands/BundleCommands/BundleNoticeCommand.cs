@@ -192,7 +192,7 @@ public class CreateBundleNoticeCommand : AtomicCommand<BundleNoticeCommandArgs, 
 			request.replacementTag = args.replacementTag;
 		}
 
-		var response = await api.PostBundlesNotices(request);
+		var response = await BundleNamespace.Send(async () => await api.PostBundlesNotices(request));
 		var output = new BundleNoticeCommandOutput
 		{
 			name = fullName,
@@ -305,7 +305,7 @@ public class UpdateBundleNoticeCommand : AtomicCommand<BundleNoticeCommandArgs, 
 			request.resolve = true;
 		}
 
-		var response = await api.PutBundlesNotices(request);
+		var response = await BundleNamespace.Send(async () => await api.PutBundlesNotices(request));
 		var output = new BundleNoticeCommandOutput
 		{
 			name = fullName,
@@ -335,7 +335,7 @@ public class WithdrawBundleNoticeCommand : AtomicCommand<BundleNoticeCommandArgs
 	{
 		var api = args.Provider.GetService<IBeamBeamobundleApi>();
 		var fullName = await BundleNamespace.FullName(args, args.bundleName);
-		await api.DeleteBundlesNotices((Optional<string>)args.id, (Optional<string>)fullName);
+		await BundleNamespace.Send(async () => await api.DeleteBundlesNotices((Optional<string>)args.id, (Optional<string>)fullName));
 		Log.Information($"Withdrew notice {args.id} on [{fullName}].");
 		return new BundleNoticeCommandOutput { name = fullName };
 	}
