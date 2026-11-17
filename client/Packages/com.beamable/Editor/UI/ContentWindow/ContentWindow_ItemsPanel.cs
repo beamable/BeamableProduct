@@ -1074,7 +1074,9 @@ namespace Beamable.Editor.UI.ContentWindow
 
 				if (i == 0 && schemaContentId != null && nameRect.width >= 20)
 				{
-					var warningRect = new Rect(Mathf.Min(nameRect.x + fieldStyle.CalcSize(new GUIContent(labelValue)).x + 4, nameRect.xMax - 18), nameRect.center.y - 8, 16, 16);
+					// Reserve the icon slot independently of the clipped label's measured width
+					// so ellipsis styling cannot collapse the space available for its name.
+					var warningRect = new Rect(nameRect.xMax - 18, nameRect.center.y - 8, 16, 16);
 					nameRect.xMax = warningRect.x - 2;
 					var warning = new GUIContent(EditorGUIUtility.IconContent("console.warnicon.sml").image,
 						ContentSchemaNotice.Title + "\nClick to review schema changes.");

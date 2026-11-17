@@ -21,14 +21,14 @@ namespace Beamable.Editor.UI.ContentWindow
             using (new EditorGUILayout.HorizontalScope())
             {
                 GUILayout.Label(Title, EditorStyles.boldLabel);
-                if (GUILayout.Button("Ã—", EditorStyles.miniButton, GUILayout.Width(22))) editorWindow.Close();
+                if (GUILayout.Button("\u00d7", EditorStyles.miniButton, GUILayout.Width(22))) editorWindow.Close();
             }
             GUILayout.Label(Description, EditorStyles.wordWrappedLabel);
             GUILayout.FlexibleSpace();
             using (new EditorGUI.DisabledScope(_scope != _service.GetContentScopeKey() ||
                        _service.CurrentProgress.IsActive || EditorApplication.isCompiling))
             {
-                if (GUILayout.Button("Review schema changesâ€¦"))
+                if (GUILayout.Button("Review schema changes\u2026"))
                 {
                     var service = _service;
                     var id = _id;
@@ -87,7 +87,7 @@ namespace Beamable.Editor.UI.ContentWindow
                 _preview = preview;
                 _comparison = comparison;
                 _groups = Enumerable.Range(0, Groups.Length).Select(i => comparison.Rows.Where(r => (int)r.Kind == i).ToArray()).ToArray();
-                _summary = $"{_groups[0].Length} removed · {_groups[1].Length} added · {_groups[2].Length} changed · {_groups[3].Length} unchanged";
+                _summary = $"{_groups[0].Length} removed \u00b7 {_groups[1].Length} added \u00b7 {_groups[2].Length} changed \u00b7 {_groups[3].Length} unchanged";
             }
             catch (Exception ex) { _error = ex.Message; }
         }
@@ -149,7 +149,7 @@ namespace Beamable.Editor.UI.ContentWindow
                         else
                         {
                             using (new EditorGUI.DisabledScope(!_comparison.Rows.Any(r => r.Kind != ContentSchemaPreview.Change.Unchanged)))
-                                if (GUILayout.Button(_applying ? "Savingâ€¦" : "Apply changes to JSON", GUILayout.Width(165))) Apply();
+                                if (GUILayout.Button(_applying ? "Saving\u2026" : "Apply changes to JSON", GUILayout.Width(165))) Apply();
                         }
                     }
                 }
@@ -193,7 +193,7 @@ namespace Beamable.Editor.UI.ContentWindow
             rect.width /= 3;
             foreach (var value in new[] { name, before, after })
             {
-                var text = value.Length > 1000 ? value.Substring(0, 1000) + "â€¦ (see JSON)" : value;
+                var text = value.Length > 1000 ? value.Substring(0, 1000) + "\u2026 (see JSON)" : value;
                 GUI.Label(rect, new GUIContent(text, text), style);
                 rect.x += rect.width;
             }
@@ -201,7 +201,7 @@ namespace Beamable.Editor.UI.ContentWindow
 
         private void DrawJson()
         {
-            GUILayout.Label("Content properties Â· read-only", EditorStyles.miniLabel);
+            GUILayout.Label("Content properties \u00b7 read-only", EditorStyles.miniLabel);
             using (new EditorGUILayout.HorizontalScope())
             {
                 DrawJsonSide("Current JSON", _comparison.CurrentJson, ref _leftScroll);
