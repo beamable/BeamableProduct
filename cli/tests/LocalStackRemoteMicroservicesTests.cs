@@ -168,6 +168,35 @@ public class LocalStackRemoteMicroservicesTests
 	}
 
 	[Test]
+	public void Apply_GivesTheBundleRuntimeTheGatewaysDeploySettings()
+	{
+		var config = TemplateConfig();
+
+		RemoteMicroservices.Apply(config.steps, Settings("justin"));
+
+		var gateway = Step(config, RemoteMicroservices.GatewayStepName).environment;
+		var runtime = Step(config, RemoteMicroservices.BundleRuntimeStepName).environment;
+		foreach (var (key, value) in gateway.Where(e => e.Key.StartsWith("BEAMABLE_")))
+		{
+			Assert.That(runtime[key], Is.EqualTo(value), key);
+		}
+
+		Assert.That(runtime["BEAMABLE_Beamo__DockerRegistryHostAndPort"], Is.EqualTo("justin-registry.ms.example.com:443"));
+		Assert.That(runtime["ASPNETCORE_URLS"], Is.EqualTo("http://localhost:5060"), "the template's own settings stay");
+	}
+
+	[Test]
+	public void Apply_WithoutTheBundleRuntime_StillApplies()
+	{
+		var config = TemplateConfig();
+		config.steps.RemoveAll(s => s.name == RemoteMicroservices.BundleRuntimeStepName);
+
+		RemoteMicroservices.Apply(config.steps, Settings("justin"));
+
+		Assert.That(Step(config, RemoteMicroservices.GatewayStepName).environment["BEAMABLE_Beamo__DockerRegistryProtocol"], Is.EqualTo("https"));
+	}
+
+	[Test]
 	public void Apply_GivesTheTunnelStepItsScript()
 	{
 		var config = TemplateConfig();
@@ -191,7 +220,7 @@ public class LocalStackRemoteMicroservicesTests
 		RemoteMicroservices.Apply(twice.steps, Settings("justin"));
 
 		Assert.That(twice.steps.Select(s => s.name), Is.EqualTo(once.steps.Select(s => s.name)));
-		foreach (var name in new[] { RemoteMicroservices.DockerStepName, RemoteMicroservices.GatewayStepName, RemoteMicroservices.TunnelStepName })
+		foreach (var name in new[] { RemoteMicroservices.DockerStepName, RemoteMicroservices.GatewayStepName, RemoteMicroservices.BundleRuntimeStepName, RemoteMicroservices.TunnelStepName })
 		{
 			Assert.That(Step(twice, name).arguments, Is.EqualTo(Step(once, name).arguments), name);
 			Assert.That(Step(twice, name).stopArguments, Is.EqualTo(Step(once, name).stopArguments), name);

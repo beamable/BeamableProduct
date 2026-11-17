@@ -53,6 +53,7 @@ public static class RemoteMicroservices
 	// The LocalStackTemplate steps this changes.
 	public const string DockerStepName = LocalStackTemplate.ApiDepsStepName;
 	public const string GatewayStepName = LocalStackDependencies.GatewayStep;
+	public const string BundleRuntimeStepName = LocalStackTemplate.BundleRuntimeStepName;
 
 	public const string RegistrySuffix = "-registry";
 	public const string ClickHouseSuffix = "-clickhouse";
@@ -395,21 +396,27 @@ public static class RemoteMicroservices
 		docker.environment["MS_REGISTRY_HOST"] = settings.RegistryHost;
 		docker.environment["MS_CLICKHOUSE_HOST"] = settings.ClickHouseHost;
 
-		gateway.environment ??= new Dictionary<string, string>();
-		// Subnets, roles and the registry secret: only for this run, so a stack without :remote-ms never starts Fargate
-		// tasks that can't pull from localhost.
-		foreach (var (key, value) in settings.GatewayEnvironment)
+		// The bundle runtime deploys manifests too (installs and auto-updates), so it gets the same settings when the
+		// stack runs it.
+		var bundleRuntime = steps.FirstOrDefault(s => string.Equals(s.name, BundleRuntimeStepName, StringComparison.OrdinalIgnoreCase));
+		foreach (var deployer in new[] { gateway, bundleRuntime }.Where(s => s != null))
 		{
-			gateway.environment[key] = value;
-		}
+			deployer.environment ??= new Dictionary<string, string>();
+			// Subnets, roles and the registry secret: only for this run, so a stack without :remote-ms never starts Fargate
+			// tasks that can't pull from localhost.
+			foreach (var (key, value) in settings.GatewayEnvironment)
+			{
+				deployer.environment[key] = value;
+			}
 
-		gateway.environment["BEAMABLE_Beamo__WebsocketUri"] = $"wss://{settings.GatewayHost}/socket";
-		gateway.environment["BEAMABLE_Beamo__DockerRegistryHostAndPort"] = $"{settings.RegistryHost}:443";
-		gateway.environment["BEAMABLE_Beamo__DockerRegistryProtocol"] = "https";
-		// Deployed services' collectors export here, so their logs and traces land in the local ClickHouse.
-		gateway.environment["BEAMABLE_Beamo__Otel__ClickHouse__Endpoint__Host"] = settings.ClickHouseHost;
-		gateway.environment["BEAMABLE_Beamo__Otel__ClickHouse__Endpoint__Port"] = "443";
-		gateway.environment["BEAMABLE_Beamo__Otel__ClickHouse__Endpoint__Protocol"] = "https";
+			deployer.environment["BEAMABLE_Beamo__WebsocketUri"] = $"wss://{settings.GatewayHost}/socket";
+			deployer.environment["BEAMABLE_Beamo__DockerRegistryHostAndPort"] = $"{settings.RegistryHost}:443";
+			deployer.environment["BEAMABLE_Beamo__DockerRegistryProtocol"] = "https";
+			// Deployed services' collectors export here, so their logs and traces land in the local ClickHouse.
+			deployer.environment["BEAMABLE_Beamo__Otel__ClickHouse__Endpoint__Host"] = settings.ClickHouseHost;
+			deployer.environment["BEAMABLE_Beamo__Otel__ClickHouse__Endpoint__Port"] = "443";
+			deployer.environment["BEAMABLE_Beamo__Otel__ClickHouse__Endpoint__Protocol"] = "https";
+		}
 
 		tunnel.shellKind = TunnelShellKind;
 		tunnel.arguments = OperatingSystem.IsWindows() ? TunnelPowerShellScript(settings) : TunnelScript(settings);

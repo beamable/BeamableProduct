@@ -118,7 +118,7 @@ public static class LocalStackLiveness
 	{
 		"java", "javaw", "node", "dotnet", "beam", "Beamable.Tools",
 		"BeamableGateway", "BeamableMessageRailRuntime", "BeamableCampaignRuntime",
-		"BeamableSegmentationRuntime", "BeamableAnalyticsLoader"
+		"BeamableSegmentationRuntime", "BeamableAnalyticsLoader", "BeamableBundleRuntime"
 	};
 
 	/// <summary>Tolerance when comparing a live process's start time to the recorded one (clock/rounding slack).</summary>

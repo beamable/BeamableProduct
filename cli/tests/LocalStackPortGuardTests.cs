@@ -209,6 +209,7 @@ public class LocalStackPortGuardTests
 		Assert.That(Step("c# campaign runtime").port, Is.EqualTo(5045));
 		// 5055 rather than the 5050 its own launchSettings declares, for that same BeamableScheduler clash.
 		Assert.That(Step("c# segmentation runtime").port, Is.EqualTo(5055));
+		Assert.That(Step("c# bundle runtime").port, Is.EqualTo(5060));
 		Assert.That(Step("portal frontend").port, Is.EqualTo(4950));
 		Assert.That(Step("scala: gateway").port, Is.EqualTo(9002),
 			"the scala gateway binds 9002 even though its readiness gate is the Caddy host");

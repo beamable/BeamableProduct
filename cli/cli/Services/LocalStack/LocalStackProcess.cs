@@ -27,10 +27,10 @@ public static class LocalStackProcess
 	public static readonly string[] ServiceImages =
 	{
 		"java.exe", "javaw.exe", "node.exe", "dotnet.exe",
-		// The five BeamableAPI .NET hosts the manifest launches as their own apphosts. Each is unambiguous
+		// The six BeamableAPI .NET hosts the manifest launches as their own apphosts. Each is unambiguous
 		// on its own, unlike dotnet.exe/node.exe; omitting one hides it from `ps` and from the orphan sweep.
 		"BeamableGateway.exe", "BeamableMessageRailRuntime.exe", "BeamableCampaignRuntime.exe",
-		"BeamableSegmentationRuntime.exe", "BeamableAnalyticsLoader.exe"
+		"BeamableSegmentationRuntime.exe", "BeamableAnalyticsLoader.exe", "BeamableBundleRuntime.exe"
 	};
 
 	/// <summary>Wrapper/host-console images that are never the real service when walking a process tree.</summary>
