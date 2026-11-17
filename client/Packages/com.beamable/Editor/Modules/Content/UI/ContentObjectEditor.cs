@@ -512,20 +512,36 @@ namespace Beamable.Editor.Content.UI
 				ContentConfiguration.Instance.EnableLocalContentInEditor, out var conflict, invalidCount,
 				_hasListValidationCache && targets.Length == 1 && (target as ContentObject)?.ContentStatus != ContentStatus.Deleted
 					? _validationStatusDetails : null);
-			if (schemaCount > 0)
-				message = ContentWindow_TooltipsHelper.GetSchemaWarningDescription(schemaDifferences, schemaCount, targets.Length > 1) + "\n\n" + message;
+			var schemaMessage = ContentWindow_TooltipsHelper.GetSchemaWarningDescription(schemaDifferences, schemaCount, targets.Length > 1);
+			var canReviewSchema = schemaCount > 0 && targets.Length == 1 && historical == 0;
 			_statusMessageStyle ??= new GUIStyle(EditorStyles.wordWrappedLabel) { padding = new RectOffset(8, 8, 8, 8) };
 			GUILayout.Space(8);
 			var text = new GUIContent(message);
 			var width = Mathf.Max(60, EditorGUIUtility.currentViewWidth - 60);
 			var height = Mathf.Max(42, _statusMessageStyle.CalcHeight(text, width));
-			var rect = EditorGUILayout.GetControlRect(false, height);
+			var schemaHeight = schemaCount > 0 ? _statusMessageStyle.CalcHeight(new GUIContent(schemaMessage), width) : 0;
+			var buttonHeight = canReviewSchema ? EditorGUIUtility.singleLineHeight + 4 : 0;
+			var rect = EditorGUILayout.GetControlRect(false, height + schemaHeight + buttonHeight);
 			EditorGUI.DrawRect(rect, conflict || invalidCount > 0 ? new Color(.7f, .15f, .15f, .24f) : new Color(.15f, .4f, .75f, .24f));
 			var icon = conflict || invalidCount > 0 ? "console.erroricon.sml" : hasChanges || schemaCount > 0 ? "console.warnicon.sml" : "console.infoicon.sml";
 			GUI.Label(new Rect(rect.x + 6, rect.y + 8, 20, 20), onlyIncoming && invalidCount == 0 && schemaCount == 0
 				? new GUIContent(ContentWindow_TooltipsHelper.GetStatusIcon(entries[0]))
 				: EditorGUIUtility.IconContent(icon));
 			rect.xMin += 28;
+			if (schemaCount > 0)
+			{
+				GUI.Label(new Rect(rect.x, rect.y, rect.width, schemaHeight), schemaMessage, _statusMessageStyle);
+				rect.yMin += schemaHeight;
+				if (canReviewSchema)
+				{
+					var service = BeamEditorContext.Default.CliContentService;
+					var id = entries[0].FullId;
+					using (new EditorGUI.DisabledScope(service.CurrentProgress.IsActive || EditorApplication.isCompiling || entries[0].StatusEnum == ContentStatus.Deleted))
+						if (GUI.Button(new Rect(rect.x + 8, rect.y, rect.width - 16, EditorGUIUtility.singleLineHeight), "Review schema changes\u2026"))
+							ContentSchemaWindow.Open(service, id);
+					rect.yMin += buttonHeight;
+				}
+			}
 			GUI.Label(rect, text, _statusMessageStyle);
 		}
 
