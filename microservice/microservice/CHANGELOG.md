@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** `IFederatedPlayerInit.CreatePlayer` takes a `FederatedPlayerAccount` instead of the generated `Account`. The new type holds the fields the platform sends to player init (id, email, gamer tags, third parties, external identities, created and updated times, user name, country, language, role string, device ids, realm), with its own types for gamer tags, third parties and external identities, so the contract no longer changes with the account API's models. Implementations change the parameter type; the field names are the same.
 
 ### Fixed
+- A JSON serializer built from `UnitySerializationSettings` still runs `ISerializationCallbackReceiver.OnBeforeSerialize` after a failed write. The callback converter used to stay removed from a reused serializer when a value's serialization threw.
 - A request whose reply never arrives no longer waits forever, and a dropped connection fails the requests sent on it.
 - Replies and event acknowledgements no longer wait for re-authentication, and are only sent on the connection their request or event came from.
 - The authentication daemon no longer stalls when a `gateway/nonce` or `gateway/auth` reply is lost.
