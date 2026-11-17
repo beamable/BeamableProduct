@@ -131,7 +131,7 @@ namespace Beamable.Editor.UI.ContentWindow
                 }
                 else GUILayout.FlexibleSpace();
                 GUILayout.Label("Removed fields and values are deleted. Missing fields get defaults.", EditorStyles.wordWrappedLabel);
-                GUILayout.Label("No value conversion or transfer. C# scripts stay unchanged.", EditorStyles.wordWrappedLabel);
+                GUILayout.Label("C# scripts stay unchanged.", EditorStyles.wordWrappedLabel);
                 GUILayout.Space(8);
                 using (new EditorGUILayout.HorizontalScope())
                 {

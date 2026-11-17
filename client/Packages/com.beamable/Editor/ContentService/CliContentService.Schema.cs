@@ -17,8 +17,12 @@ namespace Beamable.Editor.ContentService
         {
             public readonly ContentObject Content;
             public readonly string Path, FileJson, ModelProperties;
-            public LoadedContent(ContentObject content, string path, string fileJson, string modelProperties)
-            { Content = content; Path = path; FileJson = fileJson; ModelProperties = modelProperties; }
+            public readonly object LoadIdentity;
+            public LoadedContent(ContentObject content, string path, string fileJson, string modelProperties, object loadIdentity = null)
+            {
+                Content = content; Path = path; FileJson = fileJson; ModelProperties = modelProperties;
+                LoadIdentity = loadIdentity ?? new object();
+            }
         }
 
         private readonly Dictionary<string, LoadedContent> _loadedContent = new();
@@ -38,13 +42,16 @@ namespace Beamable.Editor.ContentService
                 if (previous != null) await previous;
                 if (scope != GetContentScopeKey()) throw new InvalidOperationException("Realm or namespace changed before this edit was saved.");
                 if (!CanWriteContent(contentId)) return;
-                if (!_loadedContent.TryGetValue(key, out var current) || current.Content != loaded.Content)
+                // A reload can reuse the ScriptableObject. Only our completed saves may advance
+                // the baseline of an already queued edit; a reload requires a fresh edit.
+                if (!_loadedContent.TryGetValue(key, out var current) || current.Content != loaded.Content ||
+                    !ReferenceEquals(current.LoadIdentity, loaded.LoadIdentity))
                     throw new InvalidOperationException("Content was reloaded. Select the current item before editing.");
                 if (current.ModelProperties == properties) return;
                 await WriteContentProperties(contentId, properties, current);
                 if (scope == GetContentScopeKey() && CanWriteContent(contentId) && File.Exists(current.Path) &&
                     _loadedContent.TryGetValue(key, out var active) && ReferenceEquals(active, current))
-                    _loadedContent[key] = new LoadedContent(current.Content, current.Path, File.ReadAllText(current.Path), properties);
+                    _loadedContent[key] = new LoadedContent(current.Content, current.Path, File.ReadAllText(current.Path), properties, current.LoadIdentity);
             }
             finally
             {

@@ -2,7 +2,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization.Json;
 using System.Text;
+using System.Xml;
+using System.Xml.Linq;
 using Beamable.Serialization.SmallerJSON;
 
 namespace Beamable.Editor.UI.ContentWindow
@@ -22,9 +25,9 @@ namespace Beamable.Editor.UI.ContentWindow
 
         internal ContentSchemaPreview(string originalJson, string proposedProperties)
         {
-            if (!(Json.Deserialize(originalJson) is ArrayDict root) ||
+            if (!(ReadJson(originalJson) is ArrayDict root) ||
                 !root.TryGetValue("properties", out var properties) || !(properties is ArrayDict before) ||
-                !(Json.Deserialize(proposedProperties) is ArrayDict after))
+                !(ReadJson(proposedProperties) is ArrayDict after))
                 throw new InvalidOperationException("Unable to compare content properties. Refresh and review this item again.");
             CurrentJson = Json.FormatJson(Serialize(before));
             ProposedJson = Json.FormatJson(Serialize(after));
@@ -41,6 +44,32 @@ namespace Beamable.Editor.UI.ContentWindow
             dict.TryGetValue("data", out var data) ? data : value;
         private static string Escape(string key) => key.Replace("~", "~0").Replace("/", "~1");
         private static string Serialize(object value) => Json.Serialize(value, new StringBuilder());
+
+        private static object ReadJson(string json)
+        {
+            // The framework reader exposes number tokens as text. SmallerJSON's normal
+            // deserialization converts them to long/double, losing precision in a review.
+            using var reader = JsonReaderWriterFactory.CreateJsonReader(Encoding.UTF8.GetBytes(json), XmlDictionaryReaderQuotas.Max);
+            return ReadValue(XElement.Load(reader, LoadOptions.PreserveWhitespace));
+        }
+
+        private static object ReadValue(XElement element)
+        {
+            switch ((string)element.Attribute("type"))
+            {
+                case "object":
+                    var result = new ArrayDict();
+                    foreach (var child in element.Elements())
+                        result.Add((string)child.Attribute("item") ?? child.Name.LocalName, ReadValue(child));
+                    return result;
+                case "array": return element.Elements().Select(ReadValue).ToList();
+                case "number": return new RawJsonProvider { Json = element.Value };
+                case "string": return element.Value;
+                case "boolean": return element.Value == "true";
+                case "null": return null;
+                default: throw new InvalidOperationException("Unable to read content properties for review.");
+            }
+        }
 
         private void Compare(string path, object before, bool hasBefore, object after, bool hasAfter)
         {

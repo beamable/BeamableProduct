@@ -827,6 +827,55 @@ namespace Beamable.Editor.Tests
             finally { UnityEngine.Object.DestroyImmediate(config); }
         }
 
+        [TestCase(false)]
+        [TestCase(true)]
+        public void Reload_rejects_queued_edits_even_when_it_reuses_the_same_object(bool firstSaveFails)
+        {
+            PrepareFile();
+            var config = ScriptableObject.CreateInstance<global::Beamable.Content.ContentConfiguration>();
+            try
+            {
+                Set(_service, "_contentConfiguration", config);
+                var loader = typeof(CliContentService).GetMethod("LoadContentObject", Fields);
+                var entry = _service.EntriesCache[_content.Id];
+                _content.amount = 2;
+                File.WriteAllText(_path, ClientContentSerializer.SerializeContent(_content));
+                loader.Invoke(_service, new object[] { entry, _content });
+                _content.amount = 3;
+                Exception firstError = null, queuedError = null;
+                Save().Error(error => firstError = error);
+                _content.amount = 4;
+                Save().Error(error => queuedError = error);
+                Assert.That(_commands.Properties.Count, Is.EqualTo(1));
+
+                // An external write and watcher reload arrive before the first CLI completion.
+                _content.amount = 99;
+                var externalJson = ClientContentSerializer.SerializeContent(_content);
+                File.WriteAllText(_path, externalJson);
+                loader.Invoke(_service, new object[] { entry, _content });
+                if (firstSaveFails) _commands.Properties[0].Completion.CompleteError(new InvalidOperationException("Save failed"));
+                else _commands.Properties[0].Completion.CompleteSuccess();
+
+                Assert.That(firstError != null, Is.EqualTo(firstSaveFails));
+                Assert.That(queuedError, Is.TypeOf<InvalidOperationException>());
+                Assert.That(queuedError.Message, Does.Contain("Content was reloaded"));
+                Assert.That(_commands.Properties.Count, Is.EqualTo(1), "Do not rebase the queued 2->4 edit onto 99.");
+                Assert.That(_commands.Tags, Is.Empty);
+                Assert.That(File.ReadAllText(_path), Is.EqualTo(externalJson));
+                Assert.That(_content.amount, Is.EqualTo(99));
+
+                // A fresh edit after the reload must still work and use the new baseline.
+                _content.amount = 100;
+                var fresh = Save();
+                Assert.That(_commands.Properties.Count, Is.EqualTo(2));
+                Assert.That(_commands.PropertyArgs[1].modelProperties[0], Does.Contain("99"));
+                File.WriteAllText(_path, "{\"properties\":" + _commands.PropertyArgs[1].contentProperties[0] + ",\"tags\":[\"old\"]}");
+                _commands.Properties[1].Completion.CompleteSuccess();
+                fresh.GetResult();
+            }
+            finally { UnityEngine.Object.DestroyImmediate(config); }
+        }
+
         [Test]
         public void Failed_loaded_tag_edit_is_retried_and_successful_repeat_is_a_no_op()
         {
