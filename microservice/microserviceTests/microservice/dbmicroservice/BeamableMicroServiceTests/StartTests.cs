@@ -891,13 +891,15 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                 .AddMessageHandler(
                    MessageMatcher.WithReqId(3).WithStatus(200),
                    MessageResponder.NoResponse(),
-                   MessageFrequency.OnlyOnce()
+                   MessageFrequency.OnlyOnce(),
+                   // the event's ack is a reply, which the gateway accepts before authentication finishes.
+                   requiresAuth: false
                 );
             }), contentResolver);
 
             var startUpTask = ms.Start<SimpleMicroservice>(new TestArgs());
 
-            // send content changed notification...
+            // send content changed notification... while startup may still be authenticating.
             testSocket.SendToClient(ClientRequest.Event("content.manifest", 3, new { }));
 
 
@@ -1149,12 +1151,10 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 	                    {
 		                    email = "fakeEmail"
 	                    }),
-	                    MessageFrequency.OnlyOnce())
-                    .AddMessageHandler(
-                       MessageMatcher.WithReqId(1).WithStatus(200).WithPayload<string>(n => n == "fakeEmail"),
-                       MessageResponder.NoResponse(),
-                       MessageFrequency.OnlyOnce()
-                    );
+	                    MessageFrequency.OnlyOnce());
+                    // No handler for the reply to request 1: it arrived on the first connection, and the gateway matches
+                    // a reply to the session that sent the request, so it must not be sent on this one. A reply sent
+                    // here would fail the test as an unhandled message.
                 }
 
                 connectionIndex++;
