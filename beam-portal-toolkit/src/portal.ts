@@ -82,16 +82,77 @@ export interface ExtensionConfig {
   account: ExtensionObservable<{ id: string; email: string; role: string } | null>;
 }
 
+/** How a site lays out its mounts. Set once, in the site's declaration; code can't change it. */
+export type SitePresentation = 'stack' | 'tabs' | 'route-tabs';
+
+/**
+ * A site this extension renders and offers to others: one entry of
+ * `beamable.sites` in its package.json, copied by the CLI into
+ * `metadata.json`. Place it on screen with `<BeamExtensionSite site="<id>">`;
+ * other extensions fill it by listing the id in a mount's `siteIds`. No code
+ * is generated from it: the portal resolves the id at render.
+ *
+ * @example
+ *   "sites": [
+ *     { "id": "campaign-offer", "presentation": "stack",
+ *       "description": "An offer a campaign lane sends with its message." }
+ *   ]
+ */
+export interface SiteDeclaration {
+  /**
+   * Names one kind of place across a Host. Use a domain name
+   * (`campaign-offer`, not `offer`) so two owners don't pick one id for
+   * different things. A site has no version: a change old mounts can't follow
+   * goes under a new id (`campaign-offer-v2`) rendered beside the old one.
+   */
+  id: string;
+  /**
+   * - `stack`: every mount, one after another.
+   * - `tabs`: one tab per mount; the active tab is kept in the component.
+   * - `route-tabs`: one tab per mount; the active tab follows the URL through
+   *   each mount's relative `page`. At most one per page, and the owner's own
+   *   page must end in `/*`.
+   *
+   * A tabs or route-tabs site with a single match renders as a stack.
+   */
+  presentation: SitePresentation;
+  /** Shown by the CLI and in every error about the site. Optional. */
+  description?: string;
+}
+
 /**
  * A single mount declaration from the extension's manifest. An extension
  * can declare multiple mounts via `Properties.mounts`; the portal mounts
  * the bundle once per matching entry and passes the matched entry on
- * `context.mount` so the extension can branch on `(selector, args)` to
+ * `context.mount` so the extension can branch on `(id, site, args)` to
  * render different UI at each site.
  */
 export interface ExtensionMountPoint {
-  page: string;
-  selector: string;
+  /**
+   * Names the mount within its extension. Optional in the manifest: when
+   * absent the portal derives it from the first site id, plus `:` and the
+   * page when there is one (`extension-page:development/config`). Always set
+   * on `context.mount`. Declare it only when your code branches on it.
+   */
+  id?: string;
+  /**
+   * The site ids this mount fills, e.g. `["campaign-offer"]`; a page lists
+   * `["extension-page"]`. Bare ids: no `#`, no `@`, no parent. The mount shows
+   * in every instance of these sites, on any page.
+   */
+  siteIds: string[];
+  /**
+   * For `extension-page` (and `nav-left-low`) mounts, the URL pattern
+   * relative to the Host (`development/player-profile/:playerId/*`). For a
+   * `route-tabs` site, the tab's path relative to the route where the site
+   * renders (`stats`). Not used by `stack` and `tabs` sites.
+   */
+  page?: string;
+  /**
+   * Set by the portal on `context.mount` and {@link CandidateMetadata.mount}:
+   * the site id this instance renders in. Never written in a manifest.
+   */
+  site?: string;
   navLabel?: string;
   navGroup?: string;
   navGroupOrder?: number;
@@ -112,13 +173,19 @@ export interface ExtensionMountPoint {
    */
   navColor?: string;
   args?: Record<string, unknown>;
+  /**
+   * Conditional visibility. Each key is a dot-path into the signed-in account
+   * (e.g. `"account.role"`), each value a regex alternation
+   * (`"developer|admin"`); the mount shows only when every filter matches.
+   */
+  filters?: Record<string, string>;
 }
 
 /**
- * A handle to one of this extension's own mount sites, accepted by
- * {@link ExtensionContext.getMountSiteCandidates}: either the site's
- * `selector` string, or the mount-site element itself — the
- * `<BeamExtensionSite>`'s DOM element, e.g. a React ref's `.current`.
+ * A handle to one of this extension's own sites, accepted by
+ * {@link ExtensionContext.getMountSiteCandidates}: either the site id, or the
+ * site element itself (the `<BeamExtensionSite>`'s DOM element, e.g. a React
+ * ref's `.current`).
  */
 export type MountSiteHandle = string | HTMLElement;
 
@@ -130,13 +197,13 @@ export type MountSiteHandle = string | HTMLElement;
 export interface CandidateMetadata {
   /** The candidate extension's name / beam id. */
   beamId: string;
-  /** The mount entry that matched this site — `selector`, `args`, nav*, … */
+  /** The mount entry that matched this site: `id`, `site`, `siteIds`, `args`, nav*, … */
   mount: ExtensionMountPoint;
   /** The `@beamable/portal-toolkit` version the candidate was built against. */
   toolkitVersion: string;
   /** `true` for a locally-running dev build, `false` for a deployed one. */
   isLocal: boolean;
-  /** Selectors this candidate itself exposes via `<BeamExtensionSite>`. */
+  /** The site ids this candidate itself declares in `beamable.sites`. */
   sites: string[];
 }
 
@@ -175,9 +242,9 @@ export interface BaseExtensionContext<TBeam> extends Map<any, any> {
   navigate: ExtensionNavigate;
   /**
    * The specific mount entry from the manifest that triggered this mount
-   * call — see {@link ExtensionMountPoint}. Read `mount.selector` or
-   * `mount.args` to branch when the same bundle is bound to multiple
-   * mount sites.
+   * call — see {@link ExtensionMountPoint}. `mount.id` (always set) and
+   * `mount.site` tell the instances apart when the same bundle fills several
+   * sites or pages.
    */
   mount: ExtensionMountPoint;
   /**
@@ -221,14 +288,14 @@ export interface BaseExtensionContext<TBeam> extends Map<any, any> {
   storage: ExtensionStorage;
   /**
    * Discover the extensions that could mount at one of THIS extension's own
-   * mount sites — pass the site's `selector` (or the site element) and get a
+   * sites: pass the site id (or the site element) and get a
    * reactive list of candidates with their metadata. Use it to build UI (e.g.
    * a "which view" dropdown) or to compute an `include` list for the matching
    * `<BeamExtensionSite>`. Reactive: `subscribe` to react as extensions
    * deploy, enable, or disable. See {@link CandidateMetadata}.
    *
    * @example
-   *   const obs = context.getMountSiteCandidates('detail-tabs');
+   *   const obs = context.getMountSiteCandidates('campaign-offer');
    *   const ids = obs.get().map((c) => c.beamId);   // e.g. to seed `include`
    */
   getMountSiteCandidates(site: MountSiteHandle): ExtensionObservable<CandidateMetadata[]>;

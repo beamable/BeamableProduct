@@ -51,7 +51,7 @@ public class PortalExtensionDiscoveryTests
 	public void FlaggedExtension_WithABadValue_IsLoggedWithFileAndPath()
 	{
 		var path = WritePackage("bad", @"{ ""name"": ""bad-ext"", ""beamable"": { ""portalExtension"": true,
-			""mounts"": [ { ""page"": ""x"", ""selector"": ""#extension-page"", ""navGroupOrder"": null } ] } }");
+			""mounts"": [ { ""page"": ""x"", ""siteIds"": [ ""extension-page"" ], ""navGroupOrder"": null } ] } }");
 		using var capture = new LogCapture();
 
 		var info = BeamoLocalSystem.TryReadPortalExtensionPackage(path);
@@ -67,7 +67,7 @@ public class PortalExtensionDiscoveryTests
 	public void FlaggedExtension_WithArgsThatAreNotAnObject_IsLogged()
 	{
 		var path = WritePackage("bad-args", @"{ ""name"": ""bad-args"", ""beamable"": { ""portalExtension"": true,
-			""mounts"": [ { ""page"": ""x"", ""selector"": ""#extension-page"", ""args"": [ 1 ] } ] } }");
+			""mounts"": [ { ""page"": ""x"", ""siteIds"": [ ""extension-page"" ], ""args"": [ 1 ] } ] } }");
 		using var capture = new LogCapture();
 
 		Assert.That(BeamoLocalSystem.TryReadPortalExtensionPackage(path), Is.Null);
@@ -107,12 +107,12 @@ public class PortalExtensionDiscoveryTests
 	{
 		var path = WritePackage("ext", @"{ ""name"": ""offer-ext"", ""beamable"": {
 			""portalExtension"": true,
-			""sites"": [ { ""id"": ""campaign-offer"", ""presentation"": ""stack"" } ],
+			""sites"": [ { ""id"": ""campaign-offer"", ""presentation"": ""stack"", ""input"": { ""type"": ""object"" } } ],
 			""mounts"": [
-				{ ""siteIds"": [ ""campaign-offer"" ], ""selector"": ""#offer"",
+				{ ""siteIds"": [ ""campaign-offer"" ],
 				  ""args"": { ""federationId"": ""beamable_reward"", ""offerContractVersion"": 2, ""nested"": { ""on"": true } },
 				  ""static"": { ""federationId"": ""beamable_reward"" } },
-				{ ""page"": ""no-args"", ""selector"": ""#extension-page"" }
+				{ ""page"": ""no-args"", ""siteIds"": [ ""extension-page"" ] }
 			] } }");
 
 		var def = ProjectContextUtil.FindPortalExtensionProjects(_root, new[] { path }).Single();
@@ -120,11 +120,12 @@ public class PortalExtensionDiscoveryTests
 		observer.CreateMetaDataFile();
 
 		var properties = (JObject)JObject.Parse(File.ReadAllText(observer.MetadataPath))["Properties"];
-		Assert.That(properties["sites"]?[0]?["id"]?.ToString(), Is.EqualTo("campaign-offer"), "unknown package field");
+		Assert.That(properties["sites"]?[0]?["id"]?.ToString(), Is.EqualTo("campaign-offer"));
+		Assert.That(properties["sites"]?[0]?["input"]?["type"]?.ToString(), Is.EqualTo("object"), "unknown site field");
 
 		var mount = (JObject)properties["mounts"][0];
-		Assert.That(mount["siteIds"]?[0]?.ToString(), Is.EqualTo("campaign-offer"), "unknown mount field");
-		Assert.That(mount["static"]?["federationId"]?.ToString(), Is.EqualTo("beamable_reward"));
+		Assert.That(mount["siteIds"]?[0]?.ToString(), Is.EqualTo("campaign-offer"));
+		Assert.That(mount["static"]?["federationId"]?.ToString(), Is.EqualTo("beamable_reward"), "unknown mount field");
 		Assert.That(mount["args"]["offerContractVersion"].Type, Is.EqualTo(JTokenType.Integer), "a number stays a number");
 		Assert.That((int)mount["args"]["offerContractVersion"], Is.EqualTo(2));
 		Assert.That(mount["args"]["nested"]["on"].Type, Is.EqualTo(JTokenType.Boolean));

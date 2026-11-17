@@ -448,8 +448,9 @@ public partial class BeamoLocalSystem
 [Serializable]
 public class PortalExtensionMountProperties
 {
+	public const string KEY_ID = "id";
+	public const string KEY_SITE_IDS = "siteIds";
 	public const string KEY_PAGE = "page";
-	public const string KEY_SELECTOR = "selector";
 	public const string KEY_NAV_GROUP = "navGroup";
 	public const string KEY_NAV_LABEL = "navLabel";
 	public const string KEY_NAV_ICON = "navIcon";
@@ -459,13 +460,22 @@ public class PortalExtensionMountProperties
 	public const string KEY_NAV_LABEL_ORDER = "navLabelOrder";
 	public const string KEY_FILTERS = "filters";
 
-	// For #extension-page mounts the page path defines the hub hierarchy: a single segment
+	// Names the mount within its extension. Optional: the portal derives one when absent
+	// (the first site id, plus ":" and the page when there is one).
+	[JsonProperty(KEY_ID, NullValueHandling = NullValueHandling.Ignore)]
+	[JsonConverter(typeof(OptionalConverter))]
+	public OptionalString Id;
+
+	// The site ids this mount fills, bare (no "#", no "@"); a page mount lists ["extension-page"].
+	[JsonProperty(KEY_SITE_IDS, NullValueHandling = NullValueHandling.Ignore)]
+	public List<string> SiteIds;
+
+	// For extension-page mounts the page path defines the hub hierarchy: a single segment
 	// declares a hub that is a full page of its own, and a nested path
 	// places that extension inside the "cars" hub. The nav group is a separate,
-	// additional way to organize extensions inside a given hub.
-	[JsonProperty(KEY_PAGE)] public string Page;
-
-	[JsonProperty(KEY_SELECTOR)] public string Selector;
+	// additional way to organize extensions inside a given hub. A route-tabs mount's page is
+	// relative to the route its site renders at; stack and tabs mounts have none.
+	[JsonProperty(KEY_PAGE, NullValueHandling = NullValueHandling.Ignore)] public string Page;
 
 	// Optional grouping used to organize extensions within a hub's navigation.
 	[JsonProperty(KEY_NAV_GROUP)]
@@ -552,7 +562,40 @@ public class PortalExtensionPackageProperties
 	/// </summary>
 	[JsonProperty("mounts")] public List<PortalExtensionMountProperties> Mounts;
 
-	// Package fields this model doesn't declare (e.g. "sites"), carried into metadata.json unchanged.
+	/// <summary>
+	/// The sites this extension renders (with <c>&lt;BeamExtensionSite site="…"&gt;</c>), declared by id.
+	/// Checked at build by <see cref="cli.Services.PortalExtension.PortalExtensionSiteDeclarationChecks"/>.
+	/// </summary>
+	[JsonProperty("sites", NullValueHandling = NullValueHandling.Ignore)]
+	public List<PortalExtensionSiteDeclaration> Sites;
+
+	// Package fields this model doesn't declare, carried into metadata.json unchanged.
+	[JsonExtensionData] public IDictionary<string, JToken> Extra;
+}
+
+/// <summary>
+/// One entry of <c>beamable.sites</c>: a typed kind of place this extension renders. Fields this model
+/// doesn't declare (the site's schemas, from Step 2) pass through to metadata.json unchanged.
+/// </summary>
+[Serializable]
+public class PortalExtensionSiteDeclaration
+{
+	public const string PRESENTATION_STACK = "stack";
+	public const string PRESENTATION_TABS = "tabs";
+	public const string PRESENTATION_ROUTE_TABS = "route-tabs";
+
+	public static readonly string[] Presentations = { PRESENTATION_STACK, PRESENTATION_TABS, PRESENTATION_ROUTE_TABS };
+
+	// The portal's page site: a full-page mount lists it, with a page.
+	public const string ExtensionPageSiteId = "extension-page";
+
+	[JsonProperty("id")] public string Id;
+
+	[JsonProperty("presentation")] public string Presentation;
+
+	[JsonProperty("description", NullValueHandling = NullValueHandling.Ignore)]
+	public string Description;
+
 	[JsonExtensionData] public IDictionary<string, JToken> Extra;
 }
 

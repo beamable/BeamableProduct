@@ -19,10 +19,9 @@ public class ExtensionBuildMetaData
 	public PortalExtensionPackageProperties Properties;
 
 	/// <summary>
-	/// The selector names this extension exposes via <c>&lt;BeamExtensionSite selector="..." /&gt;</c>
-	/// (e.g. <c>top</c>, <c>bottom</c>, <c>B-top</c>), scanned once at build time. Combined with
-	/// <see cref="Properties"/>'s <c>mount.page</c>, this tells the CLI/Portal which selectors live at
-	/// which URL. May be null/empty (or absent entirely in metadata built before this field existed).
+	/// The ids of the sites this extension declares (<c>beamable.sites[].id</c>) and renders with
+	/// <c>&lt;BeamExtensionSite site="…" /&gt;</c>. Filled from the declarations at build, never from the
+	/// source. May be null/empty (or absent entirely in metadata built before this field existed).
 	/// </summary>
 	public List<string> ExtensionSites;
 }
@@ -188,6 +187,21 @@ public class PortalExtensionObserver
 			return;
 		}
 
+		// An invalid site declaration fails a build that compiled, like a compile error: the portal shows it, and the
+		// terminal says why.
+		var declarationError = PortalExtensionSiteDeclarationChecks.GetErrorMessage(_metaData.Name, _metaData.Properties);
+		if (declarationError != null)
+		{
+			Log.Error(declarationError);
+			_buildHistory.Add(new PortalExtensionBuild()
+			{
+				IsError = true,
+				ErrorMessage = declarationError,
+				Checksum = Guid.NewGuid().ToString()
+			});
+			return;
+		}
+
 		try
 		{
 			var build = CreateAppBuildData();
@@ -252,8 +266,8 @@ public class PortalExtensionObserver
 			Name = ExtensionMetaData.Name,
 			ToolkitVersion = ExtensionMetaData.GetToolkitVersion(),
 			Properties = ExtensionMetaData.Properties,
-			// Scan the source once, at build, so listing/creating extensions later never has to.
-			ExtensionSites = RemotePortalConfigService.ScanExtensionSiteSelectors(ExtensionMetaData.AbsolutePath)
+			// From the declarations only, never a scan of the source: this also runs after a failed build.
+			ExtensionSites = GetDeclaredSiteIds(ExtensionMetaData.Properties)
 		};
 
 		var metadataContentJson = JsonConvert.SerializeObject(metadataContent, Formatting.Indented);
@@ -286,6 +300,16 @@ public class PortalExtensionObserver
 			throw new CliException(
 				$"Failed to write the portal extension metadata file at [{MetadataPath}]. Message = [{e.Message}] StackTrace = [{e.StackTrace}]");
 		}
+	}
+
+	/// <summary>The ids of the sites the extension declares (<c>beamable.sites[].id</c>), once each, in order.</summary>
+	public static List<string> GetDeclaredSiteIds(PortalExtensionPackageProperties properties)
+	{
+		return (properties?.Sites ?? new List<PortalExtensionSiteDeclaration>())
+			.Select(s => s?.Id)
+			.Where(id => !string.IsNullOrEmpty(id))
+			.Distinct()
+			.ToList();
 	}
 
 	public PortalExtensionBuild CreateAppBuildData()

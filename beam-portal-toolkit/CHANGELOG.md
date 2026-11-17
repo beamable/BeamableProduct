@@ -11,11 +11,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`context.scope`.** Every mount context carries the scope of its Host: `'realm'` on
   `ExtensionContext`, `'zone'` on `ZoneExtensionContext`, the same value the window registration
   already carries. Narrow on it to reach `realm` or `zid`.
+- **Declared sites.** `SiteDeclaration` (`id`, `presentation`, `description?`) and `SitePresentation`
+  (`'stack' | 'tabs' | 'route-tabs'`) type the `beamable.sites` entries an extension writes in its
+  package.json for the sites it renders. No code is generated from them; the portal resolves a site
+  id against its owner's declaration at render.
+- **`ExtensionMountPoint` gains `id?`, `siteIds`, `site?` and `filters?`.** `context.mount.id` is
+  always set (declared, or derived from the first site id and page) and `context.mount.site` names
+  the site id the instance renders in.
+
+### Removed (breaking)
+- **`ExtensionMountPoint.selector`.** A mount lists the site ids it fills in `siteIds`
+  (`["extension-page"]`, `["campaign-offer"]`): bare ids, no `#`, and no parent's Name in `page`.
+  A mount shows in every instance of its sites. `page` is now optional: a URL pattern for
+  `extension-page`, relative to the owner's route for a `route-tabs` site (`"stats"`), unused
+  otherwise.
+- **`<BeamExtensionSite selector mountKind>`.** It takes `site: string | string[]`, an id this
+  extension declares; the presentation comes from the declaration only.
 
 ### Changed
 - **Host-relative paths.** The `ExtensionNavigate` and `params` docs now describe paths relative to
   the Host the extension is mounted in, a realm or a zone. A zone extension's relative
   `context.navigate('foo')` resolves under `/<cid>/zones/<zid>/`, as the portal already did.
+- **`CandidateMetadata.sites`** lists the site ids the candidate declares, and
+  `getMountSiteCandidates` / `useMountSiteCandidates` take a site id: they return the mounts listing
+  it in `siteIds`.
 
 ## [0.5.0] - 2026-08-04
 

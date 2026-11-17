@@ -6,41 +6,45 @@ public class PortalExtensionOptionsResult
 {
     public List<PageExtensionOption> pageExtensions;
     public List<ComponentExtensionOption> componentExtensions;
+    /// <summary>Every site in the Host, once each, with who renders it.</summary>
+    public List<SiteOption> sites;
 }
 
 /// <summary>
 /// Represents a full-page mount slot. Set --mount-page to routePrefix + your custom route segment.
-/// The --mount-selector is not required; it is automatically assigned to autoSelector.
+/// No --site is needed: a page mount lists the siteIds here (["extension-page"]).
 /// </summary>
 public class PageExtensionOption
 {
     public string routePrefix;
-    public string autoSelector;
+    public List<string> siteIds;
 }
 
 /// <summary>
-/// Represents a component slot on an existing Portal page. Slots contributed by other running
-/// extensions (their <c>&lt;BeamExtensionSite&gt;</c> declarations) also appear here — they are just
-/// additional uniquely-named selectors on the site at the URL where that extension renders.
-/// Set --mount-page to path and --mount-selector to one of the entries in selectors.
+/// The sites rendered at a page of the Portal, including those other running extensions declare
+/// (rendered at the URL where that extension renders). Pass one of the siteIds as --site.
 /// </summary>
 public class ComponentExtensionOption
 {
     public string path;
-    public List<ComponentSelectorOption> selectors;
+    public List<string> siteIds;
 }
 
-public class ComponentSelectorOption
+/// <summary>One site, listed once: pass its id as --site to mount into every instance of it.</summary>
+public class SiteOption
 {
-    public string selector;
-    public string type;
+    public string id;
+    public string presentation;
+    public string description;
+    /// <summary>The extensions that render the site, or <c>portal</c> for a portal site.</summary>
+    public List<string> renderedBy;
 }
 
 public class ListPortalExtensionOptionsCommand
     : AtomicCommand<ListPortalExtensionOptionsCommandArgs, PortalExtensionOptionsResult>
 {
     public ListPortalExtensionOptionsCommand()
-        : base("list-extension-options", "List all valid portal extension mount points — pages and component slots — so you can pick the right --mount-page and --mount-selector values")
+        : base("list-extension-options", "List all valid portal extension mount points — pages and sites — so you can pick the right --mount-page and --site values")
     {
     }
 
@@ -50,30 +54,38 @@ public class ListPortalExtensionOptionsCommand
     {
         var configService = args.DependencyProvider.GetService<IRemotePortalConfigService>();
         var config = await configService.GetRemotePortalConfig(args);
+        return BuildOptions(config);
+    }
 
+    public static PortalExtensionOptionsResult BuildOptions(RemotePortalConfiguration config)
+    {
         const string pathMatchSuffix = "!pathMatch";
         var pageExtensions = new List<PageExtensionOption>();
         var componentExtensions = new List<ComponentExtensionOption>();
 
         foreach (var site in config.mountSites)
         {
-            if (site.path.EndsWith(pathMatchSuffix))
+            // A page site and a component site can share one route (extension-page and nav-left-low
+            // both render at !hub/!pathMatch), so split by each entry's type, not by the path.
+            var entries = site.selectors.Where(s => !string.IsNullOrEmpty(s.selector)).ToList();
+            var pageIds = entries.Where(s => s.type == "page").Select(s => s.selector).ToList();
+            var componentIds = entries.Where(s => s.type != "page").Select(s => s.selector).ToList();
+
+            if (pageIds.Count > 0)
             {
-                var prefix = site.path[..^pathMatchSuffix.Length];
                 pageExtensions.Add(new PageExtensionOption
                 {
-                    routePrefix = prefix,
-                    autoSelector = site.selectors.Count > 0 ? site.selectors[0].selector : string.Empty
+                    routePrefix = site.path.EndsWith(pathMatchSuffix) ? site.path[..^pathMatchSuffix.Length] : site.path,
+                    siteIds = pageIds
                 });
             }
-            else
+
+            if (componentIds.Count > 0)
             {
                 componentExtensions.Add(new ComponentExtensionOption
                 {
                     path = site.path,
-                    selectors = site.selectors
-                        .Select(s => new ComponentSelectorOption { selector = s.selector, type = s.type })
-                        .ToList()
+                    siteIds = componentIds
                 });
             }
         }
@@ -81,7 +93,16 @@ public class ListPortalExtensionOptionsCommand
         return new PortalExtensionOptionsResult
         {
             pageExtensions = pageExtensions,
-            componentExtensions = componentExtensions
+            componentExtensions = componentExtensions,
+            sites = (config.sites ?? new List<RemotePortalConfiguration.SiteConfig>())
+                .Select(s => new SiteOption
+                {
+                    id = s.id,
+                    presentation = s.presentation,
+                    description = s.description,
+                    renderedBy = s.renderedBy?.ToList() ?? new List<string>()
+                })
+                .ToList()
         };
     }
 }
