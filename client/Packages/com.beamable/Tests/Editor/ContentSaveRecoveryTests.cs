@@ -15,6 +15,7 @@ using Beamable.Common.Dependencies;
 using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.Content.UI;
 using Beamable.Editor.ContentService;
+using Beamable.Editor.UI.ContentWindow;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -617,6 +618,139 @@ namespace Beamable.Editor.Tests
                 Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(SchemaDifference.None));
             }
             finally { UnityEngine.Object.DestroyImmediate(config); }
+        }
+
+        [Test]
+        public void Schema_comparison_uses_serializer_payload_and_shows_preserved_metadata_separately()
+        {
+            PrepareFile();
+            var original = ClientContentSerializer.SerializeContent(_content)
+                .Replace("\"properties\":{", "\"properties\":{\"future\":{\"data\":37},");
+            File.WriteAllText(_path, original);
+            var preview = _service.PreviewSchemaMigration(_content.Id);
+            var comparison = new ContentSchemaPreview(preview.OriginalJson, preview.ProposedProperties);
+            var removed = comparison.Rows.Single(r => r.Path == "/future");
+            Assert.That(removed.Kind, Is.EqualTo(ContentSchemaPreview.Change.Removed));
+            Assert.That(removed.Before, Is.EqualTo("37"));
+            Assert.That(removed.After, Is.EqualTo("Removed"));
+            Assert.That(comparison.Rows.Single(r => r.Path == "/amount").Kind, Is.EqualTo(ContentSchemaPreview.Change.Unchanged));
+            Assert.That(comparison.CurrentJson, Does.Contain("future"));
+            Assert.That(comparison.ProposedJson, Does.Not.Contain("future"));
+            Assert.That(File.ReadAllText(_path), Is.EqualTo(original));
+            Assert.That(_commands.Properties, Is.Empty);
+        }
+
+        [Test]
+        public void Schema_review_loads_an_unselected_item_without_writing()
+        {
+            PrepareFile();
+            var original = ClientContentSerializer.SerializeContent(_content);
+            File.WriteAllText(_path, original);
+            var entry = _service.EntriesCache[_content.Id];
+            entry.TypeName = "saveRecovery";
+            _service.EntriesCache[_content.Id] = entry;
+            var cache = (Dictionary<string, ContentObject>)Get(_service, "_contentScriptableCache");
+            cache.Clear();
+            var reflection = new ContentTypeReflectionCache();
+            reflection.OnSetupForCacheGeneration();
+            ((Dictionary<string, Type>)Get(reflection, "_contentTypeToClass"))["saveRecovery"] = typeof(SaveRecoveryContent);
+            Set(_service, "_contentTypeReflectionCache", reflection);
+            var config = ScriptableObject.CreateInstance<global::Beamable.Content.ContentConfiguration>();
+            Set(_service, "_contentConfiguration", config);
+            try
+            {
+                var preview = _service.PreviewSchemaMigration(_content.Id);
+                Assert.That(preview.OriginalJson, Is.EqualTo(original));
+                Assert.That(File.ReadAllText(_path), Is.EqualTo(original));
+                Assert.That(_commands.Properties, Is.Empty);
+                Assert.That(cache.ContainsKey(_content.Id), Is.True);
+            }
+            finally
+            {
+                if (cache.TryGetValue(_content.Id, out var loaded)) UnityEngine.Object.DestroyImmediate(loaded);
+                UnityEngine.Object.DestroyImmediate(config);
+            }
+        }
+
+        [Test]
+        public void Schema_popup_cancel_does_not_write_and_failed_apply_requires_new_review()
+        {
+            PrepareFile();
+            var original = ClientContentSerializer.SerializeContent(_content)
+                .Replace("\"properties\":{", "\"properties\":{\"future\":{\"data\":37},");
+            File.WriteAllText(_path, original);
+            var window = ContentSchemaWindow.Open(_service, _content.Id);
+            window.Close();
+            Assert.That(_commands.Properties, Is.Empty);
+            Assert.That(File.ReadAllText(_path), Is.EqualTo(original));
+            window = ContentSchemaWindow.Open(_service, _content.Id);
+            try
+            {
+                File.AppendAllText(_path, " ");
+                typeof(ContentSchemaWindow).GetMethod("Apply", Fields).Invoke(window, null);
+                Assert.That(Get(window, "_preview"), Is.Null);
+                Assert.That(Get(window, "_error"), Is.Not.Null);
+                Assert.That(_commands.Properties, Is.Empty);
+            }
+            finally { window.Close(); }
+        }
+
+        [Test]
+        public void Schema_popup_applies_once_and_closes_only_after_write_completes()
+        {
+            PrepareFile();
+            var original = ClientContentSerializer.SerializeContent(_content)
+                .Replace("\"properties\":{", "\"properties\":{\"future\":{\"data\":37},");
+            File.WriteAllText(_path, original);
+            var window = ContentSchemaWindow.Open(_service, _content.Id);
+            try
+            {
+                var preview = (CliContentService.SchemaMigrationPreview)Get(window, "_preview");
+                var apply = typeof(ContentSchemaWindow).GetMethod("Apply", Fields);
+                apply.Invoke(window, null);
+                apply.Invoke(window, null);
+                Assert.That(_commands.Properties.Count, Is.EqualTo(1));
+                Assert.That(window != null, Is.True);
+                Assert.That((bool)Get(window, "_applying"), Is.True);
+                File.WriteAllText(_path, "{\"properties\":" + preview.ProposedProperties + ",\"tags\":[\"old\"]}");
+                _commands.Properties.Single().Completion.CompleteSuccess();
+                Assert.That(window == null, Is.True);
+                Assert.That(_commands.Tags, Is.Empty);
+            }
+            finally { if (window != null) window.Close(); }
+        }
+
+        [TestCase(720, 500, 0)]
+        [TestCase(720, 500, 1)]
+        [TestCase(1000, 700, 0)]
+        [TestCase(1000, 700, 1)]
+        public void Schema_popup_tabs_layout_with_actions_inside_window(int width, int height, int tab)
+        {
+            PrepareFile();
+            var window = ContentSchemaWindow.Open(_service, _content.Id);
+            var previousEvent = Event.current;
+            const BindingFlags statics = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
+            try
+            {
+                window.position = new Rect(0, 0, width, height);
+                Set(window, "_tab", tab);
+                foreach (var eventType in new[] { EventType.Layout, EventType.Repaint })
+                {
+                    typeof(GUIUtility).GetMethod("BeginContainerFromOwner", statics).Invoke(null, new object[] { window });
+                    try
+                    {
+                        Event.current = new Event { type = eventType };
+                        typeof(GUIUtility).GetMethod("BeginGUI", statics).Invoke(null, new object[] { 1, window.GetInstanceID(), 1 });
+                        typeof(ContentSchemaWindow).GetMethod("OnGUI", Fields).Invoke(window, null);
+                        if (eventType == EventType.Layout)
+                            typeof(GUILayoutUtility).GetMethod("LayoutFromContainer", statics).Invoke(null, new object[] { (float)width, (float)height });
+                        else Assert.That(GUILayoutUtility.GetLastRect().yMax, Is.LessThanOrEqualTo(height));
+                    }
+                    finally { typeof(GUIUtility).GetMethod("EndContainer", statics).Invoke(null, null); }
+                }
+                Assert.That(_commands.Properties, Is.Empty);
+            }
+            finally { Event.current = previousEvent; window.Close(); }
         }
 
         [TestCase(false)]

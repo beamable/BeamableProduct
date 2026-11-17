@@ -75,8 +75,8 @@ namespace Beamable.Editor.ContentService
         internal SchemaMigrationPreview PreviewSchemaMigration(string contentId)
         {
             RequireSchemaMigrationReady(contentId);
-            if (!_contentScriptableCache.TryGetValue(contentId, out var content) || content == null)
-                throw new InvalidOperationException("Compile the matching content type before migrating this item.");
+            if (!TryGetContentObject(contentId, out var content) || content == null)
+                throw new InvalidOperationException("Compile the matching local C# content type before reviewing JSON changes.");
             var entry = EntriesCache[contentId];
             var original = File.ReadAllText(entry.JsonFilePath);
             return new SchemaMigrationPreview(contentId, GetContentScopeKey(), entry.JsonFilePath, content.GetType(),
@@ -93,7 +93,7 @@ namespace Beamable.Editor.ContentService
                 !_contentScriptableCache.TryGetValue(preview.ContentId, out var content) || content == null ||
                 content.GetType() != preview.ModelType ||
                 SerializeMigration(preview.ContentId, preview.ModelType, preview.OriginalJson) != preview.ProposedProperties)
-                throw new InvalidOperationException("Content or model changed after migration preview. Review this item again.");
+                throw new InvalidOperationException("Content or model changed after the JSON preview. Review this item again.");
             await _contentWrites.Run(GetContentWriteKey(preview.ContentId), () =>
                 WriteContentProperties(preview.ContentId, preview.ProposedProperties, expectedFileHash: preview.FileHash));
             if (preview.Scope != GetContentScopeKey()) return;
