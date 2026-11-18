@@ -233,6 +233,45 @@ namespace Beamable.Editor.ContentService
 			return Directory.Exists(full) ? full : null;
 		}
 
+		private static HashSet<string> _seedSpriteGuids;
+
+		/// <summary>
+		/// True when <paramref name="guid"/> is the pinned GUID of a default content seed sprite, which
+		/// <see cref="ImportDefaultContent"/> copies into the project.
+		/// </summary>
+		internal static bool IsSeedSpriteGuid(string guid)
+		{
+			if (string.IsNullOrEmpty(guid))
+				return false;
+
+			if (_seedSpriteGuids == null)
+			{
+				var guids = new HashSet<string>();
+				var sourceRoot = ResolveSourceRoot();
+				if (!string.IsNullOrEmpty(sourceRoot))
+				{
+					// Same layout as EnsureDefaultAssetsImported: <root>/<type>/<asset> with a pinned-GUID <asset>.meta.
+					foreach (var typeDir in Directory.GetDirectories(sourceRoot))
+					{
+						foreach (var src in Directory.GetFiles(typeDir))
+						{
+							var metaPath = src + ".meta";
+							if (src.EndsWith(".meta") || !File.Exists(metaPath))
+								continue;
+
+							var knownGuid = ReadGuidFromMeta(metaPath);
+							if (!string.IsNullOrEmpty(knownGuid))
+								guids.Add(knownGuid);
+						}
+					}
+				}
+
+				_seedSpriteGuids = guids;
+			}
+
+			return _seedSpriteGuids.Contains(guid);
+		}
+
 		private static string ReadGuidFromMeta(string metaPath)
 		{
 			foreach (var line in File.ReadLines(metaPath))
