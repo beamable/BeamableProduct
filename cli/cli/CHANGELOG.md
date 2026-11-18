@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `content ps` refreshes the latest realm manifest when it starts, so a long-running CLI server does not reuse a stale publication during Local Mode exit checks.
 - CLI discovery reports the executing package version, including development revisions. Fixed telemetry collector discovery and shutdown ownership to preserve unrelated commands.
 - Fixed content history pagination, watcher cleanup/cancellation, shutdown acknowledgement retries, and reconciliation recovery after partial failures.
 - Lines `beam local logs --forward` sends to Grafana carry their OTel severity number, so Loki no longer shows lines without a level keyword (Scala/Maven build output, stack traces) as unknown ("UKN").
