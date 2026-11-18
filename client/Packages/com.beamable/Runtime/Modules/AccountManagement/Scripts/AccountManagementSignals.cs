@@ -445,7 +445,7 @@ namespace Beamable.AccountManagement
 		{
 			API.Instance.Then(de =>
 			{
-				WithLoading("Confirming Code...", de.AuthService.ConfirmPasswordUpdate(code, password)).Then(_ =>
+				WithLoading("Confirming Code...", de.AuthService.ConfirmPasswordUpdate(email, code, password)).Then(_ =>
 			 {
 				 Login(email, password);
 			 }).Error(ex =>

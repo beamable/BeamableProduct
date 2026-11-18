@@ -2,6 +2,8 @@
 
 ### Breaking
 
+- `account.confirmPasswordUpdate` requires `email`, the address the reset code was sent to
+  (`ConfirmPasswordUpdateParams`). The backend will soon reject password reset confirmations without it.
 - **Offers are Beamable's, not a provider's.** `CampaignOfferService` (`beam.campaignOffer`) becomes
   `OffersService` (`beam.offers`), over the `/api/offers/grants` routes (a grant is named by its id in
   the path):

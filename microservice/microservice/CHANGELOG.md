@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Websocket health checks: `WS_SEND_TIMEOUT_SECONDS` (default 30) for blocked sends, and `WS_STALL_TIMEOUT_SECONDS` (default 60) for connections that stop answering. `WS_KEEPALIVE_TIMEOUT_SECONDS` enables ping/pong keep-alive on .NET 9+ (off by default).
 - `BEAM_SOCKET_RELIABILITY_ENFORCE=true` makes timeouts fail with `RequestTimeoutException` and replaces broken connections. Off by default: these checks only log a warning and record a metric.
 - `beam.ws.*` metrics for timed-out, pending and connection-lost requests, and for unhealthy connections.
+- `IAuthApi.ConfirmPasswordUpdate(email, code, newPassword)` confirms a password reset with the email address the code was sent to. The overload without `email` is obsolete: the backend will soon require it.
 
 ### Changed
 
