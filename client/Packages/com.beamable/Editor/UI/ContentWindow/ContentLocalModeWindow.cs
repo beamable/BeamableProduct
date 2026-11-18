@@ -32,11 +32,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		internal static void SetEnabled(ContentConfiguration configuration, bool enabled)
 		{
 			if (configuration == null || configuration.EnableLocalContentInEditor == enabled) return;
-			var serialized = new SerializedObject(configuration);
-			serialized.FindProperty(nameof(ContentConfiguration.EnableLocalContentInEditor)).boolValue = enabled;
-			serialized.ApplyModifiedProperties();
-			// Save just this configuration, never unrelated dirty scenes or assets.
-			if (AssetDatabase.Contains(configuration)) AssetDatabase.SaveAssetIfDirty(configuration);
+			configuration.EnableLocalContentInEditor = enabled;
 		}
 
 		private static void ApplyChoice(ContentConfiguration configuration, bool confirmed, bool suppress)
