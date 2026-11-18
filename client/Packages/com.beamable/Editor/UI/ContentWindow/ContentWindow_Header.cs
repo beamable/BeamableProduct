@@ -543,7 +543,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				EditorApplication.delayCall += () =>
 				{
 					if (requested) ContentLocalModeWindow.RequestEnable(_contentConfiguration, position);
-					else ContentLocalModeWindow.SetEnabled(_contentConfiguration, false);
+					else ContentLocalModeExitWindow.Open(_contentService, _contentConfiguration);
 					Repaint();
 				};
 			}

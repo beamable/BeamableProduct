@@ -996,6 +996,7 @@ namespace Beamable.Editor.ContentService
 		private async Task<Task> StartContentWatcher()
 		{
 			if (!_contentWatchRequested || _watchersDisposed) return Task.CompletedTask;
+			await StopLocalModeExitCheck();
 			isReloading = true;
 			try
 			{

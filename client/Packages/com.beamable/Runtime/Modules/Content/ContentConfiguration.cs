@@ -44,8 +44,51 @@ namespace Beamable.Content
 		[Tooltip("When enabled, content checksum will be calculated based on default object property order.")]
 		public bool EnablePropertyOrderDependenceForContentChecksum = true;
 
-		[Tooltip("In Play Mode, resolve the namespace selected in the Content window from a read-only snapshot of the local JSON working copy, including unpublished items. Other namespaces use realm content. Restart Play Mode after changing this setting, namespace, or local files. Missing local content fails without realm fallback. Changing this setting stops active content and history watchers, waits for their CLI work to finish, then restarts them. While enabled, these watchers do not auto-sync the working copy. Does not affect player builds.")]
-		public bool EnableLocalContentInEditor = false;
+		// This is intentionally not serialized: pulling a teammate's configuration must not change
+		// this developer's content source. The old value is used only once on upgrade.
+		[NonSerialized] private bool _transientLocalContent;
+#if UNITY_EDITOR
+		// Keep an existing Local Mode session safe when upgrading; subsequent asset changes
+		// never override the local preference. This field is not an editable project default.
+		[SerializeField, HideInInspector, UnityEngine.Serialization.FormerlySerializedAs("EnableLocalContentInEditor")]
+		private bool _legacyLocalContentInEditor;
+#endif
+		public bool EnableLocalContentInEditor
+		{
+			get
+			{
+#if UNITY_EDITOR
+				if (UnityEditor.AssetDatabase.Contains(this))
+				{
+					var key = LocalContentPreferenceKey;
+					if (!UnityEditor.EditorPrefs.HasKey(key)) UnityEditor.EditorPrefs.SetBool(key, _legacyLocalContentInEditor);
+					return UnityEditor.EditorPrefs.GetBool(key, false);
+				}
+#endif
+				return _transientLocalContent;
+			}
+			set
+			{
+#if UNITY_EDITOR
+				if (UnityEditor.AssetDatabase.Contains(this))
+				{
+					UnityEditor.EditorPrefs.SetBool(LocalContentPreferenceKey, value);
+					return;
+				}
+#endif
+				_transientLocalContent = value;
+			}
+		}
+
+#if UNITY_EDITOR
+		internal static string LocalContentPreferenceKey => LocalContentPreferenceKeyFor(Application.dataPath);
+		internal static string LocalContentPreferenceKeyFor(string projectAssetsPath)
+		{
+			var path = System.IO.Path.GetFullPath(projectAssetsPath).Replace('\\', '/').TrimEnd('/');
+			if (Application.platform == RuntimePlatform.WindowsEditor) path = path.ToLowerInvariant();
+			return "Beamable.Content.LocalMode." + Hash128.Compute(path);
+		}
+#endif
 
 		[Tooltip("When using Local Content Mode In Editor, simulate how long each content reference will take to fetch.")]
 		public OptionalFloat LocalContentReferenceDelaySeconds;

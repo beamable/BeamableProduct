@@ -52,7 +52,9 @@ public class ContentPsCommand
 		var contentService = args.DependencyProvider.GetService<ContentService>();
 
 		// Declarations of the manifest variables we care about during this command's lifecycle.
-		Promise<ClientManifestJsonResponse> latestManifest = contentService.GetManifest(manifestId).ToPromise();
+		// Each invocation is a new observation of the realm, including one-shot exit checks.
+		// A long-lived CLI server may have missed a publication while its watchers were stopped.
+		Promise<ClientManifestJsonResponse> latestManifest = contentService.GetManifest(manifestId, replaceLatest: true).ToPromise();
 		await latestManifest;
 
 		void OnMessage(ContentProgressUpdateData data)

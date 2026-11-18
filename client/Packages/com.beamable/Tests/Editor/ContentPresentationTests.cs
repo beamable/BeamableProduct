@@ -1987,26 +1987,36 @@ namespace Beamable.Editor.Tests
         }
 
         [Test]
-        public void Confirmation_saves_only_the_configuration_asset()
+        public void Confirmation_persists_local_preference_without_saving_any_assets()
         {
             var prefix = "Assets/__ContentModeTest_" + Guid.NewGuid().ToString("N");
             var configPath = prefix + ".asset";
             var unrelatedPath = prefix + "_unrelated.asset";
             var unrelated = ScriptableObject.CreateInstance<ContentConfiguration>();
+            var preferenceKey = (string)typeof(ContentConfiguration).GetProperty("LocalContentPreferenceKey", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
+            var hadPreference = EditorPrefs.HasKey(preferenceKey);
+            var previousPreference = EditorPrefs.GetBool(preferenceKey);
             try
             {
                 AssetDatabase.CreateAsset(config, configPath);
                 AssetDatabase.CreateAsset(unrelated, unrelatedPath);
                 var before = System.IO.File.ReadAllBytes(unrelatedPath);
-                unrelated.EnableLocalContentInEditor = true;
+                var configBefore = System.IO.File.ReadAllBytes(configPath);
+                config.EnableLocalContentInEditor = false;
+                unrelated.validateSchemaDifference = false;
                 EditorUtility.SetDirty(unrelated);
                 Choose(true, false);
-                Assert.That(System.IO.File.ReadAllText(configPath), Does.Contain("EnableLocalContentInEditor: 1"));
+                Assert.That(config.EnableLocalContentInEditor, Is.True);
+                Assert.That(EditorPrefs.GetBool(preferenceKey), Is.True);
+                Assert.That(System.IO.File.ReadAllBytes(configPath), Is.EqualTo(configBefore));
+                Assert.That(new SerializedObject(config).FindProperty("EnableLocalContentInEditor"), Is.Null);
                 Assert.That(System.IO.File.ReadAllBytes(unrelatedPath), Is.EqualTo(before));
                 Assert.That(EditorUtility.IsDirty(unrelated), Is.True);
             }
             finally
             {
+                if (hadPreference) EditorPrefs.SetBool(preferenceKey, previousPreference);
+                else EditorPrefs.DeleteKey(preferenceKey);
                 AssetDatabase.DeleteAsset(configPath);
                 AssetDatabase.DeleteAsset(unrelatedPath);
                 if (unrelated != null) UnityEngine.Object.DestroyImmediate(unrelated);
