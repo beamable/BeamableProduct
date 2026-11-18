@@ -587,6 +587,37 @@ public partial class DeployUtil
 	/// the server checks the connection, its token and that the remote is the connection's repository.
 	/// Throws listing every project that can't be deployed as an override.
 	/// </summary>
+	/// <summary>
+	/// Storages a source delivery put beside an overridden service, marked by a <c>beam.override.json</c> of kind
+	/// <c>storage</c>. They are there so the service builds against the bundle's storage; a deploy leaves them out.
+	/// </summary>
+	public static HashSet<string> DeliveredStorageIds(BeamoLocalManifest manifest)
+	{
+		var ids = new HashSet<string>();
+		foreach (var definition in manifest.ServiceDefinitions.Where(d => d.IsLocal && d.Protocol == BeamoProtocolType.EmbeddedMongoDb))
+		{
+			var path = Path.Combine(definition.AbsoluteProjectDirectory, BundleBuild.OVERRIDE_FILE_NAME);
+			if (!File.Exists(path))
+			{
+				continue;
+			}
+
+			try
+			{
+				var kind = JObject.Parse(File.ReadAllText(path)).GetValue("kind", StringComparison.OrdinalIgnoreCase)?.ToString();
+				if (string.Equals(kind, "storage", StringComparison.OrdinalIgnoreCase))
+				{
+					ids.Add(definition.BeamoId);
+				}
+			}
+			catch (Newtonsoft.Json.JsonException)
+			{
+			}
+		}
+
+		return ids;
+	}
+
 	public static List<OverrideDeclarationPlan> ReadOverrideDeclarations(BeamoLocalManifest manifest, DeployScope scope, HashSet<string> includeOnlyBeamoIds)
 	{
 		var declarations = new List<OverrideDeclarationPlan>();
@@ -1669,6 +1700,10 @@ public partial class DeployUtil
 			: new List<OverrideDeclarationPlan>();
 		var endOverrides = ((args as IHasEndOverridesArg)?.EndOverrides ?? Array.Empty<string>()).Distinct().ToList();
 		bundleComponentIds.ExceptWith(overrideDeclarations.Select(d => d.component));
+		if (excludeAuthoredBundleComponents)
+		{
+			bundleComponentIds.UnionWith(DeliveredStorageIds(beamo.BeamoManifest));
+		}
 		await CheckOverrideConnections(provider, overrideDeclarations);
 
 		var isLoadingManifestFile = !string.IsNullOrEmpty(args.FromManifestFile);
@@ -2249,6 +2284,7 @@ public partial class DeployUtil
 		if (plan.overrides.Count > 0)
 			beamoV2PostManifestRequest.overrides = new OptionalArrayOfBeamoV2OverrideDeclaration(plan.overrides.Select(o => new BeamoV2OverrideDeclaration
 			{
+				baseVersion = o.version,
 				component = o.component,
 				connectionId = Guid.Parse(o.connectionId),
 				remote = o.remote,

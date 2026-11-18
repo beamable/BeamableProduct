@@ -69,6 +69,13 @@ public class OverrideDeclarationTests
 		};
 	}
 
+	private BeamoServiceDefinition Storage(string name, string overrideJson = null)
+	{
+		var definition = Service(name, overrideJson);
+		definition.Protocol = BeamoProtocolType.EmbeddedMongoDb;
+		return definition;
+	}
+
 	private void GitInit(string remote)
 	{
 		Assert.That(StartProcessUtil.Run("git", "init -q", workingDirectoryPath: _root).WaitForResult().exit, Is.EqualTo(0));
@@ -257,6 +264,22 @@ public class OverrideDeclarationTests
 		Assert.DoesNotThrow(() => DeployUtil.ThrowIfProjectsShadowInstalledComponents(manifest, DeployScope.Realm, site, new HashSet<string>(), null));
 		Assert.Throws<CliException>(() => DeployUtil.ThrowIfProjectsShadowInstalledComponents(manifest, DeployScope.Zone, site, new HashSet<string>(), null));
 		Assert.DoesNotThrow(() => DeployUtil.ThrowIfProjectsShadowInstalledComponents(manifest, DeployScope.Zone, site, new HashSet<string>(), new HashSet<string> { "Other" }));
+	}
+
+	[Test]
+	public void DeliveredStorage_WithAStorageOverrideFile_IsLeftOutOfTheDeploy()
+	{
+		var manifest = Manifest(
+			Storage("ScoresDb", OverrideJson("ScoresDb", kind: "storage")),
+			Storage("OwnDb"),
+			Storage("Broken", "not json"),
+			Service("Scores", OverrideJson("Scores")));
+
+		var delivered = DeployUtil.DeliveredStorageIds(manifest);
+
+		Assert.That(delivered, Is.EquivalentTo(new[] { "ScoresDb" }));
+		Assert.DoesNotThrow(() => DeployUtil.ThrowIfProjectsShadowInstalledComponents(manifest, DeployScope.Realm,
+			Installed("@acme/leaderboards", "Scores", "ScoresDb"), new HashSet<string>(delivered) { "Scores" }, null));
 	}
 
 	// ---- remotes (the same cases as the server's RepositoryRemotes tests) ----
