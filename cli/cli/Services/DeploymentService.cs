@@ -759,6 +759,33 @@ public partial class DeployUtil
 	}
 
 	/// <summary>
+	/// Refuses local projects in this deploy named like a component a bundle installation put on this site. The
+	/// plan leaves installed components to their installation, so such a project would never deploy; it has to
+	/// be renamed, or declare an override. <paramref name="leftAlone"/> holds the workspace's own bundle
+	/// components and the declared overrides, which the plan handles itself.
+	/// </summary>
+	public static void ThrowIfProjectsShadowInstalledComponents(BeamoLocalManifest manifest, DeployScope scope,
+		BeamoV2Manifest remoteV2, ISet<string> leftAlone, HashSet<string> includeOnlyBeamoIds)
+	{
+		var owners = (remoteV2?.installedBundles.GetOrElse(Array.Empty<BeamoV2InstalledBundle>()) ?? Array.Empty<BeamoV2InstalledBundle>())
+			.SelectMany(b => b.components.GetOrElse(Array.Empty<string>()).Select(c => (component: c, bundle: b.bundle.GetOrElse(""))))
+			.GroupBy(x => x.component)
+			.ToDictionary(g => g.Key, g => g.First().bundle);
+		var site = scope == DeployScope.Zone ? "zone" : "realm";
+		var problems = manifest.ServiceDefinitions
+			.Where(d => d.IsLocal && d.IsZoneScoped == (scope == DeployScope.Zone))
+			.Where(d => includeOnlyBeamoIds == null || includeOnlyBeamoIds.Contains(d.BeamoId))
+			.Where(d => !leftAlone.Contains(d.BeamoId) && !(manifest.LocallyIgnoredBeamoIds?.Contains(d.BeamoId) ?? false))
+			.Where(d => owners.ContainsKey(d.BeamoId))
+			.Select(d => $"[{d.BeamoId}] is a component of {owners[d.BeamoId]} installed on this {site}. Rename your project, or declare an override with {BundleBuild.OVERRIDE_FILE_NAME}.")
+			.ToList();
+		if (problems.Count > 0)
+		{
+			throw new CliException("Some projects are named like a bundle component installed here, so they can't be deployed:\n - " + string.Join("\n - ", problems));
+		}
+	}
+
+	/// <summary>
 	/// Check the declared overrides and <c>--end-override</c> names against what the site runs, before anything
 	/// is built or uploaded: a declared component must be a service or extension of that bundle installed here,
 	/// and an existing override of it must come from the same connection; an ended one must be overridden here.
@@ -1706,6 +1733,12 @@ public partial class DeployUtil
 					.Where(d => d.IsZoneScoped == (args.Scope == DeployScope.Zone));
 				ProjectService.ThrowIfStorageNamesTooLong(ProjectService.FindTooLongStorageNames(
 					scopedDefinitions, targetCid, targetScopeId, targetScopeId, includeOnlyBeamoIds));
+			}
+
+			if (excludeAuthoredBundleComponents)
+			{
+				ThrowIfProjectsShadowInstalledComponents(beamo.BeamoManifest, args.Scope, await beamoV2ManifestTask,
+					bundleComponentIds.Concat(overrideDeclarations.Select(d => d.component)).ToHashSet(), includeOnlyBeamoIds);
 			}
 
 			// Docker is only needed to build service images. A filtered plan whose set contains no

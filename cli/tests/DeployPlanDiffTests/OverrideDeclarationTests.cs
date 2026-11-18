@@ -214,6 +214,51 @@ public class OverrideDeclarationTests
 		Assert.That(ex.Message, Does.Contain("isn't overridden on this site"));
 	}
 
+	// ---- ThrowIfProjectsShadowInstalledComponents ----
+
+	private static BeamoV2Manifest Installed(string bundle, params string[] components) => new BeamoV2Manifest
+	{
+		installedBundles = new OptionalArrayOfBeamoV2InstalledBundle(new[]
+		{
+			new BeamoV2InstalledBundle { bundle = bundle, components = new OptionalArrayOfString(components) },
+		}),
+	};
+
+	[Test]
+	public void Shadow_ProjectNamedLikeAnInstalledComponent_IsRefused()
+	{
+		var manifest = Manifest(Service("Scores"), Service("Inventory"));
+
+		var ex = Assert.Throws<CliException>(() => DeployUtil.ThrowIfProjectsShadowInstalledComponents(manifest, DeployScope.Realm,
+			Installed("@acme/leaderboards", "Scores", "ScoresDb"), new HashSet<string>(), null));
+
+		Assert.That(ex.Message, Does.Contain("[Scores] is a component of @acme/leaderboards installed on this realm"));
+		Assert.That(ex.Message, Does.Contain("beam.override.json"));
+		Assert.That(ex.Message, Does.Not.Contain("Inventory"));
+	}
+
+	[Test]
+	public void Shadow_DeclaredOverridesAndTheWorkspacesOwnBundleComponents_AreLeftAlone()
+	{
+		var manifest = Manifest(Service("Scores"), Service("Ladder"));
+
+		Assert.DoesNotThrow(() => DeployUtil.ThrowIfProjectsShadowInstalledComponents(manifest, DeployScope.Realm,
+			Installed("@acme/leaderboards", "Scores", "Ladder"), new HashSet<string> { "Scores", "Ladder" }, null));
+	}
+
+	[Test]
+	public void Shadow_OnlyTheDeploysScope_AndTheBuildsComponents()
+	{
+		var zoneService = Service("Ladder");
+		zoneService.ServiceScope = "zone";
+		var manifest = Manifest(Service("Scores"), zoneService);
+		var site = Installed("@acme/leaderboards", "Ladder");
+
+		Assert.DoesNotThrow(() => DeployUtil.ThrowIfProjectsShadowInstalledComponents(manifest, DeployScope.Realm, site, new HashSet<string>(), null));
+		Assert.Throws<CliException>(() => DeployUtil.ThrowIfProjectsShadowInstalledComponents(manifest, DeployScope.Zone, site, new HashSet<string>(), null));
+		Assert.DoesNotThrow(() => DeployUtil.ThrowIfProjectsShadowInstalledComponents(manifest, DeployScope.Zone, site, new HashSet<string>(), new HashSet<string> { "Other" }));
+	}
+
 	// ---- remotes (the same cases as the server's RepositoryRemotes tests) ----
 
 	[TestCase("https://github.com/acme/game.git", "https://github.com/acme/game")]
