@@ -29,6 +29,26 @@ public partial class ContentPsNoAutoSyncWatchTests
     private const string Id = "items.sword";
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(10);
 
+    [Test]
+    public async Task One_shot_observation_refreshes_warm_latest_cache_without_syncing_files()
+    {
+        await using var fixture = new Fixture(noAutoSync: true, watch: false);
+        await fixture.Save(10, "current", "published");
+        await fixture.WarmLatest();
+        var original = File.ReadAllBytes(fixture.FilePath);
+        var requests = fixture.LatestRequests;
+        fixture.ChangeLatestWithoutNotification();
+
+        await fixture.RunOnce();
+        var snapshot = await fixture.Events.Next(ContentPsCommandEvent.EVT_TYPE_FullRebuild);
+        var manifest = snapshot.RelevantManifestsAgainstLatest.Single();
+        Assert.That(manifest.Entries.Single().TargetManifestUid, Is.EqualTo("after"));
+        Assert.That(manifest.Entries.Single().ChangeKind, Is.EqualTo(3));
+        Assert.That(fixture.LatestRequests, Is.GreaterThan(requests));
+        Assert.That(File.ReadAllBytes(fixture.FilePath), Is.EqualTo(original));
+        Assert.That(fixture.Server.Downloads, Is.Zero);
+    }
+
     [TestCase(true)]
     [TestCase(false)]
     public async Task Local_event_preserves_tags_in_both_modes_and_reference_when_auto_sync_is_disabled(bool noAutoSync)
@@ -143,12 +163,17 @@ public partial class ContentPsNoAutoSyncWatchTests
         public readonly TaskCompletionSource<bool> PublicationEntered = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public readonly Promise<ClientManifestJsonResponse> HeldPublication = new();
         private ClientManifestJsonResponse publicationManifest;
+        private bool latestChanged;
+        public int LatestRequests { get; private set; }
+        public Task WarmLatest() => service.GetManifest();
+        public void ChangeLatestWithoutNotification() => latestChanged = true;
+        public Task RunOnce() => commandTask = runCommand();
         public void ReleasePublication() => HeldPublication.CompleteSuccess(publicationManifest);
         public void Cancel() => lifecycle.Cancel();
         public Task Completion => commandTask!;
         public readonly TaskCompletionSource<bool> HistoryCancellationRequested = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public int CancellationPhaseHistoryRequests { get; private set; }
-        public Fixture(bool noAutoSync, bool history = false, bool populatedHistory = false, bool holdPublication = false, bool? cancelHistoryOnPublication = null)
+        public Fixture(bool noAutoSync, bool history = false, bool populatedHistory = false, bool holdPublication = false, bool? cancelHistoryOnPublication = null, bool watch = true)
         {
             this.history = history;
             Directory.CreateDirectory(Path.Combine(root, ConfigService.CFG_FOLDER));
@@ -164,6 +189,11 @@ public partial class ContentPsNoAutoSyncWatchTests
             var api = new Mock<IContentApi>(MockBehavior.Strict);
             api.Setup(x => x.GetManifestPublicJson(It.IsAny<Optional<string>>(), It.IsAny<Optional<bool>>(), It.IsAny<Optional<string>>(), true))
                 .Returns((Optional<string> id, Optional<bool> omit, Optional<string> uid, bool auth) => {
+                    if (string.IsNullOrEmpty(uid?.Value))
+                    {
+                        LatestRequests++;
+                        return Promise<ClientManifestJsonResponse>.Successful(latestChanged ? after : current);
+                    }
                     if (uid?.Value == "after" && holdPublication) {
                         PublicationEntered.TrySetResult(true);
                         return HeldPublication;
@@ -224,7 +254,7 @@ public partial class ContentPsNoAutoSyncWatchTests
             }
             else
             {
-                var args = new ContentPsCommandArgs { Watch = true, NoAutoSync = noAutoSync, ManifestId = "global", Provider = provider.Object };
+                var args = new ContentPsCommandArgs { Watch = watch, NoAutoSync = noAutoSync, ManifestId = "global", Provider = provider.Object };
                 var command = new ContentPsCommand(); ((IResultProvider)command).Reporter = Events;
                 runCommand = () => command.Handle(args);
             }

@@ -1,14 +1,24 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using Beamable.Common;
+using Beamable.Common.BeamCli;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content;
 using Beamable.Editor.BeamCli.Commands;
+using UnityEditor;
 
 namespace Beamable.Editor.ContentService
 {
 	public partial class CliContentService
 	{
+		private IBeamCommand _localModeExitCheck;
+		private Task _localModeExitCheckCompletion;
+		private Task _localModeExitCheckStop;
+		private bool _localModeExitStopFailed;
+		private int _localModeExitTimeoutMs = 30000;
+		private int _localModeExitStopTimeoutMs = 10000;
+
 		internal static bool RequiresLocalModeReview(LocalContentManifestEntry entry) =>
 			entry.IsInConflict || (ContentChangeKind)entry.ChangeKind is not
 				(ContentChangeKind.UpToDate or ContentChangeKind.LocalEdit);
@@ -48,7 +58,7 @@ namespace Beamable.Editor.ContentService
 				await ApplyLocalContentMode(async () =>
 				{
 					RequireLocalModeExitScope(reviewedScope, cancelled);
-					await CheckLocalModeExitSnapshot(reviewedScope);
+					await CheckLocalModeExitSnapshot(reviewedScope, cancelled);
 					RequireLocalModeExitScope(reviewedScope, cancelled);
 					_contentConfiguration.EnableLocalContentInEditor = false;
 				});
@@ -62,7 +72,7 @@ namespace Beamable.Editor.ContentService
 			}
 		}
 
-		private async Promise CheckLocalModeExitSnapshot(string reviewedScope)
+		private async Promise CheckLocalModeExitSnapshot(string reviewedScope, Func<bool> cancelled)
 		{
 			var command = _cli.ContentPs(new ContentPsArgs
 			{
@@ -72,7 +82,44 @@ namespace Beamable.Editor.ContentService
 			Exception reportedError = null;
 			command.OnStreamContentPsCommandEvent(report => snapshot = report.data);
 			command.OnError(report => reportedError = new InvalidOperationException(report.data.message));
-			await command.Run();
+			var abort = new TaskCompletionSource<Exception>();
+			var deadline = EditorApplication.timeSinceStartup + (_localModeExitTimeoutMs > 0 ? _localModeExitTimeoutMs : 30000) / 1000d;
+			void CheckAbort()
+			{
+				try
+				{
+					if (_watchersDisposed || (cancelled?.Invoke() ?? false) || reviewedScope != GetContentScopeKey() ||
+					    !_contentConfiguration.EnableLocalContentInEditor)
+						abort.TrySetResult(new OperationCanceledException("The Local Mode exit check was cancelled. Local Mode stays on."));
+					else if (EditorApplication.timeSinceStartup >= deadline)
+						abort.TrySetResult(new TimeoutException("The Local Mode exit check timed out. Local Mode stays on; refresh to retry."));
+				}
+				catch (Exception error) { abort.TrySetResult(error); }
+			}
+			_localModeExitCheck = command.Command;
+			_localModeExitCheckStop = null;
+			_localModeExitStopFailed = false;
+			EditorApplication.update += CheckAbort;
+			try
+			{
+				var completion = _localModeExitCheckCompletion = AwaitCommand(command.Run());
+				// Observe the original run even if cancellation wins the race below.
+				_ = completion.ContinueWith(task => { _ = task.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
+				if (await Task.WhenAny(completion, abort.Task) == abort.Task)
+				{
+					var reason = await abort.Task;
+					await StopLocalModeExitCheck();
+					throw reason;
+				}
+				await completion;
+			}
+			finally
+			{
+				EditorApplication.update -= CheckAbort;
+				// A failed stop retains ownership so a later refresh/dispose can retry cleanup.
+				if (!_localModeExitStopFailed && _localModeExitCheckCompletion?.IsCompleted == true)
+					ClearLocalModeExitCheck();
+			}
 			if (reportedError != null) throw reportedError;
 			var manifests = snapshot?.RelevantManifestsAgainstLatest;
 			var manifest = manifests?.SingleOrDefault(item =>
@@ -81,6 +128,30 @@ namespace Beamable.Editor.ContentService
 				throw new InvalidOperationException("The CLI did not return a complete snapshot for this realm and namespace. Refresh and try again.");
 			if (manifest.Entries.Any(RequiresLocalModeReview))
 				throw new InvalidOperationException("Incoming changes or conflicts still need review. Refresh, then choose Keep Local or Use Realm for each item before leaving Local Mode.");
+		}
+
+		private void ClearLocalModeExitCheck()
+		{
+			_localModeExitCheck = null;
+			_localModeExitCheckCompletion = _localModeExitCheckStop = null;
+			_localModeExitStopFailed = false;
+		}
+
+		private async Task StopLocalModeExitCheck()
+		{
+			if (_localModeExitCheck == null) return;
+			try
+			{
+				if (_localModeExitCheckStop == null || _localModeExitCheckStop.IsFaulted || _localModeExitCheckStop.IsCanceled)
+					_localModeExitCheckStop = StopWatcher(_localModeExitCheck, _localModeExitCheckCompletion);
+				var stop = _localModeExitCheckStop;
+				_ = stop.ContinueWith(task => { _ = task.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
+				if (await Task.WhenAny(stop, Task.Delay(_localModeExitStopTimeoutMs > 0 ? _localModeExitStopTimeoutMs : 10000)) != stop)
+					throw new TimeoutException("Could not confirm exit-check cleanup. Local Mode stays on. Refresh to retry before restarting watchers.");
+				await stop;
+				ClearLocalModeExitCheck();
+			}
+			catch { _localModeExitStopFailed = true; throw; }
 		}
 	}
 }

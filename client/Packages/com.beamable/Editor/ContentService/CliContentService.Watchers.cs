@@ -36,6 +36,8 @@ namespace Beamable.Editor.ContentService
         {
             get
             {
+                if (_localModeExitCheck != null)
+                    return _localModeExitStopFailed ? ContentAutoSyncState.Failed : ContentAutoSyncState.Switching;
                 // A saved preference is not proof that the previous commands have stopped.
                 if ((_retiringContentCommand != null && (_contentStop?.IsFaulted == true || _contentStop?.IsCanceled == true)) ||
                     (_retiringHistoryCommand != null && (_historyStop?.IsFaulted == true || _historyStop?.IsCanceled == true)))
@@ -84,6 +86,7 @@ namespace Beamable.Editor.ContentService
             {
                 if (_watchersDisposed) return;
                 _localContentModeError = null;
+                await StopLocalModeExitCheck();
                 var local = _contentConfiguration.EnableLocalContentInEditor;
                 if (beforeRestart == null && WatchersMatchMode(local) &&
                     _retiringContentCommand == null && _retiringHistoryCommand == null) return;
@@ -156,10 +159,11 @@ namespace Beamable.Editor.ContentService
             _contentWatchRequested = _historyWatchRequested = false;
             EditorApplication.update -= CheckLocalContentMode;
             var commands = new[] { _contentWatcher?.Command, _contentHistoryWatcher?.Command,
-                _retiringContentCommand, _retiringHistoryCommand };
+                _retiringContentCommand, _retiringHistoryCommand, _localModeExitCheck };
             _contentWatcher = null;
             _contentHistoryWatcher = null;
             _retiringContentCommand = _retiringHistoryCommand = null;
+            ClearLocalModeExitCheck();
             CancelContentHistoryRequests();
             // Reload cannot pump the gate, Unity continuations, or dispatched callbacks.
             foreach (var command in commands.Distinct())
@@ -182,7 +186,7 @@ namespace Beamable.Editor.ContentService
             _historyWatchRequested = false;
             EditorApplication.update -= CheckLocalContentMode;
             await WatcherGate.WaitAsync();
-            try { await Task.WhenAll(StopContentWatcher(), StopHistoryWatcher()); }
+            try { await Task.WhenAll(StopContentWatcher(), StopHistoryWatcher(), StopLocalModeExitCheck()); }
             finally { WatcherGate.Release(); }
         }
     }

@@ -212,6 +212,135 @@ namespace Beamable.Editor.Tests
         Promise Exit(Func<bool> cancelled = null) => (Promise)typeof(CliContentService)
             .GetMethod("ExitLocalMode", Fields).Invoke(service, new object[] { "test/realm/global", cancelled });
 
+        [UnityTest]
+        public IEnumerator Cancelling_stalled_exit_check_stops_command_and_restores_watchers_without_a_response()
+        {
+            config.EnableLocalContentInEditor = true;
+            yield return Wait(service.Reload());
+            commands.DelayExitCheck = true;
+            var cancelled = false;
+            Exception error = null;
+            var exit = Exit(() => cancelled).Error(e => error = e);
+            commands.Content[0].Completion.CompleteSuccess();
+            yield return null;
+            Assert.That(commands.Checks.Count, Is.EqualTo(1));
+            cancelled = true;
+            // No response and no manual completion of the exit check: cancellation must settle it.
+            yield return Wait(exit);
+            Assert.That(error, Is.TypeOf<OperationCanceledException>());
+            Assert.That(commands.Checks[0].Cancelled, Is.True);
+            Assert.That(config.EnableLocalContentInEditor, Is.True);
+            Assert.That(commands.Content.Last().Local, Is.True);
+            AssertMode("Paused");
+            var resumed = commands.Content.Last();
+            resumed.OnCancel = () => resumed.Completion.CompleteSuccess();
+            yield return Wait(service.Reload());
+            AssertMode("Paused");
+        }
+
+        [UnityTest]
+        public IEnumerator Stalled_exit_check_times_out_and_restores_paused_watchers()
+        {
+            config.EnableLocalContentInEditor = true;
+            commands.DelayExitCheck = true;
+            Set(service, "_localModeExitTimeoutMs", 25);
+            Exception error = null;
+            var exit = Exit().Error(e => error = e);
+            yield return Wait(exit);
+            Assert.That(error, Is.TypeOf<TimeoutException>());
+            Assert.That(commands.Checks[0].Cancelled, Is.True);
+            Assert.That(config.EnableLocalContentInEditor, Is.True);
+            AssertMode("Paused");
+            commands.DelayExitCheck = false;
+            var retry = Exit();
+            yield return Wait(retry);
+            retry.GetResult();
+            Assert.That(config.EnableLocalContentInEditor, Is.False);
+        }
+
+        [UnityTest]
+        public IEnumerator Failed_exit_check_stop_releases_gate_but_keeps_cleanup_ownership_for_retry()
+        {
+            config.EnableLocalContentInEditor = true;
+            commands.DelayExitCheck = true;
+            commands.CompleteExitCheckOnCancel = false;
+            Set(service, "_localModeExitTimeoutMs", 25);
+            Set(service, "_localModeExitStopTimeoutMs", 25);
+            Exception error = null;
+            var exit = Exit().Error(e => error = e);
+            yield return Wait(exit);
+            Assert.That(error, Is.TypeOf<TimeoutException>());
+            Assert.That(config.EnableLocalContentInEditor, Is.True);
+            AssertMode("Failed");
+            Assert.That(commands.Content, Is.Empty);
+            commands.Checks[0].Completion.CompleteSuccess();
+            var retry = service.Reload();
+            yield return Wait(retry);
+            retry.GetResult();
+            Assert.That(commands.Content.Single().Local, Is.True);
+            AssertMode("Paused");
+        }
+
+        [UnityTest]
+        public IEnumerator Stalled_exit_check_is_stopped_when_service_is_disposed()
+        {
+            config.EnableLocalContentInEditor = true;
+            commands.DelayExitCheck = true;
+            var exit = Exit().Error(_ => { });
+            var dispose = service.OnDispose();
+            yield return Wait(dispose);
+            yield return Wait(exit);
+            dispose.GetResult();
+            Assert.That(commands.Checks[0].Cancelled, Is.True);
+            Assert.That(commands.Content, Is.Empty);
+            Assert.That(config.EnableLocalContentInEditor, Is.True);
+        }
+
+        [Test]
+        public void Assembly_reload_cancels_owned_exit_check_without_restarting_watchers()
+        {
+            config.EnableLocalContentInEditor = true;
+            commands.DelayExitCheck = true;
+            var exit = Exit().Error(_ => { });
+            typeof(CliContentService).GetMethod("PrepareForAssemblyReload", Fields).Invoke(service, null);
+            Assert.That(commands.Checks[0].Cancelled, Is.True);
+            Assert.That(exit.IsCompleted, Is.True);
+            Assert.That(exit.IsFailed, Is.True);
+            Assert.That(config.EnableLocalContentInEditor, Is.True);
+            Assert.That(commands.Content, Is.Empty);
+        }
+
+        [UnityTest]
+        public IEnumerator Exit_check_cancellation_waits_for_server_acknowledgement_before_restarting()
+        {
+            config.EnableLocalContentInEditor = true;
+            yield return Wait(service.Reload());
+            var transport = new BeamWebCommandStopTests.Fixture(transports);
+            commands.ExitCheckWebCommand = transport.Command;
+            var cancelled = false;
+            var exit = Exit(() => cancelled).Error(_ => { });
+            commands.Content[0].Completion.CompleteSuccess();
+            transport.Discover();
+            transport.AllowHeaders.TrySetResult(true);
+            cancelled = true;
+            var deadline = UnityEditor.EditorApplication.timeSinceStartup + 10;
+            while (!transport.StopReceived.Task.IsCompleted && UnityEditor.EditorApplication.timeSinceStartup < deadline)
+            {
+                UnityEditor.EditorApplication.QueuePlayerLoopUpdate();
+                yield return null;
+            }
+            Assert.That(transport.StopReceived.Task.IsCompleted, Is.True);
+            Assert.That(exit.IsCompleted, Is.False);
+            Assert.That(commands.Content.Count, Is.EqualTo(1));
+            transport.ReleaseWorker.TrySetResult(true);
+            transport.AllowAcknowledgement.TrySetResult(true);
+            yield return Wait(exit);
+            Assert.That(exit.IsFailed, Is.True);
+            Assert.That(config.EnableLocalContentInEditor, Is.True);
+            Assert.That(commands.Content.Last().Local, Is.True);
+            AssertMode("Paused");
+        }
+
         [TestCase(0, false)]
         [TestCase(30, false)]
         [TestCase(30, true)]
@@ -717,6 +846,7 @@ namespace Beamable.Editor.Tests
             foreach (var command in commands.Content.ToArray()) command.Completion.CompleteSuccess();
             foreach (var command in commands.History.ToArray()) command.Completion.CompleteSuccess();
             foreach (var command in commands.Manifests.ToArray()) command.Completion.CompleteSuccess();
+            foreach (var command in commands.Checks.ToArray()) command.Completion.CompleteSuccess();
             var cleanup = BeamWebCommandStopTests.CleanupFixtures(transports);
             try
             {
@@ -740,6 +870,8 @@ namespace Beamable.Editor.Tests
             public LocalContentManifestEntry[] ExitEntries = Array.Empty<LocalContentManifestEntry>();
             public string ExitManifestId = "global";
             public bool DelayExitCheck;
+            public bool CompleteExitCheckOnCancel = true;
+            public BeamCli.BeamWebCommand ExitCheckWebCommand;
             public bool DelayInitialContent;
             public bool DelayManifests;
             public bool FailNextContentStart;
@@ -749,6 +881,12 @@ namespace Beamable.Editor.Tests
             {
                 if (!args.watch)
                 {
+                    if (ExitCheckWebCommand != null)
+                    {
+                        var web = ExitCheckWebCommand;
+                        ExitCheckWebCommand = null;
+                        return new ContentPsWrapper { Command = web };
+                    }
                     // Mirrors the CLI producer CreateFullRebuildEvent: one scoped manifest, even when empty.
                     var check = new HeldCommand(args.noAutoSync, new BeamContentPsCommandEvent
                     {
@@ -759,6 +897,7 @@ namespace Beamable.Editor.Tests
                         },
                         ToRemoveLocalEntries = new List<LocalContentManifest>()
                     }, true) { DelayInitial = DelayExitCheck };
+                    if (CompleteExitCheckOnCancel) check.OnCancel = () => check.Completion.CompleteSuccess();
                     Checks.Add(check);
                     return new ContentPsWrapper { Command = check };
                 }
