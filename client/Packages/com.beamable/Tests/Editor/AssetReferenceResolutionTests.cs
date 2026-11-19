@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
+using UnityEditor.AddressableAssets.Settings;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.TestTools;
@@ -66,7 +67,7 @@ namespace Beamable.Editor.Tests
 		[Test]
 		public void SlicedSpriteTexture_IsResolved()
 		{
-			var guid = CreateTexture(TextureImporterType.Sprite, SpriteImportMode.Multiple, sliced: true);
+			var guid = CopySlicedSpriteSheet();
 
 			Assert.That(AssetReferenceResolution.Resolve(typeof(AssetReferenceSprite), guid, out _), Is.EqualTo(AssetReferenceState.Resolved));
 		}
@@ -109,11 +110,11 @@ namespace Beamable.Editor.Tests
 		}
 
 		[Test]
-		public void SeedSpriteGuid_GuidanceMentionsImportDefaultContent()
+		public void SeedSpriteGuid_GuidanceMentionsImportDefaultIcons()
 		{
 			var guidance = AssetReferenceResolution.GetGuidance(typeof(AssetReferenceSprite), AssetReferenceState.MissingAsset, COINS_SEED_GUID, null);
 
-			StringAssert.Contains("Import Default Content", guidance);
+			StringAssert.Contains("Import Default Icons", guidance);
 		}
 
 		[Test]
@@ -178,9 +179,90 @@ namespace Beamable.Editor.Tests
 			}
 		}
 
+		[Test]
+		public void ReplacementWithoutSettings_PreservesExistingReference()
+		{
+			var spriteGuid = CreateTexture(TextureImporterType.Sprite, SpriteImportMode.Single);
+			var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(AssetDatabase.GUIDToAssetPath(spriteGuid));
+			AssertRejectedReplacement(sprite, typeof(AssetReferenceSprite), "configure Addressables");
+		}
+
+		[Test]
+		public void NonSpriteSubAsset_PreservesExistingReference()
+		{
+			var path = $"Assets/__AssetRefTest_{NewGuid()}.asset";
+			AssetDatabase.CreateAsset(new Mesh { name = "Main" }, path);
+			_createdAssets.Add(path);
+			var mesh = new Mesh { name = "Child" };
+			AssetDatabase.AddObjectToAsset(mesh, path);
+			AssetDatabase.SaveAssets();
+
+			AssertRejectedReplacement(mesh, typeof(AssetReferenceT<Mesh>), "pick a standalone asset");
+		}
+
+		private static void AssertRejectedReplacement(Object asset, Type referenceType, string expectedWarning)
+		{
+			var currency = ScriptableObject.CreateInstance<CurrencyContent>();
+			try
+			{
+				currency.icon = new AssetReferenceSprite(NewGuid());
+				var serialized = new SerializedObject(currency);
+				var icon = serialized.FindProperty(nameof(CurrencyContent.icon));
+				icon.FindPropertyRelative(AssetReferenceResolution.SUB_OBJECT_NAME_PROPERTY).stringValue = "Previous";
+				serialized.ApplyModifiedProperties();
+				var previousKey = currency.icon.RuntimeKey;
+
+				LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex(expectedWarning));
+				ContentObjectEditor.AssignAssetReference(icon, referenceType, asset, null);
+
+				Assert.That(serialized.ApplyModifiedProperties(), Is.False);
+				Assert.That(currency.icon.RuntimeKey, Is.EqualTo(previousKey));
+			}
+			finally
+			{
+				Object.DestroyImmediate(currency);
+			}
+		}
+
+		[Test]
+		public void SlicedSpriteReplacement_RegistersAssetAndPreservesSelectedSprite()
+		{
+			var guid = CopySlicedSpriteSheet();
+			var sprites = AssetDatabase.LoadAllAssetRepresentationsAtPath(AssetDatabase.GUIDToAssetPath(guid));
+			var sprite = Array.Find(sprites, asset => asset is Sprite && asset.name == "Avatars_1");
+			Assert.That(sprite, Is.Not.Null);
+			var settings = AddressableAssetSettings.Create("Assets", "TestSettings", true, false);
+			var currency = ScriptableObject.CreateInstance<CurrencyContent>();
+			try
+			{
+				currency.icon = new AssetReferenceSprite(NewGuid());
+				var serialized = new SerializedObject(currency);
+				var icon = serialized.FindProperty(nameof(CurrencyContent.icon));
+				ContentObjectEditor.AssignAssetReference(icon, typeof(AssetReferenceSprite), sprite, settings);
+				serialized.ApplyModifiedProperties();
+
+				Assert.That(settings.FindAssetEntry(guid), Is.Not.Null);
+				Assert.That(currency.icon.RuntimeKey, Is.EqualTo($"{guid}[Avatars_1]"));
+			}
+			finally
+			{
+				Object.DestroyImmediate(currency);
+				Object.DestroyImmediate(settings);
+			}
+		}
+
 		private static string NewGuid() => Guid.NewGuid().ToString("N");
 
-		private string CreateTexture(TextureImporterType textureType, SpriteImportMode spriteMode, bool sliced = false)
+		private string CopySlicedSpriteSheet()
+		{
+			const string source = "Packages/com.beamable/Runtime/Modules/Avatars/Sprites/Avatars.png";
+			var path = $"Assets/__AssetRefTest_{NewGuid()}.png";
+			Assert.That(AssetDatabase.CopyAsset(source, path), Is.True);
+			_createdAssets.Add(path);
+			return AssetDatabase.AssetPathToGUID(path);
+		}
+
+		private string CreateTexture(TextureImporterType textureType, SpriteImportMode spriteMode)
 		{
 			var path = $"Assets/__AssetRefTest_{NewGuid()}.png";
 			var texture = new Texture2D(8, 8);
@@ -198,16 +280,6 @@ namespace Beamable.Editor.Tests
 			var importer = (TextureImporter)AssetImporter.GetAtPath(path);
 			importer.textureType = textureType;
 			importer.spriteImportMode = spriteMode;
-			if (sliced)
-			{
-#pragma warning disable CS0618 // spritesheet is the simplest slicing API available on every supported Unity version.
-				importer.spritesheet = new[]
-				{
-					new SpriteMetaData { name = "left", rect = new Rect(0, 0, 4, 8), pivot = new Vector2(0.5f, 0.5f) },
-					new SpriteMetaData { name = "right", rect = new Rect(4, 0, 4, 8), pivot = new Vector2(0.5f, 0.5f) },
-				};
-#pragma warning restore CS0618
-			}
 			importer.SaveAndReimport();
 
 			return AssetDatabase.AssetPathToGUID(path);

@@ -627,7 +627,7 @@ namespace Beamable.Editor.Content.UI
 			var replacement = EditorGUILayout.ObjectField("Replace With", null, GetReplacementPickerType(unresolved.referenceType), false);
 			if (replacement != null)
 			{
-				AssignAssetReference(property, unresolved.referenceType, replacement);
+				AssignAssetReference(property, unresolved.referenceType, replacement, UnityEditor.AddressableAssets.AddressableAssetSettingsDefaultObject.Settings);
 			}
 
 			EditorGUILayout.BeginHorizontal();
@@ -636,10 +636,10 @@ namespace Beamable.Editor.Content.UI
 			{
 				EditorGUIUtility.PingObject(AssetDatabase.LoadMainAssetAtPath(unresolved.assetPath));
 			}
-			if (unresolved.state == AssetReferenceState.MissingAsset && DefaultContentImporter.IsSeedSpriteGuid(unresolved.guid) && GUILayout.Button("Import Default Content"))
+			if (unresolved.state == AssetReferenceState.MissingAsset && DefaultContentImporter.IsSeedSpriteGuid(unresolved.guid) && GUILayout.Button("Import Default Icons"))
 			{
-				// The import shows a dialog and refreshes the AssetDatabase, so run it outside of this GUI pass.
-				EditorApplication.delayCall += DefaultContentImporter.ImportDefaultContent_MenuItem;
+				// Refresh the AssetDatabase outside this GUI pass.
+				EditorApplication.delayCall += () => DefaultContentImporter.ImportDefaultIcons();
 			}
 			if (GUILayout.Button("Clear Reference"))
 			{
@@ -659,7 +659,8 @@ namespace Beamable.Editor.Content.UI
 		/// Points the reference at <paramref name="asset"/>, the way the Addressables picker does: a sprite sliced
 		/// from a multi-sprite texture is stored as a sub-object, and the asset is made addressable.
 		/// </summary>
-		private static void AssignAssetReference(SerializedProperty property, Type referenceType, UnityEngine.Object asset)
+		internal static void AssignAssetReference(SerializedProperty property, Type referenceType, UnityEngine.Object asset,
+			UnityEditor.AddressableAssets.Settings.AddressableAssetSettings settings)
 		{
 			// Unity's built-in assets (such as the UISprite and Background sprites the picker lists first) live
 			// outside Assets/ and Packages/ and cannot be Addressables references.
@@ -678,19 +679,39 @@ namespace Beamable.Editor.Content.UI
 			}
 
 			string subObjectName = string.Empty, subObjectType = string.Empty;
-			if (asset is Sprite && AssetDatabase.IsSubAsset(asset) && AssetDatabase.LoadAllAssetRepresentationsAtPath(path).OfType<Sprite>().Count() > 1)
+			if (AssetDatabase.IsSubAsset(asset))
 			{
-				subObjectName = asset.name;
-				subObjectType = typeof(Sprite).AssemblyQualifiedName;
+				if (!(asset is Sprite))
+				{
+					Debug.LogWarning($"Cannot assign '{asset.name}' to {property.displayName}: pick a standalone asset for this reference type.");
+					return;
+				}
+
+				var sprites = AssetDatabase.LoadAllAssetRepresentationsAtPath(path).OfType<Sprite>().ToArray();
+				if (sprites.Count(sprite => sprite.name == asset.name) != 1)
+				{
+					Debug.LogWarning($"Cannot assign '{asset.name}' to {property.displayName}: pick a sprite with a unique name.");
+					return;
+				}
+				if (sprites.Length > 1 || AssetReferenceResolution.GetTargetType(referenceType) != typeof(Sprite))
+				{
+					subObjectName = asset.name;
+					subObjectType = typeof(Sprite).AssemblyQualifiedName;
+				}
+			}
+
+			var entry = settings?.FindAssetEntry(guid, true);
+			if (entry == null && settings != null && settings.DefaultGroup != null)
+			{
+				entry = settings.CreateOrMoveEntry(guid, settings.DefaultGroup);
+			}
+			if (entry == null)
+			{
+				Debug.LogWarning($"Cannot assign '{assetPath}' to {property.displayName}: configure Addressables and register the asset, then try again.");
+				return;
 			}
 
 			SetAssetReference(property, guid, subObjectName, subObjectType);
-
-			var settings = UnityEditor.AddressableAssets.AddressableAssetSettingsDefaultObject.Settings;
-			if (settings != null && settings.FindAssetEntry(guid) == null)
-			{
-				settings.CreateOrMoveEntry(guid, settings.DefaultGroup);
-			}
 		}
 
 		private static bool IsProjectAssetPath(string assetPath)

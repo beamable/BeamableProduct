@@ -109,7 +109,7 @@ namespace Beamable.Editor.Content
 					              "The reference is kept unchanged. ";
 					if (DefaultContentImporter.IsSeedSpriteGuid(guid))
 					{
-						return message + "It is a Beamable default content sprite: run Import Default Content to add it, " +
+						return message + "It is a Beamable default content sprite: use Import Default Icons to add it, " +
 						       $"or pick a {expected} to replace it.";
 					}
 
