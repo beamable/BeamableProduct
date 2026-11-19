@@ -297,6 +297,11 @@ namespace Beamable.Common.Api.Auth
 
 		public Promise<EmptyResponse> ConfirmPasswordUpdate(string email, string code, string newPassword)
 		{
+			if (string.IsNullOrWhiteSpace(email))
+			{
+				return Promise<EmptyResponse>.Failed(new ArgumentException("A password reset email is required.", nameof(email)));
+			}
+
 			var req = new ConfirmPasswordUpdateWithEmailRequest { email = email, code = code, newPassword = newPassword };
 			return _requester.Request<EmptyResponse>(Method.POST, $"{ACCOUNT_URL}/password-update/confirm", req);
 		}

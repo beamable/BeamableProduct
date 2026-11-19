@@ -502,6 +502,10 @@ export class AccountService extends ApiService {
   async confirmPasswordUpdate(
     params: ConfirmPasswordUpdateParams,
   ): Promise<void> {
+    if (typeof params?.email !== 'string' || !params.email.trim()) {
+      throw new BeamError('Email is required to confirm a password update');
+    }
+
     await accountsPostPasswordUpdateConfirmBasic(
       this.requester,
       params,

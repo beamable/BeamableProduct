@@ -698,6 +698,23 @@ describe('AccountService', () => {
   });
 
   describe('confirmPasswordUpdate', () => {
+    it.each([{}, { email: null }, { email: '' }, { email: ' \t ' }])(
+      'rejects an invalid email before sending a request (%j)',
+      async (emailField) => {
+        const confirm = vi
+          .spyOn(apis, 'accountsPostPasswordUpdateConfirmBasic')
+          .mockClear();
+        const accountService = new AccountService({ beam: {} as BeamBase });
+        const params = { code: 'code123', newPassword: 'newPass123', ...emailField };
+
+        // JavaScript consumers can bypass the required TypeScript field.
+        await expect(
+          accountService.confirmPasswordUpdate(params as ConfirmPasswordUpdateParams),
+        ).rejects.toThrow('Email is required');
+        expect(confirm).not.toHaveBeenCalled();
+      },
+    );
+
     it('calls accountsPostPasswordUpdateConfirmBasic on the accounts API with the email', async () => {
       const params: ConfirmPasswordUpdateParams = {
         email: 'player@example.com',
