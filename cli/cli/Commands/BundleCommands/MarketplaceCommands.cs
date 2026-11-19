@@ -331,4 +331,38 @@ public class PlacementsCommand : AtomicCommand<PlacementsCommandArgs, Placements
 			}).ToArray(),
 		};
 	}
+
+	protected override void LogResult(object result)
+	{
+		if (result is not PlacementsCommandOutput output)
+		{
+			base.LogResult(result);
+			return;
+		}
+
+		if (output.bundles.Length == 0)
+		{
+			AnsiConsole.WriteLine("No listed bundles add anything there.");
+			return;
+		}
+
+		var table = new Table();
+		table.AddColumn("Place");
+		table.AddColumn("Bundle");
+		table.AddColumn("Latest");
+		table.AddColumn("Component groups");
+		table.AddColumn("Yours");
+		foreach (var b in output.bundles)
+		{
+			var yours = b.owned ? "owned" : b.installation ?? (b.acquired ? "acquired" : "");
+			table.AddRow(
+				Markup.Escape(b.place),
+				Markup.Escape(b.bundle),
+				$"v{b.latestVersion}",
+				Markup.Escape(string.Join(", ", b.componentGroups)),
+				Markup.Escape(yours));
+		}
+
+		AnsiConsole.Write(table);
+	}
 }
