@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added local/realm property and read-only JSON diffs, a reconciliation queue, clearer status/Inspector warnings, and saved column widths.
 - Fields with the `MustBeComparatorString` attribute show a dropdown in the Inspector listing the comparators the backend accepts for that field, with a tooltip for each.
+- `IAuthApi.ConfirmPasswordUpdate(email, code, newPassword)` and `PlayerAccounts.ConfirmPassword(email, code, newPassword)` confirm a password reset with the email address the code was sent to.
 
 ### Fixed
 
@@ -21,16 +22,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - With Unity IAP 5, purchasing can be initialized more than once (login, `ChangeAuthorizedPlayer`, several `BeamContext`s, play mode without domain reload) without failing with `ErrorNoProductsAvailable (FetchProducts cannot be invoked if a fetch is already in progress...)`. SKUs without a product id for the current store are skipped with a warning, products the store doesn't know no longer disable purchasing, and Steam builds use the Beamable Steam store.
 - Purchases are no longer lost or left hanging: an order whose fulfillment fails stays pending in the store instead of being confirmed without its reward, and `StartPurchase` always completes, including for unknown SKUs, a second purchase while one is in flight (`ExistingPurchasePending`), deferred payments (`UnityBeamablePurchaser.PURCHASE_DEFERRED_ERROR_CODE`, on Unity IAP 4 too) and a store that disconnected in the background. Initializing purchasing again or disposing its context settles a purchase left in flight, and its Beamable transaction is always closed with the account that began it. Prices are sent in a culture-independent format.
 - With Unity IAP 5 on iOS and macOS, purchases are fulfilled with the App Store receipt instead of Unity's receipt wrapper, and the receipt is refreshed only during a purchase the player started. A failed order can be retried without another charge by the account that bought it, by buying the same product again or calling `RestorePurchases`, and the SDK no longer restores transactions at startup.
+- Selecting a currency or item whose icon points at a missing asset, or at a texture not imported as a Sprite, no longer logs `Assigned editorAsset does not match type UnityEngine.U2D.SpriteAtlas or UnityEngine.Sprite` on every Inspector repaint. The field explains the problem and offers to replace or clear the reference, or to import the default `coins` and `gems` icons. Importing icons preserves existing currency definitions. Replacing a reference requires a registered Addressable asset and a selection the picker can represent.
 
 ### Changed
 
 - Local Mode pauses auto-sync while History tracks realm publications. Publishing requires resolving validation errors, conflicts, and incoming changes.
 - Unverified content requires an explicit local/realm choice in Issues. Preserve `referenceManifestId` in external JSON: empty/null requires review; omission fails loading.
 - Beam Account login window pre-fills the environment and organization from the project's existing configuration, such as `config-defaults.txt`, and restores the previously selected realm after login.
+- Password reset confirmation sends the email address, which the backend will soon require. `PlayerAccount.ConfirmPassword`, `PasswordResetOperation.Confirm` and the Account Management flow send it automatically. Calling `ConfirmPassword(code, newPassword, null)` with a literal `null` is now ambiguous. Use `ConfirmPassword(code, newPassword, (PlayerAccount)null)` to preserve the account-specific overload and its refresh.
 
 ### Deprecated
 
 - `ContentConfiguration.EditorManifestID` remains for source compatibility but is ignored; Local Mode uses the Content window namespace.
+- `IAuthApi.ConfirmPasswordUpdate(code, newPassword)` and `PlayerAccounts.ConfirmPassword(code, newPassword)` are obsolete. Pass the email address too: the backend will soon reject confirmations without it. Both obsolete overloads omit the email address.
 
 ## [6.2.0] - 2026-10-08
 

@@ -315,9 +315,15 @@ namespace Beamable.Server.Common
 		    var thisIndex = serializer.Converters.IndexOf(this);
 		    serializer.Converters.RemoveAt(thisIndex);
 
-		    serializer.Serialize(writer, value);
-
-		    serializer.Converters.Insert(thisIndex, this);
+		    try
+		    {
+			    serializer.Serialize(writer, value);
+		    }
+		    finally
+		    {
+			    // A failed write must not leave a reused serializer without this converter.
+			    serializer.Converters.Insert(thisIndex, this);
+		    }
 	    }
 #pragma warning restore CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
 

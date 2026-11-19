@@ -96,38 +96,33 @@ export function BeamChildExtension(
 BeamChildExtension.displayName = 'BeamChildExtension';
 
 // ---------------------------------------------------------------------------
-// BeamExtensionSite — declare a mount site inside this extension that other
-// extensions can target. Matched children are paired by name (the parent
-// extension's manifest `Name`) and the provided `selector`.
+// BeamExtensionSite — place one of this extension's sites on screen, by id.
+// Every mount that lists the id in `siteIds` renders here, laid out as the
+// site's declaration (`beamable.sites` in this extension's package.json) says.
 // ---------------------------------------------------------------------------
 
 export interface BeamExtensionSiteProps {
   /**
-   * The site identifier child extensions target. Children whose manifest
-   * mount declares `selector: "#<this value>"` render here.
-   */
-  selector: string;
-  /**
-   * How multiple matching children render at this site.
+   * The site to place here: an id THIS extension declares in its own
+   * `beamable.sites` (see `SiteDeclaration`). The portal resolves it against
+   * this extension's declaration at render; an id it doesn't declare shows a
+   * site error in place. The declaration sets the presentation (`stack`,
+   * `tabs` or `route-tabs`), so there is no layout prop.
    *
-   * - `additive` (default): stack them, all mounted simultaneously.
-   *   Children match by parent name: `mount.page = "<parent's manifest Name>"`.
-   * - `tabs`: render in a `beam-tab-group`; tab selection is internal
-   *   state. Children match by parent name (same as `additive`). Best for
-   *   ephemeral tab UIs (settings dialogs, etc.) where deep-linking
-   *   doesn't matter.
-   * - `tabs-route`: render in a `beam-tab-group`; the **active tab** is
-   *   whichever child's `mount.page` matches the current URL. Children
-   *   declare full URL patterns (e.g. `"players/list/:playerId/inventory"`),
-   *   not parent-name references. Tab clicks fire a portal navigate to
-   *   the clicked child's URL, with the parent's matched params filled
-   *   in. Use this for page-level tabbed views (Player 360, microservice
-   *   detail, anything that's "a thing with deep-linkable views").
+   * Pass several ids to render two sites in one socket while mounts move to a
+   * successor (`['campaign-offer', 'campaign-offer-v2']`); the first id's
+   * declaration sets the presentation.
    *
-   * `tabs` and `tabs-route` both require ≥2 matching children — a single
-   * match falls back to additive so the tab strip is never one tab wide.
+   * For `route-tabs`, each mount's `page` is relative to this extension's own
+   * route (its page without the trailing `/*`): `page: "stats"` under
+   * `development/player-profile/:playerId/*` is the tab at
+   * `development/player-profile/:playerId/stats`.
+   *
+   * @example
+   *   // package.json: "sites": [{ "id": "player-profile-tabs", "presentation": "route-tabs" }]
+   *   <BeamExtensionSite site="player-profile-tabs" />
    */
-  mountKind?: 'additive' | 'tabs' | 'tabs-route';
+  site: string | string[];
   /**
    * Arbitrary in-process data to hand to every child extension mounted at
    * this site. Shows up on the child's `context.siteData` as a snapshot at

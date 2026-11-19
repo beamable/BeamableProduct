@@ -1328,23 +1328,65 @@ namespace Beamable.Player
 			}
 
 			var res = new PasswordResetConfirmOperation { account = account };
-			var service = GetAuthServiceForAccount(account);
+			var email = account?.Email;
+			if (string.IsNullOrWhiteSpace(email))
+			{
+				res.error = PasswordResetConfirmError.INVALID;
+				return res;
+			}
 
-			await service.ConfirmPasswordUpdate(code, newPassword);
+			var service = GetAuthServiceForAccount(account);
+			await service.ConfirmPasswordUpdate(email, code, newPassword);
 			await Refresh();
 			return res;
 		}
 
-
+		/// <summary>
+		/// Sends a password reset code to the given email address.
+		/// Complete the reset with <see cref="ConfirmPassword(string, string, string)"/>, passing the same email address.
+		/// </summary>
+		/// <param name="email">The email address registered to the account whose password should be reset.</param>
 		public async Promise ResetPassword(string email)
 		{
 			await OnReady;
 
 			var service = GetAuthServiceForAccount(Current);
 			await service.IssuePasswordUpdate(email);
-
 		}
 
+		/// <summary>
+		/// Completes a password reset flow that was started with <see cref="ResetPassword(string)"/>.
+		/// </summary>
+		/// <param name="email">The email address the code was sent to.</param>
+		/// <param name="code">The code that was sent to the email address.</param>
+		/// <param name="newPassword">A new password to assign to the email credential.</param>
+		/// <returns>A <see cref="PasswordResetResult"/> describing whether the reset succeeded.</returns>
+		public async Promise<PasswordResetResult> ConfirmPassword(string email, string code, string newPassword)
+		{
+			if (string.IsNullOrWhiteSpace(email))
+			{
+				return new PasswordResetResult(new ArgumentException("A password reset email is required.", nameof(email)));
+			}
+
+			await OnReady;
+
+			var service = GetAuthServiceForAccount(Current);
+			try
+			{
+				await service.ConfirmPasswordUpdate(email, code, newPassword);
+				return new PasswordResetResult();
+			}
+			catch (Exception ex)
+			{
+				return new PasswordResetResult(ex);
+			}
+		}
+
+		/// <summary>
+		/// Completes a password reset flow without naming the email address.
+		/// This legacy request omits the email address.
+		/// </summary>
+		[Obsolete("Password reset confirmation will require the email address. Use " + nameof(ConfirmPassword) + "(email, code, newPassword) instead.")]
 		public async Promise<PasswordResetResult> ConfirmPassword(string code, string newPassword)
 		{
 			await OnReady;

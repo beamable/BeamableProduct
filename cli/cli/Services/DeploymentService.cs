@@ -1891,6 +1891,11 @@ public partial class DeployUtil
 
 			beamActivity.SetTag(TelemetryAttributes.PortalExtensionName(peDef.Name));
 
+			// An invalid site declaration never ships.
+			var declarationError = PortalExtensionSiteDeclarationChecks.GetErrorMessage(peDef.Name, peDef.Properties);
+			if (declarationError != null)
+				throw new CliException(declarationError);
+
 			var observer = new PortalExtensionObserver { ExtensionMetaData = peDef, RootActivity = beamActivity };
 			observer.InstallDeps();
 			observer.BuildExtension();
