@@ -3,6 +3,7 @@ using Beamable.Server;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace cli.Services.Bundles;
@@ -88,6 +89,11 @@ public static class BundleNamespace
 		return Qualify(await Resolve(args, explicitNs), name);
 	}
 
+	/// <summary>Whether <paramref name="text"/> names the bundle <paramref name="fullName"/> on its own, not as part of a longer name.</summary>
+	public static bool IsNamedIn(string text, string fullName) =>
+		!string.IsNullOrEmpty(text) && !string.IsNullOrEmpty(fullName) &&
+		Regex.IsMatch(text, $@"(?<![\w@/.-]){Regex.Escape(fullName)}(?![\w/-]|\.\w)");
+
 	/// <summary>The catalog namespace for a customer alias: <c>@&lt;alias&gt;</c>.</summary>
 	public static string FromAlias(string alias) => "@" + alias.TrimStart('@');
 
@@ -110,7 +116,7 @@ public static class BundleNamespace
 		}
 	}
 
-	private static string RefusalOf(RequesterException e)
+	public static string RefusalOf(RequesterException e)
 	{
 		try
 		{

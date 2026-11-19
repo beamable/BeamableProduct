@@ -9,6 +9,7 @@ using Spectre.Console;
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
+using System.CommandLine.Invocation;
 using System.Linq;
 using System.Text;
 
@@ -35,6 +36,9 @@ public class InstallBundleCommandArgs : ZoneInstallationArgs
 	public long version;
 	public string tag;
 	public List<string> componentGroups;
+
+	/// <summary>Turn every component group off.</summary>
+	public bool noComponentGroups;
 	public string realms;
 	public List<string> realmIds;
 	public bool? autoUpdate;
@@ -66,6 +70,19 @@ public class InstallBundleCommandArgs : ZoneInstallationArgs
 			throw new CliException("Give --version or --tag, not both.");
 		if (version > 0) request.version = version;
 		if (!string.IsNullOrEmpty(tag)) request.tag = tag;
+		var optionLike = componentGroups?.FirstOrDefault(g => g.StartsWith("-"));
+		if (optionLike != null)
+		{
+			throw new CliException($"--component-groups got [{optionLike}] as a component group. To turn every component group off, use --no-component-groups.");
+		}
+		if (noComponentGroups)
+		{
+			if (componentGroups?.Count > 0)
+			{
+				throw new CliException("Give --component-groups or --no-component-groups, not both.");
+			}
+			componentGroups = new List<string>();
+		}
 		if (componentGroups != null) request.componentGroups = new OptionalArrayOfString(componentGroups.ToArray());
 		if (autoUpdate.HasValue) request.autoUpdate = autoUpdate.Value;
 		if (detach?.Count > 0) request.detach = new OptionalArrayOfString(detach.ToArray());
@@ -129,6 +146,8 @@ public class InstallBundleCommand : AtomicCommand<InstallBundleCommandArgs, Inst
 	{
 	}
 
+	public override bool AutoLogOutput => false;
+
 	public override void Configure()
 	{
 		AddArgument(new Argument<string>("bundle-name", "The bundle name, optionally namespaced as @<namespace>/<bundle-name>"),
@@ -139,6 +158,8 @@ public class InstallBundleCommand : AtomicCommand<InstallBundleCommandArgs, Inst
 			(args, i) => args.tag = i);
 		AddOption(new Option<List<string>>("--component-groups", "The component groups to turn on, comma separated or repeated. Defaults to the ones on by default") { AllowMultipleArgumentsPerToken = true },
 			(args, i) => args.componentGroups = i?.Count > 0 ? i.SelectMany(f => f.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)).ToList() : null);
+		AddOption(new Option<bool>("--no-component-groups", "Turn every component group off, instead of --component-groups"),
+			(args, i) => args.noComponentGroups = i);
 		AddOption(new Option<string>("--realms", "Which realms get the realm components: all (every realm of the zone, including later ones) or none (zone components only). Defaults to all"),
 			(args, i) => args.realms = i);
 		AddOption(new Option<List<string>>("--realm", "A realm (its id) to get the realm components; repeat for each. Instead of --realms") { AllowMultipleArgumentsPerToken = true },
@@ -162,16 +183,17 @@ public class InstallBundleCommand : AtomicCommand<InstallBundleCommandArgs, Inst
 
 		for (var attempt = 1; ; attempt++)
 		{
-			var plan = InstallationPlanInfo.From(await api.PostInstallationsPlan(request));
+			var plan = InstallationPlanInfo.From(await BundleNamespace.Send(async () => await api.PostInstallationsPlan(request)));
 			plan.Print();
 
 			var output = new InstallBundleCommandOutput { plan = plan };
 			if (plan.refusals.Length > 0)
 			{
 				Log.Error($"The plan is refused, so nothing was applied:\n - {string.Join("\n - ", plan.refusals)}");
+				args.Provider.GetService<InvocationContext>().ExitCode = 1;
 				return output;
 			}
-			if (plan.sites.Length == 0 && plan.change != "AutoUpdate")
+			if (!plan.HasChanges())
 			{
 				Log.Information("Nothing to change.");
 				return output;
@@ -196,7 +218,10 @@ public class InstallBundleCommand : AtomicCommand<InstallBundleCommandArgs, Inst
 				output.applied = true;
 				output.warnings = response.warnings.GetOrElse(Array.Empty<string>());
 				output.results = SiteResultInfo.From(response.results.GetOrElse(new MapOfInstallationSite()));
-				foreach (var warning in output.warnings) Log.Warning(warning);
+				foreach (var warning in output.warnings.Except(plan.warnings))
+				{
+					Log.Warning(warning);
+				}
 				foreach (var result in output.results)
 				{
 					if (result.state == "failed") Log.Error($"{result.site}: failed. {result.error}");
@@ -215,6 +240,10 @@ public class InstallBundleCommand : AtomicCommand<InstallBundleCommandArgs, Inst
 			{
 				Log.Warning("Something changed on the zone since the plan was made, so it wasn't applied. Planning again...");
 			}
+			catch (RequesterException e) when (e.Status >= 400 && e.Status < 500)
+			{
+				throw new CliException(BundleNamespace.RefusalOf(e));
+			}
 		}
 	}
 }
@@ -229,6 +258,8 @@ public class UninstallBundleCommand : AtomicCommand<UninstallBundleCommandArgs, 
 	public UninstallBundleCommand() : base("uninstall", "Uninstall a bundle from a zone. Its components are archived; storage data is kept")
 	{
 	}
+
+	public override bool AutoLogOutput => false;
 
 	public override void Configure()
 	{
@@ -327,6 +358,7 @@ public class InstallationPlanInfo
 		}).ToArray(),
 		refusals = p.refusals.GetOrElse(Array.Empty<string>()),
 		warnings = p.warnings.GetOrElse(Array.Empty<string>()),
+		_blockerBundles = p.blockers.GetOrElse(Array.Empty<DependencyBlocker>()).Select(b => b.bundle.GetOrElse("")).ToArray(),
 		blockers = p.blockers.GetOrElse(Array.Empty<DependencyBlocker>()).Select(b =>
 		{
 			var range = BundleDependencyConfig.FormatRange(b.min.GetOrElse(0), b.max.HasValue ? b.max.Value : null);
@@ -345,12 +377,22 @@ public class InstallationPlanInfo
 		hash = p.hash.GetOrElse(""),
 	};
 
+	/// <summary>The bundle each of <see cref="blockers"/> is about, in the same order.</summary>
+	private string[] _blockerBundles = Array.Empty<string>();
+
+	/// <summary>Whether applying the plan changes anything: a site changes, or the auto-update setting does.</summary>
+	public bool HasChanges() => sites.Length > 0 || change == "AutoUpdate";
+
 	public void Print()
 	{
 		var sb = new StringBuilder();
-		sb.AppendLine($"Plan for [{bundle}] on zone [{zoneId}]: {change}");
+		sb.AppendLine($"Plan for [{bundle}] on zone [{zoneId}]: {(HasChanges() ? change : "no change")}");
 		if (from != null) sb.AppendLine($"  now:   {from.Describe()}");
-		if (to != null) sb.AppendLine($"  after: {to.Describe()}{(autoUpdateLocked ? " (auto-update required by the publisher)" : "")}");
+		if (to != null)
+		{
+			var locked = !autoUpdateLocked ? "" : to.autoUpdate ? " (auto-update required by the publisher)" : " (refused: auto-update required by the publisher)";
+			sb.AppendLine($"  after: {to.Describe()}{locked}");
+		}
 		if (compatible == false) sb.AppendLine("  This upgrade is breaking for at least one component, or changes data irreversibly.");
 		foreach (var site in sites.OrderByDescending(s => s.isZone))
 		{
@@ -358,7 +400,14 @@ public class InstallationPlanInfo
 			foreach (var c in site.changes) sb.AppendLine($"   - {c}");
 		}
 		Log.Information(sb.ToString().TrimEnd());
-		foreach (var blocker in blockers) Log.Warning($"Blocked: {blocker}");
+		for (var i = 0; i < blockers.Length; i++)
+		{
+			var blockerBundle = i < _blockerBundles.Length ? _blockerBundles[i] : null;
+			if (!refusals.Any(r => BundleNamespace.IsNamedIn(r, blockerBundle)))
+			{
+				Log.Warning($"Blocked: {blockers[i]}");
+			}
+		}
 		foreach (var warning in warnings) Log.Warning(warning);
 	}
 }

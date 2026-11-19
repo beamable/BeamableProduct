@@ -152,6 +152,13 @@ public static class BundleWorkspace
 		{
 			dto = JsonConvert.DeserializeObject<BundleFileDto>(text, StrictBundleSettings);
 		}
+		catch (JsonSerializationException e) when (!string.IsNullOrEmpty(e.Path))
+		{
+			var problem = e.Message.StartsWith("Could not find member")
+				? $"unknown property [{e.Path}]"
+				: $"property [{e.Path}] has the wrong type";
+			throw new CliException($"Bundle file=[{displayPath}] is not a valid bundle file: {problem} at line {e.LineNumber}.");
+		}
 		catch (JsonException e)
 		{
 			throw new CliException($"Bundle file=[{displayPath}] is not a valid bundle file: {e.Message}");
@@ -275,9 +282,11 @@ public static class BundleWorkspace
 	/// extension (beamoIds are case-sensitive, so a near miss is suggested); a declared site matches the
 	/// component's own scope; every component group that has a service has the storages it uses (a hard dependency);
 	/// and a service whose source is available makes its storages' source available too, since the service
-	/// doesn't build without them. Throws <see cref="CliException"/> listing every problem.
+	/// doesn't build without them. Throws <see cref="CliException"/> listing every problem. When
+	/// <paramref name="fromComponentOptions"/> is set, the bundle comes from <c>bundles new -c</c> options rather
+	/// than a file, so the error points at those options.
 	/// </summary>
-	public static void ValidateAgainstProjects(BeamoLocalManifest manifest, BundleConfigFile bundle)
+	public static void ValidateAgainstProjects(BeamoLocalManifest manifest, BundleConfigFile bundle, bool fromComponentOptions = false)
 	{
 		var definitions = (manifest?.ServiceDefinitions ?? new List<BeamoServiceDefinition>())
 			.Where(d => d.IsLocal)
@@ -327,7 +336,9 @@ public static class BundleWorkspace
 				{
 					if (!bundle.components.TryGetValue(storage, out var storageConfig))
 					{
-						problems.Add($"Service [{component}] uses storage [{storage}], which isn't in the bundle.");
+						problems.Add(fromComponentOptions
+							? $"Service [{component}] uses storage [{storage}], which isn't in the bundle. Add -c {storage}."
+							: $"Service [{component}] uses storage [{storage}], which isn't in the bundle.");
 						continue;
 					}
 
@@ -349,7 +360,10 @@ public static class BundleWorkspace
 		if (problems.Count > 0)
 		{
 			var fileLabel = bundle.filePath != null ? Path.GetFileName(bundle.filePath) : bundle.name;
-			throw new CliException($"Bundle=[{bundle.name}] doesn't match its projects. Fix {fileLabel}:\n - " + string.Join("\n - ", problems));
+			var header = fromComponentOptions
+				? $"Bundle=[{bundle.name}] wasn't created: its components don't match their projects. Fix the -c options:"
+				: $"Bundle=[{bundle.name}] doesn't match its projects. Fix {fileLabel}:";
+			throw new CliException(header + "\n - " + string.Join("\n - ", problems));
 		}
 	}
 
@@ -388,7 +402,12 @@ public static class BundleWorkspace
 		{
 			ValidateName(bundle.name);
 			if (!seenNames.Add(bundle.name))
-				throw new CliException($"Bundle name=[{bundle.name}] is declared by more than one *{BUNDLE_FILE_SUFFIX} file.");
+			{
+				var files = bundles
+					.Where(b => b.name == bundle.name)
+					.Select(b => SafeRelative(configService.BeamableWorkspace, b.filePath));
+				throw new CliException($"Bundle name=[{bundle.name}] is declared by more than one file: {string.Join(", ", files)}.");
+			}
 
 			foreach (var component in bundle.ComponentNames)
 			{

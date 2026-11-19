@@ -147,6 +147,7 @@ public class BundleReleasesCommand
 		table.AddColumn("Published At");
 		table.AddColumn("Tags");
 		table.AddColumn("Status");
+		table.AddColumn("Compatible since");
 		foreach (var release in output.releases)
 		{
 			// Only a deprecation sets a version's status; other kinds are listed below the table.
@@ -157,7 +158,8 @@ public class BundleReleasesCommand
 				Markup.Escape($"v{release.version}"),
 				Markup.Escape(BundleInfo.FormatPublishedAt(release.publishedAt)),
 				Markup.Escape(tagsByVersion.TryGetValue(release.version, out var t) ? t : "-"),
-				Markup.Escape(status));
+				Markup.Escape(status),
+				Markup.Escape(release.FormatCompatibleSince()));
 		}
 		AnsiConsole.Write(table);
 
@@ -187,6 +189,11 @@ public class BundleReleasesCommand
 			AnsiConsole.Write(content);
 			foreach (var (dependency, range) in output.content.dependencies)
 				AnsiConsole.MarkupLine($"Depends on {Markup.Escape(dependency)} ({Markup.Escape(range)})");
+			var release = output.releases.FirstOrDefault(r => r.version == output.content.version);
+			foreach (var (component, since) in release?.compatibleSince.OrderBy(c => c.Key, StringComparer.Ordinal) ?? Enumerable.Empty<KeyValuePair<string, long>>())
+			{
+				AnsiConsole.WriteLine($"{component}: compatible since v{since}");
+			}
 		}
 	}
 }

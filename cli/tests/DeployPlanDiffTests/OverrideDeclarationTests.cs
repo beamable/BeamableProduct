@@ -387,4 +387,20 @@ public class OverrideDeclarationTests
 			Site(("Scores", "@acme/leaderboards", Connection))));
 		Assert.That(ex.Message, Does.Contain("can't also be ended"));
 	}
+
+	[Test]
+	public void SavedPlan_EndOverridesAndNotes_RoundTrip()
+	{
+		var plan = new DeployablePlan
+		{
+			endOverrides = new List<string> { "Scores" },
+			notes = new Dictionary<string, List<string>> { ["InlineDb"] = new List<string> { "Is being disabled because it was not referenced by any active service. " } },
+		};
+
+		var loaded = Beamable.Serialization.JsonSerializable.FromJson<DeployablePlan>(Beamable.Serialization.JsonSerializable.ToJson(plan));
+
+		Assert.That(loaded.endOverrides, Is.EqualTo(new[] { "Scores" }));
+		Assert.That(loaded.notes.Keys, Is.EqualTo(new[] { "InlineDb" }));
+		Assert.That(loaded.notes["InlineDb"], Is.EqualTo(plan.notes["InlineDb"]));
+	}
 }

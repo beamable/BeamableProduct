@@ -17,7 +17,7 @@ export default function App({ context }: AppProps) {
 
       <BeamCard>
         <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div>Player ID {beam?.player.id ?? '...'}</div>
+          <div>Realm {beam?.pid ?? '...'}</div>
           <div>
             <BeamButton variant="brand">Click</BeamButton>
           </div>

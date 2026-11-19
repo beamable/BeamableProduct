@@ -286,7 +286,21 @@ public class DeployablePlan : JsonSerializable.ISerializable
 		s.Serialize(nameof(diff), ref diff);
 		s.Serialize(nameof(changeCount), ref changeCount);
 		s.Serialize(nameof(ranHealthChecks), ref ranHealthChecks);
-		s.SerializeDictionary(nameof(notes), ref notes);
+		if (s.isLoading)
+		{
+			notes = new Dictionary<string, List<string>>();
+			if (s.HasKey(nameof(notes)) && s.GetValue(nameof(notes)) is IDictionary<string, object> loadedNotes)
+			{
+				foreach (var (beamoId, value) in loadedNotes)
+				{
+					notes[beamoId] = (value as System.Collections.IList)?.Cast<object>().Select(n => n?.ToString()).ToList() ?? new List<string>();
+				}
+			}
+		}
+		else
+		{
+			s.SerializeDictionary(nameof(notes), ref notes);
+		}
 		s.SerializeList(nameof(servicesToUpload), ref servicesToUpload);
 		s.SerializeList(nameof(portalExtensionsToUpload), ref portalExtensionsToUpload);
 		s.SerializeList(nameof(portalExtensionReferences), ref portalExtensionReferences);
@@ -1526,26 +1540,26 @@ public partial class DeployUtil
 	
 	public static void PrintPlanInfo(DeployablePlan plan, IHasDeployPlanArgs args, out bool hasChanges)
 	{
-		var detectedChangeCount = PrintChangesAndNoticeChange(plan.diff.disabledServices, "Disabling", "service");
-		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.removedServices, "Removing", "service");
-		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.addedServices, "Adding", "service");
-		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.enabledServices, "Enabling", "service");
-		detectedChangeCount += PrintChangesAndNoticeChangeT(plan.diff.serviceImageIdChanges, "Updating", "service");
-		detectedChangeCount += PrintChangesAndNoticeChangeT(plan.diff.addedFederations, "Enabling", "federation");
-		detectedChangeCount += PrintChangesAndNoticeChangeT(plan.diff.removedFederations, "Disabling", "federation");
-		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.disabledStorages, "Disabling", "storage");
-		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.removedStorage, "Removing", "storage");
-		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.addedStorage, "Adding", "storage");
-		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.enabledStorages, "Enabling", "storage");
-		detectedChangeCount += PrintChangesAndNoticeChangeT(plan.diff.servicesSwitchingLogProvider, "Switching LogProvider", "service");
-		detectedChangeCount += PrintChangesAndNoticeChange(plan.servicesToUpload, "Uploading", "service");
-		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.addedPortalExtensions, "Adding", "portal extension");
-		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.changedPortalExtensions, "Updating", "portal extension");
-		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.removedPortalExtensions, "Removing", "portal extension");
+		PrintChangesAndNoticeChange(plan.diff.disabledServices, "Disabling", "service");
+		PrintChangesAndNoticeChange(plan.diff.removedServices, "Removing", "service");
+		PrintChangesAndNoticeChange(plan.diff.addedServices, "Adding", "service");
+		PrintChangesAndNoticeChange(plan.diff.enabledServices, "Enabling", "service");
+		PrintChangesAndNoticeChangeT(plan.diff.serviceImageIdChanges, "Updating", "service");
+		PrintChangesAndNoticeChangeT(plan.diff.addedFederations, "Enabling", "federation");
+		PrintChangesAndNoticeChangeT(plan.diff.removedFederations, "Disabling", "federation");
+		PrintChangesAndNoticeChange(plan.diff.disabledStorages, "Disabling", "storage");
+		PrintChangesAndNoticeChange(plan.diff.removedStorage, "Removing", "storage");
+		PrintChangesAndNoticeChange(plan.diff.addedStorage, "Adding", "storage");
+		PrintChangesAndNoticeChange(plan.diff.enabledStorages, "Enabling", "storage");
+		PrintChangesAndNoticeChangeT(plan.diff.servicesSwitchingLogProvider, "Switching LogProvider", "service");
+		PrintChangesAndNoticeChange(plan.servicesToUpload, "Uploading", "service");
+		PrintChangesAndNoticeChange(plan.diff.addedPortalExtensions, "Adding", "portal extension");
+		PrintChangesAndNoticeChange(plan.diff.changedPortalExtensions, "Updating", "portal extension");
+		PrintChangesAndNoticeChange(plan.diff.removedPortalExtensions, "Removing", "portal extension");
 		PrintChangesAndNoticeChange(
 			plan.overrides.Select(o => $"{o.component}: your build, in place of {o.bundle}'s (from v{o.version}), from {o.remote}").ToList(),
 			"Overriding", "bundle component");
-		detectedChangeCount += PrintChangesAndNoticeChange(plan.endOverrides, "Giving back", "overridden component");
+		PrintChangesAndNoticeChange(plan.endOverrides, "Giving back", "overridden component");
 		foreach (var kept in plan.keptOverrides)
 			Log.Information(kept);
 		var portalExtensionChangeCount = plan.diff.addedPortalExtensions.Count
@@ -1555,7 +1569,7 @@ public partial class DeployUtil
 		             || plan.portalExtensionsToUpload.Count > 0
 		             || portalExtensionChangeCount > 0
 		             || plan.endOverrides.Count > 0;
-		var hasDetectedChanges = detectedChangeCount > 0;
+		var hasDetectedChanges = plan.changeCount > 0;
 		if (hasChanges)
 		{
 			if (!plan.ranHealthChecks && plan.servicesToUpload.Count > 0)
@@ -1581,13 +1595,13 @@ public partial class DeployUtil
 		switch (hasChanges, hasDetectedChanges)
 		{
 			case (true, true):
-				if (detectedChangeCount == 1)
+				if (plan.changeCount == 1)
 				{
 					Log.Information("This plan has 1 pending change! ");
 				}
 				else
 				{
-					Log.Information($"This plan has {detectedChangeCount} pending changes! ");
+					Log.Information($"This plan has {plan.changeCount} pending changes! ");
 				}
 
 				if (args.UseLatestDeployedManifest)
@@ -1632,7 +1646,7 @@ public partial class DeployUtil
 				sb.AppendLine($" - {changes[i].ToString()}");
 			}
 		
-			Log.Warning(sb.ToString());
+			Log.Warning(sb.ToString().TrimEnd());
 			return changes.Count;
 		}
 	}
@@ -1778,8 +1792,9 @@ public partial class DeployUtil
 
 			// Docker is only needed to build service images. A filtered plan whose set contains no
 			// local microservice (e.g. a portal-extension-only bundle) can run without the daemon.
+			var excludeFromBuild = bundleComponentIds.ToHashSet();
 			var needsServiceBuild = beamo.BeamoManifest.ServiceDefinitions.Any(d =>
-				d.IsLocal && d.Protocol == BeamoProtocolType.HttpMicroservice && d.IsZoneScoped == (args.Scope == DeployScope.Zone) && (includeOnlyBeamoIds == null || includeOnlyBeamoIds.Contains(d.BeamoId)));
+				d.IsLocal && d.Protocol == BeamoProtocolType.HttpMicroservice && d.IsZoneScoped == (args.Scope == DeployScope.Zone) && (includeOnlyBeamoIds == null || includeOnlyBeamoIds.Contains(d.BeamoId)) && !excludeFromBuild.Contains(d.BeamoId));
 			if (needsServiceBuild)
 			{
 				var dockerStatus = await DockerStatusCommand.CheckDocker(provider);
@@ -1789,7 +1804,7 @@ public partial class DeployUtil
 				}
 			}
 
-			localTask = CreateReleaseManifestFromLocal(args, provider, beamo.BeamoManifest, progressHandler, args.MaxParallelTask, useSequentialBuild: args.UseSequentialBuild, includeOnlyBeamoIds: includeOnlyBeamoIds, scope: args.Scope);
+			localTask = CreateReleaseManifestFromLocal(args, provider, beamo.BeamoManifest, progressHandler, args.MaxParallelTask, useSequentialBuild: args.UseSequentialBuild, includeOnlyBeamoIds: includeOnlyBeamoIds, scope: args.Scope, excludeBeamoIds: excludeFromBuild);
 		}
 		progressHandler?.Invoke(MergingManifestProgressName, 0);
 		remote = await remoteTask;
@@ -2013,6 +2028,10 @@ public partial class DeployUtil
 				.Where(pe => !bundleComponentIds.Contains(pe.name)).ToList();
 			nextPortalExtensionRefs = nextPortalExtensionRefs
 				.Where(pe => !bundleComponentIds.Contains(pe.name)).ToList();
+			foreach (var id in bundleComponentIds)
+			{
+				notes.Remove(id);
+			}
 		}
 
 		progressHandler?.Invoke(MergingManifestProgressName, .5f);
@@ -2159,6 +2178,7 @@ public partial class DeployUtil
 			              + diff.addedPortalExtensions.Count
 			              + diff.changedPortalExtensions.Count
 			              + diff.removedPortalExtensions.Count
+			              + endOverrides.Count
 		}, localBuildReports);
 	}
 
@@ -2576,7 +2596,7 @@ public partial class DeployUtil
 		return (localManifest, new List<BuildImageOutput>());
 	}
 	
-	public static async Task<(ManifestView, List<BuildImageOutput>)> CreateReleaseManifestFromLocal<TArg>(TArg slnArg, IDependencyProvider provider, BeamoLocalManifest localManifest, ProgressHandler progressHandler, int maxParallelTask, bool useSequentialBuild=false, HashSet<string> includeOnlyBeamoIds = null, DeployScope scope = DeployScope.Realm)
+	public static async Task<(ManifestView, List<BuildImageOutput>)> CreateReleaseManifestFromLocal<TArg>(TArg slnArg, IDependencyProvider provider, BeamoLocalManifest localManifest, ProgressHandler progressHandler, int maxParallelTask, bool useSequentialBuild=false, HashSet<string> includeOnlyBeamoIds = null, DeployScope scope = DeployScope.Realm, HashSet<string> excludeBeamoIds = null)
 		where TArg : CommandArgs, IHasSolutionFileArg
 	{
 		var services = new ServiceReference[localManifest.HttpMicroserviceLocalProtocols.Count];
@@ -2590,7 +2610,7 @@ public partial class DeployUtil
 		// build all the local services first as a solution level build. On a filtered plan with no
 		// microservice in the set (e.g. a portal-extension-only bundle), skip the solution build.
 		var anyIncludedService = localManifest.ServiceDefinitions.Any(d =>
-			d.IsLocal && d.Protocol == BeamoProtocolType.HttpMicroservice && d.IsZoneScoped == (scope == DeployScope.Zone) && (includeOnlyBeamoIds == null || includeOnlyBeamoIds.Contains(d.BeamoId)));
+			d.IsLocal && d.Protocol == BeamoProtocolType.HttpMicroservice && d.IsZoneScoped == (scope == DeployScope.Zone) && (includeOnlyBeamoIds == null || includeOnlyBeamoIds.Contains(d.BeamoId)) && (excludeBeamoIds == null || !excludeBeamoIds.Contains(d.BeamoId)));
 		var beamoIdToReport = new Dictionary<string, BuildImageSourceOutput>();
 		if (!useSequentialBuild && anyIncludedService)
 		{
@@ -2607,6 +2627,10 @@ public partial class DeployUtil
 			if (includeOnlyBeamoIds != null && !includeOnlyBeamoIds.Contains(definition.BeamoId))
 				// a filtered plan only builds/includes the requested components.
 				continue;
+			if (excludeBeamoIds != null && excludeBeamoIds.Contains(definition.BeamoId))
+			{
+				continue;
+			}
 			if (definition.IsZoneScoped != (scope == DeployScope.Zone))
 				// a realm plan ignores zone-scoped services; a zone plan includes only them.
 				continue;

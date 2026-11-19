@@ -113,9 +113,9 @@ public class PublishBundleCommand
 		if (args.fromLastPlan)
 		{
 			if (!string.IsNullOrEmpty(args.fromPlanFile))
-				throw new CliException("cannot specify both --from-latest-plan and --plan");
+				throw new CliException("Can't use both --last-plan and --plan.");
 			args.fromPlanFile = BundlePlanUtil.GetLatestBundlePlanFilePath(provider, bundle.name)
-			                    ?? throw new CliException($"cannot use --from-latest-plan, because there are no plan files for bundle=[{bundle.name}]. Please run `dotnet beam bundles plan {bundle.name}`");
+			                    ?? throw new CliException($"Can't use --last-plan: there are no plan files for bundle=[{bundle.name}]. Run `dotnet beam bundles plan {bundle.name}` first.");
 		}
 
 		var ns = await BundleNamespace.Get(args);
@@ -152,7 +152,14 @@ public class PublishBundleCommand
 		BundleDiff.Print(diff, fullName);
 		if (diff.isNoOp)
 		{
-			Log.Information("Nothing to publish.");
+			if (string.IsNullOrEmpty(args.tag))
+			{
+				Log.Information("Nothing to publish.");
+			}
+			else
+			{
+				Log.Information($"Nothing to publish, so the tag [{args.tag}] wasn't applied. To point a tag at an existing release, use `beam bundles tag {bundle.name} {args.tag} <version>`.");
+			}
 			this.SendResults<DefaultStreamResultChannel, PublishBundleCommandOutput>(new PublishBundleCommandOutput
 			{
 				name = fullName, checksum = content?.checksum.GetOrElse("") ?? "", isNewVersion = false, version = latestVersion, diff = diff,

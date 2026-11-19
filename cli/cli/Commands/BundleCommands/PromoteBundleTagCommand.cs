@@ -43,12 +43,12 @@ public class PromoteBundleTagCommand : AtomicCommand<PromoteBundleTagCommandArgs
 	{
 		var api = args.Provider.GetService<IBeamBeamobundleApi>();
 		var fullName = await BundleNamespace.FullName(args, args.bundleName);
-		var summary = await api.PutBundlesTags(new SetBundleTagRequest
+		var summary = await BundleNamespace.Send(async () => await api.PutBundlesTags(new SetBundleTagRequest
 		{
 			name = fullName,
 			tag = args.tag,
 			version = args.version,
-		});
+		}));
 		return new PromoteBundleTagCommandOutput { name = fullName, tags = summary.tags.ToTagInfos() };
 	}
 }

@@ -39,7 +39,7 @@ public class YankBundleCommand : AtomicCommand<YankBundleCommandArgs, YankBundle
 	{
 		var api = args.Provider.GetService<IBeamBeamobundleApi>();
 		var fullName = await BundleNamespace.FullName(args, args.bundleName);
-		var response = await api.PostReleasesYank(new YankReleaseRequest { name = fullName, version = args.version });
+		var response = await BundleNamespace.Send(async () => await api.PostReleasesYank(new YankReleaseRequest { name = fullName, version = args.version }));
 		var latest = response.latestVersion.GetOrElse(0);
 		Log.Information(latest > 0
 			? $"Yanked [{fullName}] v{args.version}; latest is v{latest}."

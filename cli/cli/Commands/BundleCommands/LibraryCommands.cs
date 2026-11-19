@@ -5,6 +5,7 @@ using cli.Services.Bundles;
 using Spectre.Console;
 using System;
 using System.CommandLine;
+using System.CommandLine.Invocation;
 using System.Linq;
 
 namespace cli.BundleCommands;
@@ -40,6 +41,8 @@ public class AcquireBundleCommand : AtomicCommand<LibraryBundleCommandArgs, Acqu
 	{
 	}
 
+	public override bool AutoLogOutput => false;
+
 	public override void Configure()
 	{
 		AddArgument(new Argument<string>("bundle-name", "The bundle name, @<namespace>/<bundle-name>"),
@@ -50,7 +53,7 @@ public class AcquireBundleCommand : AtomicCommand<LibraryBundleCommandArgs, Acqu
 	{
 		var api = args.Provider.GetService<IBeamBeamoinstallationApi>();
 		var fullName = await BundleNamespace.FullName(args, args.bundleName);
-		var plan = await api.PostAcquisitionsPlan(new AcquireBundleRequest { name = fullName });
+		var plan = await BundleNamespace.Send(async () => await api.PostAcquisitionsPlan(new AcquireBundleRequest { name = fullName }));
 		var output = new AcquireBundleCommandOutput
 		{
 			name = fullName,
@@ -70,8 +73,11 @@ public class AcquireBundleCommand : AtomicCommand<LibraryBundleCommandArgs, Acqu
 			Log.Information($"Suggested: {suggestion}. Optional; it is never acquired for you.");
 		if (!plan.canAcquire.GetOrElse(false))
 		{
-			var reasons = output.refusals.Concat(output.missingHardDependencies.Select(d => $"acquire its hard dependency {d} first"));
+			var reasons = output.refusals.Concat(output.missingHardDependencies
+				.Where(d => !output.refusals.Any(r => BundleNamespace.IsNamedIn(r, d)))
+				.Select(d => $"acquire its hard dependency {d} first"));
 			Log.Error($"[{fullName}] can't be acquired:\n - {string.Join("\n - ", reasons)}");
+			args.Provider.GetService<InvocationContext>().ExitCode = 1;
 			return output;
 		}
 
@@ -84,7 +90,7 @@ public class AcquireBundleCommand : AtomicCommand<LibraryBundleCommandArgs, Acqu
 			return output;
 		}
 
-		await api.PostAcquisitions(new AcquireBundleRequest { name = fullName });
+		await BundleNamespace.Send(async () => await api.PostAcquisitions(new AcquireBundleRequest { name = fullName }));
 		output.acquired = true;
 		Log.Information($"[{fullName}] is in your org's library. Install it with `beam bundles install {fullName}`.");
 		return output;
@@ -196,6 +202,12 @@ public class LibraryCommand : AtomicCommand<LibraryCommandArgs, LibraryCommandOu
 		if (result is not LibraryCommandOutput output)
 		{
 			base.LogResult(result);
+			return;
+		}
+
+		if (output.bundles.Length == 0)
+		{
+			AnsiConsole.WriteLine("Your org's library is empty. Acquire a bundle with beam bundles acquire <bundle>.");
 			return;
 		}
 

@@ -73,13 +73,13 @@ public class ReleaseDeploymentCommand
 		{
 			if (isLoadingPlan)
 			{
-				throw new CliException("cannot specify both --from-latest-plan and --plan");
+				throw new CliException("Can't use both --last-plan and --plan.");
 			}
 			args.fromPlanFile = DeployUtil.GetLatestPlanFilePath(args.DependencyProvider);
 			if (args.fromPlanFile == null)
 			{
 				throw new CliException(
-					"cannot use --from-latest-plan, because there are no plan files. Please run `dotnet beam deploy plan`");
+					"Can't use --last-plan: there are no plan files. Run `dotnet beam deploy plan` first.");
 			}
 
 			isLoadingPlan = true;

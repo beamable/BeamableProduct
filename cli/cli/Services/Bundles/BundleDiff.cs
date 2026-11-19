@@ -139,28 +139,37 @@ public static class BundleDiff
 
 	/// <summary>
 	/// Log a human-readable summary of the diff, using the same grouped layout as
-	/// <see cref="cli.Deployment.Services.DeployUtil.PrintPlanInfo"/> ("Adding 2 services\n - x\n - y").
+	/// <see cref="cli.Deployment.Services.DeployUtil.PrintPlanInfo"/> ("Adding 2 services\n - x\n - y"). Components
+	/// are split by the site they run on (the zone, or the realms); the component groups and dependencies follow.
 	/// </summary>
 	public static void Print(BundleDiffResult diff, string bundleName)
 	{
 		var detectedChangeCount = 0;
-		foreach (var kind in new[] { ("service", "service"), ("storage", "storage"), ("extension", "portal extension"), ("schema", "schema"), ("componentGroup", "component group"), ("dependency", "bundle dependency") })
+		var componentKinds = new[] { ("service", "service", "services"), ("storage", "storage", "storages"), ("extension", "portal extension", "portal extensions"), ("schema", "schema", "schemas") };
+		var otherKinds = new[] { ("componentGroup", "component group", "component groups"), ("dependency", "bundle dependency", "bundle dependencies") };
+
+		foreach (var (site, heading) in new[] { ("zone", "Runs on the zone:"), ("realm", "Runs on realms:"), ("", null) })
 		{
-			foreach (var (change, verb) in new[] { ("Added", "Adding"), ("Removed", "Removing"), ("Changed", "Updating") })
+			var siteChanges = diff.changes.Where(c => componentKinds.Any(k => k.Item1 == c.kind) && SiteOf(c) == site).ToList();
+			var lines = ChangeLines(siteChanges, componentKinds, heading == null ? "" : "  ", heading != null);
+			if (lines.Count == 0)
 			{
-				var items = diff.changes.Where(c => c.change == change && c.kind == kind.Item1).ToList();
-				if (items.Count == 0) continue;
-				var sb = new StringBuilder();
-				sb.AppendLine($"{verb} {items.Count} {(items.Count == 1 ? kind.Item2 : kind.Item2 + "s")}");
-				foreach (var item in items)
-				{
-					sb.AppendLine(change == "Changed"
-						? $" - {item.name}: {item.published} -> {item.local}"
-						: $" - {item.name}: {(change == "Added" ? item.local : item.published)}");
-				}
-				Log.Warning(sb.ToString());
-				detectedChangeCount += items.Count;
+				continue;
 			}
+			if (heading != null)
+			{
+				lines.Insert(0, heading);
+			}
+			Log.Warning(string.Join(Environment.NewLine, lines));
+			detectedChangeCount += siteChanges.Count;
+		}
+
+		var otherChanges = diff.changes.Where(c => otherKinds.Any(k => k.Item1 == c.kind)).ToList();
+		var otherLines = ChangeLines(otherChanges, otherKinds, "", false);
+		if (otherLines.Count > 0)
+		{
+			Log.Warning(string.Join(Environment.NewLine, otherLines));
+			detectedChangeCount += otherChanges.Count;
 		}
 
 		if (detectedChangeCount == 0)
@@ -173,5 +182,56 @@ public static class BundleDiff
 			Log.Information(detectedChangeCount == 1
 				? $"This plan has 1 change against v{diff.publishedVersion}."
 				: $"This plan has {detectedChangeCount} changes against v{diff.publishedVersion}.");
+	}
+
+	/// <summary>The site a change is on, the first part of its fingerprint: its local side's, else its published side's.</summary>
+	private static string SiteOf(BundleComponentChange change) =>
+		SiteOf(string.IsNullOrEmpty(change.local) ? change.published : change.local);
+
+	private static string SiteOf(string fingerprint)
+	{
+		var comma = fingerprint.IndexOf(',');
+		return comma < 0 ? "" : fingerprint.Substring(0, comma);
+	}
+
+	private static string WithoutSite(string fingerprint)
+	{
+		var comma = fingerprint.IndexOf(", ", StringComparison.Ordinal);
+		return comma < 0 ? fingerprint : fingerprint.Substring(comma + 2);
+	}
+
+	/// <summary>
+	/// "Adding 2 services" / " - x: ..." lines for the given kinds, each prefixed with <paramref name="indent"/>. Under a
+	/// site heading (<paramref name="dropSite"/>) the site is left out of each entry, unless a change moved it.
+	/// </summary>
+	private static List<string> ChangeLines(List<BundleComponentChange> changes, (string kind, string singular, string plural)[] kinds, string indent, bool dropSite)
+	{
+		var lines = new List<string>();
+		foreach (var kind in kinds)
+		{
+			foreach (var (change, verb) in new[] { ("Added", "Adding"), ("Removed", "Removing"), ("Changed", "Updating") })
+			{
+				var items = changes.Where(c => c.change == change && c.kind == kind.kind).ToList();
+				if (items.Count == 0)
+				{
+					continue;
+				}
+				lines.Add($"{indent}{verb} {items.Count} {(items.Count == 1 ? kind.singular : kind.plural)}");
+				foreach (var item in items)
+				{
+					var local = item.local;
+					var published = item.published;
+					if (dropSite && (change != "Changed" || SiteOf(published) == SiteOf(local)))
+					{
+						local = WithoutSite(local);
+						published = WithoutSite(published);
+					}
+					lines.Add(change == "Changed"
+						? $"{indent} - {item.name}: {published} -> {local}"
+						: $"{indent} - {item.name}: {(change == "Added" ? local : published)}");
+				}
+			}
+		}
+		return lines;
 	}
 }

@@ -145,8 +145,7 @@ public class BundlesApi : ILocalWebApi
 						var names = groups.Select(g => g.Type == JTokenType.String && NamePattern.IsMatch(g.Value<string>()!)
 							? g.Value<string>()
 							: throw new LocalWebRequestException(400, $"Invalid component group [{g}].")).ToList();
-						// An empty list turns every component group off.
-						args.Add("--component-groups=" + string.Join(",", names));
+						args.Add(names.Count == 0 ? "--no-component-groups" : "--component-groups=" + string.Join(",", names));
 					}
 					if (Has("realms")) args.AddRange(new[] { "--realms", OneOf("realms", RealmsValues) });
 					if (request["autoUpdate"]?.Type == JTokenType.Boolean)

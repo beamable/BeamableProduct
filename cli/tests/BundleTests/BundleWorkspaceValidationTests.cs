@@ -103,6 +103,22 @@ public class BundleWorkspaceValidationTests
 		Assert.That(ex.Message, Does.Contain("x.beam.bundle.json"), "the error must name the offending file");
 	}
 
+	[Test]
+	public void Parse_UnknownProperty_NamesItWithoutInternalTypes()
+	{
+		var ex = Assert.Throws<CliException>(() => Parse("{\n  \"components\": {},\n  \"scope\": \"realm\"\n}"));
+		Assert.That(ex.Message, Does.Contain("unknown property [scope] at line 3"));
+		Assert.That(ex.Message, Does.Not.Contain("Dto"));
+	}
+
+	[Test]
+	public void Parse_WrongType_NamesThePropertyWithoutInternalTypes()
+	{
+		var ex = Assert.Throws<CliException>(() => Parse(@"{ ""components"": [""a""] }"));
+		Assert.That(ex.Message, Does.Contain("property [components] has the wrong type"));
+		Assert.That(ex.Message, Does.Not.Contain("Dto").And.Not.Contain("System."));
+	}
+
 	// ---- ValidateAgainstProjects ----
 
 	private static BeamoLocalManifest ScoresProjects(string panelScope = null) => Manifest(new[]
@@ -158,6 +174,18 @@ public class BundleWorkspaceValidationTests
 		var bundle = Parse(@"{ ""components"": { ""Scores"": {} }, ""componentGroups"": { ""a"": { ""components"": [""Scores""] } } }");
 		var ex = Assert.Throws<CliException>(() => BundleWorkspace.ValidateAgainstProjects(ScoresProjects(), bundle));
 		Assert.That(ex.Message, Does.Contain("uses storage [ScoresDb], which isn't in the bundle"));
+	}
+
+	[Test]
+	public void Projects_FromComponentOptions_PointsAtTheOptions()
+	{
+		var bundle = Parse(@"{ ""components"": { ""Scores"": {} }, ""componentGroups"": { ""a"": { ""components"": [""Scores""] } } }");
+		bundle.name = "leaderboards";
+		bundle.filePath = "leaderboards.beam.bundle.json";
+		var ex = Assert.Throws<CliException>(() => BundleWorkspace.ValidateAgainstProjects(ScoresProjects(), bundle, fromComponentOptions: true));
+		Assert.That(ex.Message, Does.Contain("Add -c ScoresDb"));
+		Assert.That(ex.Message, Does.Contain("Fix the -c options"));
+		Assert.That(ex.Message, Does.Not.Contain("leaderboards.beam.bundle.json"));
 	}
 
 	[Test]

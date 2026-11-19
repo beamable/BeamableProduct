@@ -1,3 +1,4 @@
+using cli.BundleCommands;
 using cli.Commands.LocalStack;
 using cli.DeploymentCommands;
 using cli.Services.Bundles;
@@ -56,7 +57,37 @@ public class BundleJobRunnerTests
 	{
 		var args = Build(@"{""op"":""install"",""bundle"":""@acme/vip"",""componentGroups"":[],""planOnly"":true}");
 
-		Assert.That(args, Does.Contain("--component-groups="));
+		Assert.That(args, Does.Contain("--no-component-groups"));
+		Assert.That(args, Does.Contain("--plan-only"));
+	}
+
+	[Test]
+	public void NoComponentGroups_SendsAnEmptyList()
+	{
+		var request = new InstallBundleCommandArgs { noComponentGroups = true }.Request("@acme/vip");
+
+		Assert.That(request.componentGroups.HasValue, Is.True);
+		Assert.That(request.componentGroups.Value, Is.Empty);
+	}
+
+	[Test]
+	public void ComponentGroups_RefuseAnOptionTakenAsAGroup()
+	{
+		Assert.That(() => new InstallBundleCommandArgs { componentGroups = new List<string> { "--plan-only" } }.Request("@acme/vip"),
+			Throws.TypeOf<cli.CliException>());
+		Assert.That(() => new InstallBundleCommandArgs { componentGroups = new List<string> { "a" }, noComponentGroups = true }.Request("@acme/vip"),
+			Throws.TypeOf<cli.CliException>());
+	}
+
+	[TestCase("'@acme/core' (1 or later) is a hard dependency", "@acme/core", true)]
+	[TestCase("Acquire '@acme/core' first: it is a hard dependency", "@acme/core", true)]
+	[TestCase("acquire @acme/core.", "@acme/core", true)]
+	[TestCase("'@acme/core-extras' is missing", "@acme/core", false)]
+	[TestCase("'@acme/core/x' is missing", "@acme/core", false)]
+	[TestCase("'@other@acme/core' is missing", "@acme/core", false)]
+	public void IsNamedIn_MatchesWholeBundleNames(string text, string bundle, bool expected)
+	{
+		Assert.That(BundleNamespace.IsNamedIn(text, bundle), Is.EqualTo(expected));
 	}
 
 	[TestCase(@"{""op"":""install"",""bundle"":""vip"",""componentGroups"":[""--quiet""],""planOnly"":true}")]

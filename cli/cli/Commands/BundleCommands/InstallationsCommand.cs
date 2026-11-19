@@ -101,12 +101,15 @@ public class ListInstallationsCommand : AtomicCommand<ListInstallationsCommandAr
 	{
 	}
 
+	private string _zoneId;
+
 	public override void Configure() => ZoneInstallationArgs.AddTargetZoneOption(this);
 
 	public override async Task<ListInstallationsCommandOutput> GetResult(ListInstallationsCommandArgs args)
 	{
 		var api = args.Provider.GetService<IBeamBeamoinstallationApi>();
 		using var zone = await args.ZoneScope();
+		_zoneId = args.DependencyProvider.GetService<CliRequester>().GetEffectiveScopeIds().scopeId;
 		var response = await api.GetInstallations();
 		return new ListInstallationsCommandOutput
 		{
@@ -119,6 +122,12 @@ public class ListInstallationsCommand : AtomicCommand<ListInstallationsCommandAr
 		if (result is not ListInstallationsCommandOutput output)
 		{
 			base.LogResult(result);
+			return;
+		}
+
+		if (output.installations.Length == 0)
+		{
+			AnsiConsole.WriteLine($"Nothing is installed on zone [{_zoneId}].");
 			return;
 		}
 
@@ -445,7 +454,7 @@ public class EndOverrideCommand : AtomicCommand<EndOverrideCommandArgs, EndOverr
 		var api = args.Provider.GetService<IBeamBeamoinstallationApi>();
 		var fullName = await BundleNamespace.FullName(args, args.bundleName);
 		using var scope = args.zone || !string.IsNullOrEmpty(args.targetZone) ? await args.ZoneScope() : null;
-		var checksum = await api.DeleteInstallationsOverrides(args.component, fullName);
+		var checksum = await BundleNamespace.Send(async () => await api.DeleteInstallationsOverrides(args.component, fullName));
 		var warnings = checksum.warnings.GetOrElse(Array.Empty<string>());
 		foreach (var warning in warnings) Log.Warning(warning);
 		Log.Information($"[{args.component}] runs the bundle's build again.");

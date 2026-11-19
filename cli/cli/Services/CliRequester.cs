@@ -171,6 +171,7 @@ public class CliRequester : IRequester
 			await using Stream stream = await result.Content.ReadAsStreamAsync();
 			using var reader = new StreamReader(stream, Encoding.UTF8);
 			var rawResponse = await reader.ReadToEndAsync();
+			Log.Verbose($"RESPONSE BODY:\n{rawResponse}");
 			throw new RequesterException("Cli", method.ToReadableString(), uri, (int)result.StatusCode, rawResponse);
 		}
 
@@ -184,6 +185,10 @@ public class CliRequester : IRequester
 			if (typeof(T) == typeof(string) && rawResponse is T response)
 			{
 				return response;
+			}
+			if (parser != null && string.IsNullOrWhiteSpace(rawResponse) && typeof(JsonSerializable.ISerializable).IsAssignableFrom(typeof(T)))
+			{
+				return default;
 			}
 			if (parser != null)
 			{

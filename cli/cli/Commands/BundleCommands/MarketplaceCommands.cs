@@ -59,16 +59,32 @@ public class SearchMarketplaceCommand : AtomicCommand<SearchMarketplaceCommandAr
 			bundles = response.records.GetOrElse(Array.Empty<BundleSummaryView>()).Select(BundleSummaryInfo.FromSummary).ToArray(),
 			nextCursor = response.nextCursor.GetOrElse((string)null),
 		};
-		if (output.nextCursor != null)
-			Log.Information($"More bundles: run again with --cursor {output.nextCursor}");
+		_query = args.query;
+		_category = args.category;
 		return output;
 	}
+
+	private string _query;
+	private string _category;
 
 	protected override void LogResult(object result)
 	{
 		if (result is not SearchMarketplaceCommandOutput output)
 		{
 			base.LogResult(result);
+			return;
+		}
+
+		if (output.bundles.Length == 0)
+		{
+			var filters = new[]
+				{
+					string.IsNullOrEmpty(_query) ? null : $"[{_query}]",
+					string.IsNullOrEmpty(_category) ? null : $"category [{_category}]",
+				}
+				.Where(f => f != null)
+				.ToArray();
+			AnsiConsole.WriteLine(filters.Length == 0 ? "No public bundles found." : $"No public bundles match {string.Join(" in ", filters)}.");
 			return;
 		}
 
@@ -86,6 +102,10 @@ public class SearchMarketplaceCommand : AtomicCommand<SearchMarketplaceCommandAr
 				Markup.Escape(string.Join(", ", b.categories)));
 		}
 		AnsiConsole.Write(table);
+		if (output.nextCursor != null)
+		{
+			AnsiConsole.WriteLine($"More bundles: run again with --cursor {output.nextCursor}");
+		}
 	}
 }
 
@@ -130,6 +150,8 @@ public class BundleInfoCommand : AtomicCommand<BundleInfoCommandArgs, BundleInfo
 		var listing = summary?.listing.GetOrElse((BundleListing)null);
 		var release = response.latestRelease.GetOrElse((BundleRelease)null);
 		var content = response.latestContent.GetOrElse((BundleContentView)null);
+		_groups = content?.componentGroups.GetOrElse(Array.Empty<BundleComponentGroup>()) ?? Array.Empty<BundleComponentGroup>();
+		_dependencies = content?.dependencies.GetOrElse(Array.Empty<BundleDep>()) ?? Array.Empty<BundleDep>();
 		return new BundleInfoCommandOutput
 		{
 			bundle = BundleSummaryInfo.FromSummary(summary),
@@ -137,11 +159,16 @@ public class BundleInfoCommand : AtomicCommand<BundleInfoCommandArgs, BundleInfo
 			docsUrl = listing?.docsUrl.GetOrElse((string)null),
 			latestRelease = BundleReleaseInfo.FromRelease(release),
 			latestContent = content == null ? null : BundleContentInfo.FromContent(release?.version.GetOrElse(0) ?? 0, content),
-			componentGroupDescriptions = (content?.componentGroups.GetOrElse(Array.Empty<BundleComponentGroup>()) ?? Array.Empty<BundleComponentGroup>())
-				.ToDictionary(f => f.name.GetOrElse(""), f =>
-					$"{f.title.GetOrElse("")}{(f.enabledByDefault.GetOrElse(false) ? " (on by default)" : "")}: {f.description.GetOrElse("")}"),
+			componentGroupDescriptions = _groups.ToDictionary(f => f.name.GetOrElse(""), f =>
+			{
+				var description = f.description.GetOrElse("");
+				return $"{f.title.GetOrElse("")}{(f.enabledByDefault.GetOrElse(false) ? " (on by default)" : "")}{(string.IsNullOrEmpty(description) ? "" : $": {description}")}";
+			}),
 		};
 	}
+
+	private BundleComponentGroup[] _groups = Array.Empty<BundleComponentGroup>();
+	private BundleDep[] _dependencies = Array.Empty<BundleDep>();
 
 	protected override void LogResult(object result)
 	{
@@ -152,18 +179,64 @@ public class BundleInfoCommand : AtomicCommand<BundleInfoCommandArgs, BundleInfo
 		}
 
 		var b = output.bundle;
-		AnsiConsole.MarkupLine($"[bold]{Markup.Escape(string.IsNullOrEmpty(b.displayName) ? b.name : b.displayName)}[/] {Markup.Escape(b.name)} · {Markup.Escape(b.visibility)} · latest v{b.latestVersion}{(b.autoUpdateRequired ? " · auto-update required" : "")}");
-		if (!string.IsNullOrEmpty(b.summary)) AnsiConsole.MarkupLine(Markup.Escape(b.summary));
-		if (!string.IsNullOrEmpty(output.description)) AnsiConsole.MarkupLine(Markup.Escape(output.description));
-		if (!string.IsNullOrEmpty(output.docsUrl)) AnsiConsole.MarkupLine($"Docs: {Markup.Escape(output.docsUrl)}");
+		AnsiConsole.MarkupLine($"[bold]{Markup.Escape(b.name)}[/]");
+		var about = new Grid().AddColumn(new GridColumn().NoWrap()).AddColumn();
+		void AddLine(string label, string value)
+		{
+			if (!string.IsNullOrEmpty(value))
+			{
+				about.AddRow($"[bold]{label}[/]", Markup.Escape(value));
+			}
+		}
+		AddLine("Display name", b.displayName);
+		AddLine("Visibility", b.visibility);
+		AddLine("Latest release", $"v{b.latestVersion}");
+		AddLine("Auto-update", b.autoUpdateRequired ? "required by the publisher" : null);
+		AddLine("Summary", b.summary);
+		AddLine("Description", output.description);
+		AddLine("Docs", output.docsUrl);
+		AddLine("Categories", string.Join(", ", b.categories));
+		AnsiConsole.Write(about);
 		foreach (var notice in b.notices.Where(n => !n.resolvedAt.HasValue))
 		{
 			AnsiConsole.MarkupLine($"{(notice.warns ? "[yellow]Notice[/]" : "Notice")}: {Markup.Escape(notice.description)}");
 		}
-		foreach (var (group, description) in output.componentGroupDescriptions)
-			AnsiConsole.MarkupLine($"Component group [bold]{Markup.Escape(group)}[/]: {Markup.Escape(description)} ({Markup.Escape(string.Join(", ", output.latestContent?.componentGroups.GetValueOrDefault(group) ?? Array.Empty<string>()))})");
-		foreach (var (dependency, range) in output.latestContent?.dependencies ?? new Dictionary<string, string>())
-			AnsiConsole.MarkupLine($"Depends on {Markup.Escape(dependency)} ({Markup.Escape(range)})");
+
+		if (_groups.Length > 0)
+		{
+			var groups = new Table().Title("Component groups");
+			groups.AddColumn("Group");
+			groups.AddColumn("Title");
+			groups.AddColumn("On by default");
+			groups.AddColumn("Description");
+			groups.AddColumn("Components");
+			foreach (var g in _groups)
+			{
+				groups.AddRow(
+					Markup.Escape(g.name.GetOrElse("")),
+					Markup.Escape(g.title.GetOrElse("")),
+					g.enabledByDefault.GetOrElse(false) ? "yes" : "no",
+					Markup.Escape(g.description.GetOrElse("")),
+					Markup.Escape(string.Join(", ", g.components.GetOrElse(Array.Empty<string>()))));
+			}
+			AnsiConsole.Write(groups);
+		}
+
+		if (_dependencies.Length > 0)
+		{
+			var dependencies = new Table().Title("Dependencies");
+			dependencies.AddColumn("Bundle");
+			dependencies.AddColumn("Kind");
+			dependencies.AddColumn("Range");
+			foreach (var d in _dependencies)
+			{
+				dependencies.AddRow(
+					Markup.Escape(d.name.GetOrElse("")),
+					Markup.Escape(d.kind.HasValue ? d.kind.Value.ToString().ToLowerInvariant() : ""),
+					Markup.Escape(BundleDependencyConfig.FormatRange(d.min.GetOrElse(0), d.max.HasValue ? d.max.Value : null)));
+			}
+			AnsiConsole.Write(dependencies);
+		}
 	}
 }
 

@@ -67,7 +67,7 @@ public class NewBundleCommand : AtomicCommand<NewBundleCommandArgs, NewBundleCom
 			{
 				title = args.bundleName, description = "", components = args.components.ToList(), enabledByDefault = true,
 			};
-			BundleBuild.ValidateComponentsExist(args.BeamoLocalSystem.BeamoManifest, draft);
+			BundleBuild.ValidateComponentsExist(args.BeamoLocalSystem.BeamoManifest, draft, fromComponentOptions: true);
 		}
 
 		// the bundle's name is the file name itself; it is not stored inside the file.

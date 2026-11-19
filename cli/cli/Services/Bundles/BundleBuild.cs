@@ -79,11 +79,11 @@ public static class BundleBuild
 	};
 
 	/// <summary>Validate the bundle against the workspace's projects before the (potentially expensive) build.</summary>
-	public static void ValidateComponentsExist(BeamoLocalManifest localManifest, BundleConfigFile bundle)
+	public static void ValidateComponentsExist(BeamoLocalManifest localManifest, BundleConfigFile bundle, bool fromComponentOptions = false)
 	{
 		if (bundle.components.Count == 0)
 			throw new CliException($"Bundle=[{bundle.name}] has no components. Add some to {Path.GetFileName(bundle.filePath)}.");
-		BundleWorkspace.ValidateAgainstProjects(localManifest, bundle);
+		BundleWorkspace.ValidateAgainstProjects(localManifest, bundle, fromComponentOptions);
 	}
 
 	/// <summary>
