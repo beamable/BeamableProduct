@@ -37,13 +37,6 @@ public class ConfigService
 	public const string CFG_TOKEN_JSON_FIELD_REFRESH_TOKEN = "refresh-token";
 
 	public const string CFG_FILE_NAME = "config.beam.json";
-	/// <summary>
-	/// The v2 root manifest file (sibling to <see cref="CFG_FILE_NAME"/>). Holds bundle references
-	/// for this realm. Presence of this file = v2 manifest schema; absence = legacy v1.
-	/// </summary>
-	public const string MANIFEST_FILE_NAME = "bundles.manifest.beam.json";
-	/// <summary>The manifest schemaVersion the CLI authors for v2 workspaces.</summary>
-	public const int MANIFEST_SCHEMA_VERSION = 2;
 	public const string CFG_JSON_FIELD_CLI_VERSION = "cliVersion";
 	public const string CFG_JSON_FIELD_HOST = "host";
 	public const string CFG_JSON_FIELD_CID = "cid";
@@ -1508,64 +1501,6 @@ public class ConfigService
 		}
 
 		return config;
-	}
-
-	#endregion
-
-	#region Helpers - Manifest References (v2 bundles)
-
-	/// <summary>The full path to the v2 root manifest file, whether or not it exists.</summary>
-	public string GetManifestReferencesPath() => GetConfigPath(MANIFEST_FILE_NAME);
-
-	/// <summary>True when this workspace opts into the v2 bundle-references manifest schema.</summary>
-	public bool ExistsManifestReferences() => File.Exists(GetManifestReferencesPath());
-
-	/// <summary>
-	/// Load <c>.beamable/bundles.manifest.beam.json</c>, or <c>null</c> if the workspace is legacy v1 (no file).
-	/// Parsed via <see cref="JObject"/> rather than typed deserialization to avoid Beamable's
-	/// Optional converters on a plain-shaped file.
-	/// </summary>
-	[CanBeNull]
-	public ManifestReferences LoadManifestReferences()
-	{
-		var path = GetManifestReferencesPath();
-		if (!File.Exists(path)) return null;
-
-		var obj = JsonConvert.DeserializeObject<JObject>(LockedRead(path)) ?? new JObject();
-		var result = new ManifestReferences
-		{
-			schemaVersion = obj.Value<int?>("schemaVersion") ?? MANIFEST_SCHEMA_VERSION,
-			realm = new Dictionary<string, string>(),
-			zone = new Dictionary<string, string>()
-		};
-		if (obj["realm"] is JObject realmRefs)
-		{
-			foreach (var kvp in realmRefs)
-			{
-				result.realm[kvp.Key] = kvp.Value?.Value<string>();
-			}
-		}
-		if (obj["zone"] is JObject zoneRefs)
-		{
-			foreach (var kvp in zoneRefs)
-			{
-				result.zone[kvp.Key] = kvp.Value?.Value<string>();
-			}
-		}
-
-		return result;
-	}
-
-	/// <summary>Write <c>.beamable/bundles.manifest.beam.json</c>, creating it if absent.</summary>
-	public void SaveManifestReferences(ManifestReferences manifest)
-	{
-		var obj = new JObject
-		{
-			["schemaVersion"] = manifest?.schemaVersion ?? MANIFEST_SCHEMA_VERSION,
-			["realm"] = JObject.FromObject(manifest?.realm ?? new Dictionary<string, string>()),
-			["zone"] = JObject.FromObject(manifest?.zone ?? new Dictionary<string, string>())
-		};
-		LockedWrite(GetManifestReferencesPath(), obj.ToString(Formatting.Indented));
 	}
 
 	#endregion

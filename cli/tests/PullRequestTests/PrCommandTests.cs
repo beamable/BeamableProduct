@@ -156,7 +156,7 @@ public class PrCommandTests : CLITestExtensions
 				.ReturnsPromise(new GetPullRequestResponse())
 				.Verifiable();
 			mock.Setup(x => x.PostPrsApprove("pr-1", It.IsAny<bool>()))
-				.ReturnsPromise(new BeamoPullRequestActorManifestChecksum { id = "pr-1", checksum = "abc" })
+				.ReturnsPromise(new ManifestChecksum { id = "pr-1", checksum = "abc" })
 				.Verifiable();
 		});
 

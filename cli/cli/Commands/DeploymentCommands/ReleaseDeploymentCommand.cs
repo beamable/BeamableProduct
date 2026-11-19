@@ -9,8 +9,9 @@ using Beamable.Server;
 
 namespace cli.DeploymentCommands;
 
-public class ReleaseDeploymentCommandArgs : CommandArgs, IHasDeployPlanArgs
+public class ReleaseDeploymentCommandArgs : CommandArgs, IHasDeployPlanArgs, IHasEndOverridesArg
 {
+	public string[] EndOverrides { get; set; }
 	public string fromPlanFile;
 	public bool fromLastPlan;
 	public string Comment { get; set; }
@@ -49,6 +50,7 @@ public class ReleaseDeploymentCommand
 	public override void Configure()
 	{
 		DeployArgs.AddPlanOptions(this);
+		DeployArgs.AddEndOverrideOption(this);
 		DeployArgs.AddScopeOption(this);
 		AddOption(new Option<string>(new string[] { "--from-plan", "--plan", "-p" }, "The file path to a pre-generated plan file using the `deploy plan` command"),
 			(args, i) => args.fromPlanFile = i);
@@ -71,13 +73,13 @@ public class ReleaseDeploymentCommand
 		{
 			if (isLoadingPlan)
 			{
-				throw new CliException("cannot specify both --from-latest-plan and --plan");
+				throw new CliException("Can't use both --last-plan and --plan.");
 			}
 			args.fromPlanFile = DeployUtil.GetLatestPlanFilePath(args.DependencyProvider);
 			if (args.fromPlanFile == null)
 			{
 				throw new CliException(
-					"cannot use --from-latest-plan, because there are no plan files. Please run `dotnet beam deploy plan`");
+					"Can't use --last-plan: there are no plan files. Run `dotnet beam deploy plan` first.");
 			}
 
 			isLoadingPlan = true;

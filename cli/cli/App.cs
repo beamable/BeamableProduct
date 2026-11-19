@@ -862,18 +862,34 @@ public class App
 		// `bundles` is its own top-level command group: `beam bundles <cmd>`
 		Commands.AddRootCommand<BundlesCommand>();
 		Commands.AddSubCommandWithHandler<NewBundleCommand, NewBundleCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<CreateBundleCommand, CreateBundleCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<UpdateBundleCommand, UpdateBundleCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<ListBundlesCommand, ListBundlesCommandArgs, BundlesCommand>();
-		Commands.AddSubCommandWithHandler<GetBundleCommand, GetBundleCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<BundleReleasesCommand, BundleReleasesCommandArgs, BundlesCommand>();
-		Commands.AddSubCommandWithHandler<BundleTagsCommand, BundleTagsCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<PromoteBundleTagCommand, PromoteBundleTagCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<YankBundleCommand, YankBundleCommandArgs, BundlesCommand>();
-		Commands.AddSubCommandWithHandler<BundleAclCommand, BundleAclCommandArgs, BundlesCommand>();
-		Commands.AddSubCommandWithHandler<InstallBundleCommand, InstallBundleCommandArgs, BundlesCommand>();
-		Commands.AddSubCommandWithHandler<UninstallBundleCommand, UninstallBundleCommandArgs, BundlesCommand>();
-		Commands.AddSubCommandWithHandler<PruneYankedCommand, PruneYankedCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<PublishBundleCommand, PublishBundleCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<BundlePlanCommand, BundlePlanCommandArgs, BundlesCommand>();
+		Commands.AddSubCommand<BundleNoticeCommand, CommandGroupArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<CreateBundleNoticeCommand, BundleNoticeCommandArgs, BundleNoticeCommand>();
+		Commands.AddSubCommandWithHandler<UpdateBundleNoticeCommand, BundleNoticeCommandArgs, BundleNoticeCommand>();
+		Commands.AddSubCommandWithHandler<WithdrawBundleNoticeCommand, BundleNoticeCommandArgs, BundleNoticeCommand>();
+		Commands.AddSubCommandWithHandler<SearchMarketplaceCommand, SearchMarketplaceCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<BundleInfoCommand, BundleInfoCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<PlacementsCommand, PlacementsCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<AcquireBundleCommand, LibraryBundleCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<RemoveBundleCommand, LibraryBundleCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<LibraryCommand, LibraryCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<InstallBundleCommand, InstallBundleCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<UninstallBundleCommand, UninstallBundleCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<ListInstallationsCommand, ListInstallationsCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<InstallationHistoryCommand, InstallationHistoryCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<InstallationDependenciesCommand, InstallationDependenciesCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<InstallationNoticesCommand, InstallationNoticesCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<EndOverrideCommand, EndOverrideCommandArgs, BundlesCommand>();
+		Commands.AddSubCommand<BundleSourceCommand, CommandGroupArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<RequestSourceCommand, RequestSourceCommandArgs, BundleSourceCommand>();
+		Commands.AddSubCommandWithHandler<ListSourceDeliveriesCommand, ListSourceDeliveriesCommandArgs, BundleSourceCommand>();
 
 		Commands.AddRootCommand<ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentBakeCommand, ContentBakeCommandArgs, ContentCommand>();
@@ -1466,7 +1482,12 @@ public class App
 			switch (ex)
 			{
 				case RequesterException requesterException:
-					Console.Error.WriteLine($"[[{requesterException.Uri}]]request error with response code: {requesterException.Status} and message: {requesterException.RequestError.message}");
+					Environment.ExitCode = context.ExitCode = 1;
+					Console.Error.WriteLine(DescribeRequestError(requesterException));
+					break;
+				case Exception when IsUnansweredPrompt(ex):
+					Environment.ExitCode = context.ExitCode = 1;
+					Console.Error.WriteLine("This command asks for confirmation, but there is no console to answer it (input or output is redirected). Run it again with --quiet (-q) to answer yes.");
 					break;
 				case CliException cliException:
 					if (cliException.ReportOnStdOut)
@@ -1527,8 +1548,7 @@ public class App
 
 			// console-only: a CliException's message can end up above a long stack trace (e.g. when wrapped in an
 			// AggregateException during manifest init), so repeat it last, in red, where it's seen without scrolling.
-			var cliError = ex as CliException ??
-			               (ex as AggregateException)?.Flatten().InnerExceptions.OfType<CliException>().FirstOrDefault();
+			var cliError = (ex as AggregateException)?.Flatten().InnerExceptions.OfType<CliException>().FirstOrDefault();
 			if (cliError != null && !appContext.UsePipeOutput && !appContext.ShowRawOutput)
 			{
 				AnsiConsole.MarkupLine($"\n[red]{Markup.Escape(cliError.Message)}[/]");
@@ -1537,6 +1557,35 @@ public class App
 		
 		
 		return commandLineBuilder.Build();
+	}
+
+	/// <summary>A failed request as one line: the route, the status, and the server's error code and description when it sent them.</summary>
+	public static string DescribeRequestError(RequesterException e)
+	{
+		var details = "";
+		if (!string.IsNullOrWhiteSpace(e.Payload))
+		{
+			try
+			{
+				var body = Newtonsoft.Json.Linq.JObject.Parse(e.Payload);
+				var code = body.Value<string>("error");
+				var description = body.Value<string>("description") ?? body.Value<string>("message");
+				details = string.Join(": ", new[] { code, description }.Where(s => !string.IsNullOrWhiteSpace(s)));
+			}
+			catch (JsonReaderException)
+			{
+				details = e.Payload.Length > 500 ? e.Payload.Substring(0, 500) + "..." : e.Payload;
+			}
+		}
+
+		return $"[{e.Uri}] request failed with status {e.Status}{(string.IsNullOrWhiteSpace(details) ? "." : $": {details}")}";
+	}
+
+	/// <summary>Whether <paramref name="ex"/> is a prompt that failed because nobody can answer it: input or output is redirected.</summary>
+	private static bool IsUnansweredPrompt(Exception ex)
+	{
+		IEnumerable<Exception> inner = ex is AggregateException aggregate ? aggregate.Flatten().InnerExceptions : new[] { ex };
+		return inner.Any(e => e is InvalidOperationException && e.Message.Contains("non-interactive mode"));
 	}
 
 	private void ProxyHelp(HelpContext helpContext)

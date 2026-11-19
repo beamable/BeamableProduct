@@ -232,7 +232,7 @@ Refusing an opt-in is `success = false` on a 200, not an exception.
 
 ### 8. Run and verify
 
-Add the service (and storage) to the bundle manifest `components` (`beam-bundles`), then:
+Add the service (and storage) to the bundle config file's `components` and a component group (`beam-bundles`), then:
 
 ```
 beam_exec("project run --ids <Name>MessageRailService")

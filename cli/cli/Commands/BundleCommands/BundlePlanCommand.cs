@@ -38,7 +38,9 @@ public class BundlePlanCommandOutput
 {
 	public string name;
 	public bool isNoOp;
-	public string publishedChecksum;
+
+	/// <summary>The latest release's version the plan was diffed against, or 0 when there is none.</summary>
+	public long publishedVersion;
 	public List<BundleComponentChange> changes = new List<BundleComponentChange>();
 
 	/// <summary>Path of the saved plan file, usable with `bundles publish --from-plan`.</summary>
@@ -53,7 +55,7 @@ public class BundlePlanCommand
 {
 	public override bool AutoLogOutput => false;
 
-	public BundlePlanCommand() : base("plan", "Build an authored bundle and diff it against the published version")
+	public BundlePlanCommand() : base("plan", "Build an authored bundle and diff it against its latest release")
 	{
 	}
 
@@ -71,32 +73,21 @@ public class BundlePlanCommand
 		var bundle = BundleWorkspace.Require(args.ConfigService, args.bundleName);
 		BundleBuild.ValidateComponentsExist(args.BeamoLocalSystem.BeamoManifest, bundle);
 
-		// A zone bundle must be built against the zone manifest, or every zone-scoped component is
-		// filtered out of the plan and SelectComponents fails. Derive the deploy scope from the
-		// bundle's own scope field (no --scope flag — that name is taken by the visibility tier) and
-		// pin BEAM_SCOPE to {cid}.{zid} for the build, exactly like `beam deploy --scope zone`.
-		args.Scope = bundle.IsZoneScoped ? DeployScope.Zone : DeployScope.Realm;
-		using var scopeHandle = await DeployArgs.ApplyDeployScopeAsync(args, args.Scope);
-
 		var ns = await BundleNamespace.Get(args);
 		var fullName = BundleNamespace.Qualify(ns, bundle.name);
 
 		Log.Information($"Building bundle=[{fullName}] to compute its diff...");
-		// Don't exclude bundle components here — this command operates on exactly those components.
-		// Restrict the build to them, so an unrelated local service can't fail (or slow down) the plan.
-		var (plan, _) = await this.InteractivePlan(provider, args, excludeAuthoredBundleComponents: false, savePlanToTemp: false,
-			includeOnlyBeamoIds: new HashSet<string>(bundle.components));
-		var (services, storages, extensions) = BundleBuild.SelectComponents(plan, bundle);
+		var build = await BundleBuild.Build(this, args, bundle);
 
-		var published = await BundleBuild.FetchLatestPublished(provider.GetService<IBeamBeamobundleApi>(), ns, bundle.name);
-		var diff = BundleDiff.Compute(services, storages, extensions, bundle.bundleDependencies, published);
+		var (release, content) = await BundleBuild.FetchLatestPublished(provider.GetService<IBeamBeamobundleApi>(), fullName);
+		var diff = BundleDiff.Compute(build, bundle, release, content);
 		BundleDiff.Print(diff, fullName);
 
 		var planPath = await BundlePlanUtil.SaveBundlePlanToTempFolder(provider, new BundlePlanFile
 		{
 			bundleName = bundle.name,
-			publishedChecksum = diff.publishedChecksum,
-			plan = plan,
+			publishedVersion = diff.publishedVersion,
+			build = build,
 			diff = diff,
 		});
 		BundlePlanUtil.PrintBundlePlanNextSteps(planPath, bundle.name, hasChanges: !diff.isNoOp);
@@ -106,7 +97,7 @@ public class BundlePlanCommand
 		{
 			name = fullName,
 			isNoOp = diff.isNoOp,
-			publishedChecksum = diff.publishedChecksum,
+			publishedVersion = diff.publishedVersion,
 			changes = diff.changes,
 			planPath = planPath,
 		});

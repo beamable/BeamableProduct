@@ -176,7 +176,7 @@ public class PortalExtensionUpdateToolkitCommand : AtomicCommand<PortalExtension
 		{
 			// Bundle components are beamoIds; for a portal extension the beamoId equals its package.json name.
 			var bundledComponents = BundleWorkspace.Discover(args.ConfigService)
-				.SelectMany(b => b.components)
+				.SelectMany(b => b.ComponentNames)
 				.ToHashSet(StringComparer.Ordinal);
 			portalExtensions = portalExtensions.Where(p => bundledComponents.Contains(p.BeamoId)).ToList();
 		}

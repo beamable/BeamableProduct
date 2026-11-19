@@ -416,11 +416,24 @@ namespace Beamable.Common.Content
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalArrayOfUuid : OptionalArray<Guid> { }
+	public class OptionalArrayOfGuid : OptionalArray<Guid>
+	{
+		public OptionalArrayOfGuid()
+		{
+
+		}
+
+		public OptionalArrayOfGuid(IEnumerable<Guid> data)
+		{
+			Value = data.ToArray();
+			HasValue = true;
+		}
+
+	}
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalArrayOfGuid : OptionalArray<Guid> { }
+	public class OptionalArrayOfUuid : OptionalArray<Guid> { }
 
 	[System.Serializable]
 	[Agnostic]

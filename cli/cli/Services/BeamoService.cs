@@ -113,7 +113,8 @@ public class BeamoService
 	/// this rides the scoped requester, a zone deploy (<c>cid.zid</c>) gets the zone's repository names, which
 	/// is what the server's <c>PostManifest</c> checks against (fixes <c>DockerImagesNotAvailable</c> for zone
 	/// services). The returned <c>repositoryNames</c> is empty if the server does not provide them (older
-	/// backends); callers fall back to the legacy client-side repo hash in that case.
+	/// backends); callers fall back to the legacy client-side repo hash in that case. With no service names
+	/// (only the registry is wanted, e.g. a bundle publish or a release with nothing to push) none are expected.
 	/// </summary>
 	public async Promise<(string registryUri, Dictionary<string, string> repositoryNames)> GetImageUploadTargets(
 		IEnumerable<string> serviceNames)
@@ -170,7 +171,7 @@ public class BeamoService
 			Log.Information($"Per-service canonical repositories from server: " +
 			                $"{string.Join(", ", repos.Select(kv => $"{kv.Key}=>{kv.Value}"))}");
 		}
-		else
+		else if (names.Length > 0)
 		{
 			Log.Warning("Server returned NO per-service repositoryNames for /api/beamo/registry-uri. " +
 			            "Falling back to the legacy client-side repo hash (cid_pid_beamoId), which is realm-only — " +

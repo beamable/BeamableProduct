@@ -14,8 +14,8 @@ namespace cli.Services.Bundles;
 
 /// <summary>
 /// A saved <c>bundles plan</c> result, the bundle analog of a <c>deploy plan</c> file. Wraps the
-/// full built <see cref="DeployablePlan"/> (component refs, image/asset upload lists) with the
-/// bundle it was planned for and the catalog state it was diffed against, so <c>bundles publish
+/// full build (a deploy plan per site, the catalog components and the files to upload) with the
+/// bundle it was planned for and the release it was diffed against, so <c>bundles publish
 /// --from-plan</c> can skip the rebuild and detect staleness.
 /// </summary>
 public class BundlePlanFile : JsonSerializable.ISerializable
@@ -24,19 +24,19 @@ public class BundlePlanFile : JsonSerializable.ISerializable
 	public string bundleName;
 
 	/// <summary>
-	/// The published @latest bundle checksum at plan time ("" if never published). If the catalog's
-	/// @latest differs at publish time, the plan is out of date.
+	/// The latest release's version at plan time (0 if there was none). If <c>latest</c> moved by
+	/// publish time, the plan is out of date.
 	/// </summary>
-	public string publishedChecksum;
+	public long publishedVersion;
 
-	public DeployablePlan plan;
+	public BundleBuildResult build;
 	public BundleDiffResult diff;
 
 	public void Serialize(JsonSerializable.IStreamSerializer s)
 	{
 		s.Serialize(nameof(bundleName), ref bundleName);
-		s.Serialize(nameof(publishedChecksum), ref publishedChecksum);
-		s.Serialize(nameof(plan), ref plan);
+		s.Serialize(nameof(publishedVersion), ref publishedVersion);
+		s.Serialize(nameof(build), ref build);
 		s.Serialize(nameof(diff), ref diff);
 	}
 }
@@ -90,8 +90,8 @@ public static class BundlePlanUtil
 	{
 		return data != null
 		       && data.ContainsKey(nameof(BundlePlanFile.bundleName))
-		       && data.ContainsKey(nameof(BundlePlanFile.publishedChecksum))
-		       && data.ContainsKey(nameof(BundlePlanFile.plan))
+		       && data.ContainsKey(nameof(BundlePlanFile.publishedVersion))
+		       && data.ContainsKey(nameof(BundlePlanFile.build))
 		       && data.ContainsKey(nameof(BundlePlanFile.diff))
 			;
 	}
@@ -127,7 +127,7 @@ public static class BundlePlanUtil
 		}
 		else
 		{
-			Log.Information("There is nothing to publish; the catalog already matches this bundle. ");
+			Log.Information("There is nothing to publish; the latest release already matches this bundle.");
 		}
 	}
 }
