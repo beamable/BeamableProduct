@@ -40,7 +40,6 @@ public interface IAppContext : IRealmInfo, IRequesterInfo
 	public bool ShowRawOutput { get; }
 	public bool ShowPrettyOutput { get; }
 	public string DotnetPath { get; }
-	public string JavaPath { get; }
 	/// <summary>Non-null only when <c>--java-path</c> was explicitly passed on the command line (not auto-detected).</summary>
 	string ExplicitJavaPath { get; }
 	public HashSet<string> IgnoreBeamoIds { get; }
@@ -115,7 +114,6 @@ public class DefaultAppContext : IAppContext
 	public bool ShowPrettyOutput { get; private set; }
 
 	public string DotnetPath { get; private set; }
-	public string JavaPath { get; private set; }
 	public string ExplicitJavaPath { get; private set; }
 		public string DockerPath { get; private set; }
 	public HashSet<string> IgnoreBeamoIds { get; private set; }
@@ -218,9 +216,6 @@ public class DefaultAppContext : IAppContext
 		_dotnetPathOption = dotnetPathOption;
 		DockerPath = consoleContext.ParseResult.GetValueForOption(dockerPathOption);
 			ExplicitJavaPath = consoleContext.ParseResult.GetValueForOption(JavaPathOption.Instance);
-			JavaPath = ExplicitJavaPath;
-			if (string.IsNullOrEmpty(JavaPath) && JavaPathOption.TryGetJavaHome(out var resolvedJavaHome, out _))
-				JavaPath = resolvedJavaHome;
 		IgnoreBeamoIds =
 			new HashSet<string>(consoleContext.ParseResult.GetValueForOption(IgnoreBeamoIdsOption.Instance));
 	}

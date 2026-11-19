@@ -452,29 +452,20 @@ public static class ProjectContextUtil
 
 		foreach (string filePath in packageJsonPaths)
 		{
-			try
+			// Quiet for a package.json that isn't an extension; logs a flagged one that fails to parse.
+			var info = BeamoLocalSystem.TryReadPortalExtensionPackage(filePath);
+			var properties = info?.BeamableProperties;
+			if (properties?.IsPortalExtension != true) continue;
+
+			var dir = Path.GetDirectoryName(filePath);
+
+			projects.Add(new PortalExtensionDef()
 			{
-				string jsonContent = File.ReadAllText(filePath);
-
-				var info = JsonConvert.DeserializeObject<BeamoLocalSystem.PortalExtensionPackageInfo>(jsonContent);
-				var properties = info.BeamableProperties;
-
-				if (!properties.IsPortalExtension) continue;
-
-				var dir = Path.GetDirectoryName(filePath);
-
-				projects.Add(new PortalExtensionDef()
-				{
-					Name = info.Name,
-					Properties = properties,
-					RelativePath = Path.GetRelativePath(rootFolder, dir),
-					AbsolutePath = Path.GetFullPath(dir),
-				});
-			}
-			catch (Exception e)
-			{
-				// we don't really care if the file is not the correct format one
-			}
+				Name = info.Name,
+				Properties = properties,
+				RelativePath = Path.GetRelativePath(rootFolder, dir),
+				AbsolutePath = Path.GetFullPath(dir),
+			});
 		}
 
 		return projects;

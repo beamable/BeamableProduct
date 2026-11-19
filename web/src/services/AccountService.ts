@@ -51,6 +51,12 @@ export interface ExternalIdentityParams {
   externalUserId: string;
 }
 
+export interface ConfirmPasswordUpdateParams
+  extends PasswordUpdateConfirmation {
+  /** The email address the confirmation code was sent to. */
+  email: string;
+}
+
 export class AccountService extends ApiService {
   constructor(props: ApiServiceProps) {
     super(props);
@@ -486,6 +492,7 @@ export class AccountService extends ApiService {
    * const account = beamServer.account(playerId);
    * // confirm password update
    * await account.confirmPasswordUpdate({
+   *   email: 'player@example.com',
    *   code: 'confirmation-code',
    *   newPassword: 'new-password',
    * });
@@ -493,8 +500,12 @@ export class AccountService extends ApiService {
    * @throws {BeamError} If the confirmation fails (e.g., invalid code, invalid new password).
    */
   async confirmPasswordUpdate(
-    params: PasswordUpdateConfirmation,
+    params: ConfirmPasswordUpdateParams,
   ): Promise<void> {
+    if (typeof params?.email !== 'string' || !params.email.trim()) {
+      throw new BeamError('Email is required to confirm a password update');
+    }
+
     await accountsPostPasswordUpdateConfirmBasic(
       this.requester,
       params,

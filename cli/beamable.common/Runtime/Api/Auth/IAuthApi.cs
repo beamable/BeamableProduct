@@ -190,7 +190,8 @@ namespace Beamable.Common.Api.Auth
 		/// If the player forgets the password they registered with their email during the <see cref="RegisterDBCredentials"/> method,
 		/// you can use this method to issue them a password update email.
 		/// This method will send the player an email containing a unique code. That code needs to be given to the
-		/// <see cref="ConfirmPasswordUpdate"/> method to complete the password update.
+		/// <see cref="ConfirmPasswordUpdate(string, string, string)"/> method, along with the same email address,
+		/// to complete the password update.
 		/// </summary>
 		/// <param name="email">The email address to send the code to. This must always be the same address registered as the User's <see cref="User.email"/></param>
 		/// <returns>An empty <see cref="Promise"/> representing the network request's completion. </returns>
@@ -204,7 +205,20 @@ namespace Beamable.Common.Api.Auth
 		/// <param name="code">The code that was sent to the player's email address</param>
 		/// <param name="newPassword">A new password that the player can use to sign in. This password will replace the old password.</param>
 		/// <returns>An empty <see cref="Promise"/> representing the network request's completion. </returns>
+		[Obsolete("Password reset confirmation will require the email address. Use " + nameof(ConfirmPasswordUpdate) + "(email, code, newPassword) instead.")]
 		Promise<EmptyResponse> ConfirmPasswordUpdate(string code, string newPassword);
+
+		/// <summary>
+		/// If the player forgets the password they registered with their email during the <see cref="RegisterDBCredentials"/> method,
+		/// you can use the <see cref="IssuePasswordUpdate"/> method to send the player a one time password reset code.
+		/// That code needs to be given to this method, along with the email address it was sent to and a new password,
+		/// to complete the password update process.
+		/// </summary>
+		/// <param name="email">The email address the code was sent to. This must be the same address given to <see cref="IssuePasswordUpdate"/></param>
+		/// <param name="code">The code that was sent to the player's email address</param>
+		/// <param name="newPassword">A new password that the player can use to sign in. This password will replace the old password.</param>
+		/// <returns>An empty <see cref="Promise"/> representing the network request's completion. </returns>
+		Promise<EmptyResponse> ConfirmPasswordUpdate(string email, string code, string newPassword);
 
 		/// <summary>
 		/// This method should not be used by Developers, and will soon be marked as obsolete.

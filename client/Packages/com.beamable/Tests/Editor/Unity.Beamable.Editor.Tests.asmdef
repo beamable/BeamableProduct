@@ -10,6 +10,8 @@
         "Beamable.JsonSerializable",
         "Beamable.Service",
         "Beamable.Coroutines",
+        "Unity.Addressables",
+        "Unity.Addressables.Editor",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
         "Unity.PerformanceTesting"

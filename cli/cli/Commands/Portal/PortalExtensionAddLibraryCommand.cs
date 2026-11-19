@@ -155,22 +155,16 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 
 		foreach (var packagePath in EnumeratePackageJsonExcludingNodeModules(workspace))
 		{
-			try
+			// Quiet for a package.json that isn't a library; logs a flagged one that fails to parse.
+			var info = BeamoLocalSystem.TryReadPortalExtensionPackage(packagePath);
+			if (info?.BeamableProperties?.IsPortalExtensionLib == true)
 			{
-				var info = JsonConvert.DeserializeObject<BeamoLocalSystem.PortalExtensionPackageInfo>(File.ReadAllText(packagePath));
-				if (info?.BeamableProperties?.IsPortalExtensionLib == true)
+				results.Add(new PortalExtensionLibraryLocation
 				{
-					results.Add(new PortalExtensionLibraryLocation
-					{
-						Name = info.Name,
-						Directory = Path.GetFullPath(Path.GetDirectoryName(packagePath)),
-						PackageJsonPath = Path.GetFullPath(packagePath),
-					});
-				}
-			}
-			catch
-			{
-				// ignore files that aren't valid package.json libraries
+					Name = info.Name,
+					Directory = Path.GetFullPath(Path.GetDirectoryName(packagePath)),
+					PackageJsonPath = Path.GetFullPath(packagePath),
+				});
 			}
 		}
 

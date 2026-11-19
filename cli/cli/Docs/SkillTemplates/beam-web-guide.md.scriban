@@ -207,7 +207,7 @@ await beam.account.confirmEmailUpdate({ code: "123456", password: "current-passw
 
 await beam.account.initiatePasswordUpdate({ email: "player@example.com" });
 // User receives code...
-await beam.account.confirmPasswordUpdate({ code: "123456", newPassword: "new-password" });
+await beam.account.confirmPasswordUpdate({ email: "player@example.com", code: "123456", newPassword: "new-password" });
 ```
 
 ---

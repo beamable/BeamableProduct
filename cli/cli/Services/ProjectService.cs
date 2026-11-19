@@ -611,6 +611,37 @@ public class ProjectService
 		return Path.Combine(solutionPath, slnNameWithExtension);
 	}
 
+	/// <summary>
+	/// The full paths of the projects a solution already contains, as `dotnet sln list` reports them.
+	/// </summary>
+	public async Task<HashSet<string>> GetSolutionProjectPaths(string slnPath)
+	{
+		var lines = new List<string>();
+		await CliExtensions.GetDotnetCommand(_app.DotnetPath, $"sln {slnPath.EnquotePath()} list")
+			.WithStandardOutputPipe(PipeTarget.ToDelegate(lines.Add))
+			.ExecuteAsync();
+
+		// The output is a header, a line of dashes, then one path per line, relative to the solution. A solution
+		// without projects prints a single message instead, so no line of dashes means no projects.
+		var slnDir = Path.GetDirectoryName(Path.GetFullPath(slnPath));
+		var projects = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var dashes = lines.FindIndex(line => line.Length > 0 && line.All(c => c == '-'));
+		if (dashes < 0)
+		{
+			return projects;
+		}
+
+		foreach (var line in lines.Skip(dashes + 1))
+		{
+			if (!string.IsNullOrWhiteSpace(line))
+			{
+				projects.Add(Path.GetFullPath(Path.Combine(slnDir, line.Trim())));
+			}
+		}
+
+		return projects;
+	}
+
 	public delegate bool ProjectFilterPredicate(string fullCsProjPath);
 	
 	public async Task<string> CreateSolutionFilterFile(string slnPath, ProjectFilterPredicate filter)

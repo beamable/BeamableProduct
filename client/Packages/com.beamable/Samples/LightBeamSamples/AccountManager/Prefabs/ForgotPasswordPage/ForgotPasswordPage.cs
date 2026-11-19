@@ -41,7 +41,7 @@ public class ForgotPasswordPage : MonoBehaviour, ILightComponent<ForgotPasswordM
 		{
 			var newPassword = passwordInput.text;
 			var code = codeInput.text;
-			var res = await beam.BeamContext.Accounts.ConfirmPassword(code, newPassword);
+			var res = await beam.BeamContext.Accounts.ConfirmPassword(model.email, code, newPassword);
 
 			if (res.isSuccess)
 			{
