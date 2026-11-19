@@ -9,5 +9,6 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         public System.Collections.Generic.List<BeamPageExtensionOption> pageExtensions;
         public System.Collections.Generic.List<BeamComponentExtensionOption> componentExtensions;
+        public System.Collections.Generic.List<BeamSiteOption> sites;
     }
 }

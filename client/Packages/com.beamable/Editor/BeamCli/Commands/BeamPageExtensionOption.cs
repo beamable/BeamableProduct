@@ -8,6 +8,6 @@ namespace Beamable.Editor.BeamCli.Commands
     public partial class BeamPageExtensionOption
     {
         public string routePrefix;
-        public string autoSelector;
+        public System.Collections.Generic.List<string> siteIds;
     }
 }

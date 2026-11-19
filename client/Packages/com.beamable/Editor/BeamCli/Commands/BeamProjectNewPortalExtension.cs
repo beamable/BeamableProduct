@@ -12,10 +12,10 @@ namespace Beamable.Editor.BeamCli.Commands
         public string sln;
         /// <summary>Relative path to directory where project should be created. Defaults to "SOLUTION_DIR/services"</summary>
         public string serviceDirectory;
-        /// <summary>The portal page to mount on. For page extensions use routePrefix + your custom route; for component extensions use the page path. Run 'portal extension list-extension-options' to see all valid values</summary>
+        /// <summary>The portal page to mount on. Required for page extensions: routePrefix + your custom route. Optional with --site: for a route-tabs site, the tab's page relative to the route the site renders at; usually omitted for stack and tabs sites. A --zone extension is declared with a zone-relative page path and renders inside the portal's zone view (/zones/:zid/) — the portal owns the prefix. Run 'portal extension list-extension-options' to see all valid values</summary>
         public string mountPage;
-        /// <summary>The mount slot on the page. Required for component extensions; omit for page extensions (auto-assigned). Run 'portal extension list-extension-options' to see valid selectors per page</summary>
-        public string mountSelector;
+        /// <summary>The id of a site to mount into (repeat for several), e.g. --site campaign-offer. The mount shows in every instance of the site. Omit for page extensions (they mount into extension-page). Run 'portal extension list-extension-options' to see the sites</summary>
+        public string[] site;
         /// <summary>Specify the navigation group of the extension, used to organize extensions within a hub. This is required when the extension is a full page</summary>
         public string mountGroup;
         /// <summary>Specify the navigation label of the extension. This is only valid when the extension is a full page</summary>
@@ -54,10 +54,14 @@ namespace Beamable.Editor.BeamCli.Commands
             {
                 genBeamCommandArgs.Add(("--mount-page=" + this.mountPage));
             }
-            // If the mountSelector value was not default, then add it to the list of args.
-            if ((this.mountSelector != default(string)))
+            // If the site value was not default, then add it to the list of args.
+            if ((this.site != default(string[])))
             {
-                genBeamCommandArgs.Add(("--mount-selector=" + this.mountSelector));
+                for (int i = 0; (i < this.site.Length); i = (i + 1))
+                {
+                    // The parameter allows multiple values
+                    genBeamCommandArgs.Add(("--site=" + this.site[i]));
+                }
             }
             // If the mountGroup value was not default, then add it to the list of args.
             if ((this.mountGroup != default(string)))
