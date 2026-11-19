@@ -33,6 +33,16 @@ namespace Beamable.Experimental.Api.Chat
 		Promise<RoomInfo> CreateRoom(string roomName, bool keepSubscribed, List<long> players);
 
 		/// <summary>
+		/// Get the latest messages sent to a room the current player is in, oldest first.
+		/// Rooms keep this history on realms that send notifications over the Beamable websocket;
+		/// on realms that use PubNub, the room's history is PubNub's.
+		/// </summary>
+		/// <param name="roomId">The room id</param>
+		/// <param name="limit">How many of the latest messages to get, from 1 to 100</param>
+		/// <returns>A <see cref="Promise"/> containing the room's latest <see cref="Message"/>s</returns>
+		Promise<List<Message>> GetRoomHistory(string roomId, int limit = 50);
+
+		/// <summary>
 		/// Remove the current player from a room
 		/// </summary>
 		/// <param name="roomId">The room id to leave</param>
@@ -126,6 +136,12 @@ namespace Beamable.Experimental.Api.Chat
 	public class SendChatResponse
 	{
 		public Message message;
+	}
+
+	[Serializable]
+	public class GetRoomHistoryResponse
+	{
+		public List<Message> messages;
 	}
 
 	[Serializable]

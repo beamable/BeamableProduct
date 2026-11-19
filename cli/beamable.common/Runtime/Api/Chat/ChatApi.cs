@@ -1,5 +1,6 @@
 using Beamable.Common;
 using Beamable.Common.Api;
+using System;
 using System.Collections.Generic;
 
 namespace Beamable.Experimental.Api.Chat
@@ -43,6 +44,16 @@ namespace Beamable.Experimental.Api.Chat
 				string.Format("{0}/{1}/rooms", BaseUri, _userContext.UserId),
 				new CreateRoomRequest(roomName, keepSubscribed, players)
 			).Map(response => response.room);
+		}
+
+		/// <inheritdoc cref="IChatApi.GetRoomHistory"/>
+		public Promise<List<Message>> GetRoomHistory(string roomId, int limit = 50)
+		{
+			return _requester.Request<GetRoomHistoryResponse>(
+				Method.GET,
+				string.Format("{0}/{1}/messages?roomId={2}&limit={3}", BaseUri, _userContext.UserId,
+				              Uri.EscapeDataString(roomId), limit)
+			).Map(response => response.messages);
 		}
 
 		/// <inheritdoc cref="IChatApi.LeaveRoom"/>
