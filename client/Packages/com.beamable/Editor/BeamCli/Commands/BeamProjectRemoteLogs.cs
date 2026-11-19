@@ -16,6 +16,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public string from;
         /// <summary>A timestamp filter, where logs must be older than this time. Must be an exact date time string, or a relative time string. Relative time strings are in the format <number><unit>. The unit is either s (seconds), m (minutes), h (hours), or d (days). To represent 5 minutes in the past, use the term '5m' </summary>
         public string to;
+        /// <summary>Which scope to target: 'realm' (default) for the selected realm (cid.pid); 'zone' for the zone bound to it (cid.zid)</summary>
+        public string scope;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -42,6 +44,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.to != default(string)))
             {
                 genBeamCommandArgs.Add(("--to=" + this.to));
+            }
+            // If the scope value was not default, then add it to the list of args.
+            if ((this.scope != default(string)))
+            {
+                genBeamCommandArgs.Add(("--scope=" + this.scope));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

@@ -20,6 +20,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public string from;
         /// <summary>If set, this will force the order to be ascending instead of the default descending order</summary>
         public bool ascending;
+        /// <summary>Which scope to target: 'realm' (default) for the selected realm (cid.pid); 'zone' for the zone bound to it (cid.zid)</summary>
+        public string scope;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -59,6 +61,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.ascending != default(bool)))
             {
                 genBeamCommandArgs.Add(("--ascending=" + this.ascending));
+            }
+            // If the scope value was not default, then add it to the list of args.
+            if ((this.scope != default(string)))
+            {
+                genBeamCommandArgs.Add(("--scope=" + this.scope));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

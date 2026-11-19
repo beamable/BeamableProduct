@@ -39,8 +39,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public bool fromLatestPlan;
         /// <summary>An additional tag to advance to the published checksum</summary>
         public string tag;
-        /// <summary>Widen the published checksum's visibility tier (each tier is a superset of the previous, not a list of realms): 'realm' = only this realm; 'org' = every realm in your customer; 'public' = every realm in every customer. A literal <cid>.<pid> / <cid> / * is also accepted</summary>
-        public string scope;
+        /// <summary>Widen the bundle's visibility tier (each tier is a superset of the previous, not a list of realms): 'private' = only this scope (the realm, or the zone for a zone bundle); 'org' = every realm and zone in your customer; 'public' = every realm in every customer. '*' is also accepted as an alias for 'public'</summary>
+        public string acl;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -127,10 +127,10 @@ namespace Beamable.Editor.BeamCli.Commands
             {
                 genBeamCommandArgs.Add(("--tag=" + this.tag));
             }
-            // If the scope value was not default, then add it to the list of args.
-            if ((this.scope != default(string)))
+            // If the acl value was not default, then add it to the list of args.
+            if ((this.acl != default(string)))
             {
-                genBeamCommandArgs.Add(("--scope=" + this.scope));
+                genBeamCommandArgs.Add(("--acl=" + this.acl));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

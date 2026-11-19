@@ -8,6 +8,6 @@ namespace Beamable.Editor.BeamCli.Commands
     public partial class BeamComponentExtensionOption
     {
         public string path;
-        public System.Collections.Generic.List<BeamComponentSelectorOption> selectors;
+        public System.Collections.Generic.List<string> siteIds;
     }
 }
