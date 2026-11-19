@@ -24,17 +24,60 @@ namespace Beamable.Platform.Tests.Auth.AuthServiceTests
 			public OfflineAccounts(IAuthService auth, IBeamableRequester requester, IDependencyProvider provider)
 				: base(null, auth, null, requester, null, null, provider) { }
 
-			protected override Promise PerformRefresh() => Promise.Success;
+			public int RefreshCount { get; private set; }
+
+			protected override Promise PerformRefresh()
+			{
+				RefreshCount++;
+				return Promise.Success;
+			}
 		}
 
-		private PlayerAccounts CreateAccounts()
+		private OfflineAccounts CreateAccounts(string email = FirstEmail)
 		{
 			var dependencies = new DependencyBuilder();
 			dependencies.AddSingleton<IAuthService>(_service);
 			var accounts = new OfflineAccounts(_service, _requester, dependencies.Build());
-			var user = new User { id = 1, email = FirstEmail, thirdPartyAppAssociations = new List<string>() };
+			var user = new User { id = 1, email = email, thirdPartyAppAssociations = new List<string>() };
 			accounts.Current = new PlayerAccount(accounts, null, user, new UserExtensions.StatCollection());
 			return accounts;
+		}
+
+		[TestCase(null)]
+		[TestCase("")]
+		[TestCase("   ")]
+		public void AccountConfirmationRejectsMissingEmailLocally(string email)
+		{
+			var accounts = CreateAccounts(email);
+			var refreshCount = accounts.RefreshCount;
+			var confirm = _requester.MockRequest<EmptyResponse>(Method.POST, ConfirmRoute)
+				.WithResponse(new EmptyResponse());
+
+			var result = accounts.Current.ConfirmPassword(Code, NewPassword).GetResult();
+
+			Assert.That(result.isSuccess, Is.False);
+			Assert.That(result.error, Is.EqualTo(PasswordResetConfirmError.INVALID));
+			Assert.That(confirm.CallCount, Is.Zero);
+			Assert.That(accounts.RefreshCount, Is.EqualTo(refreshCount));
+		}
+
+		[Test]
+		public void AccountConfirmationSendsCurrentAccountEmailAndRefreshes()
+		{
+			var accounts = CreateAccounts();
+			var refreshCount = accounts.RefreshCount;
+			var confirm = _requester.MockRequest<EmptyResponse>(Method.POST, ConfirmRoute)
+				.WithJsonFieldMatch("email", FirstEmail)
+				.WithJsonFieldMatch("code", Code)
+				.WithJsonFieldMatch("newPassword", NewPassword)
+				.WithResponse(new EmptyResponse());
+
+			var result = accounts.ConfirmPassword(Code, NewPassword, (PlayerAccount)null).GetResult();
+
+			Assert.That(result.isSuccess, Is.True);
+			Assert.That(result.account, Is.SameAs(accounts.Current));
+			Assert.That(confirm.CallCount, Is.EqualTo(1));
+			Assert.That(accounts.RefreshCount, Is.EqualTo(refreshCount + 1));
 		}
 
 		[Test]

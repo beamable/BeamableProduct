@@ -1328,9 +1328,15 @@ namespace Beamable.Player
 			}
 
 			var res = new PasswordResetConfirmOperation { account = account };
-			var service = GetAuthServiceForAccount(account);
+			var email = account?.Email;
+			if (string.IsNullOrWhiteSpace(email))
+			{
+				res.error = PasswordResetConfirmError.INVALID;
+				return res;
+			}
 
-			await ConfirmPasswordUpdate(service, account?.Email, code, newPassword);
+			var service = GetAuthServiceForAccount(account);
+			await service.ConfirmPasswordUpdate(email, code, newPassword);
 			await Refresh();
 			return res;
 		}
@@ -1395,19 +1401,6 @@ namespace Beamable.Player
 			{
 				return new PasswordResetResult(ex);
 			}
-		}
-
-		private static Promise<EmptyResponse> ConfirmPasswordUpdate(IAuthService service, string email, string code, string newPassword)
-		{
-			if (!string.IsNullOrEmpty(email))
-			{
-				return service.ConfirmPasswordUpdate(email, code, newPassword);
-			}
-
-			// No email is known; the request is sent without one, which the backend will stop accepting.
-#pragma warning disable CS0618
-			return service.ConfirmPasswordUpdate(code, newPassword);
-#pragma warning restore CS0618
 		}
 
 		/// <summary>
