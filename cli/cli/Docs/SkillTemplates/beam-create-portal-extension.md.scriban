@@ -12,14 +12,34 @@ description: Create a portal extension (full-page or component) mounted on the B
 ## Steps
 
 ### 1. Discover mount points (REQUIRED)
-You MUST call this before creating the extension. It returns the valid `--mount-page` and `--mount-selector` values from the remote portal config.
+You MUST call this before creating the extension. It returns the valid `--mount-page` values and the sites (`--site`) from the remote portal config and the running extensions.
 ```
 beam_exec("portal extension list-extension-options")
 ```
 
-The response has two sections:
-- **pageExtensions**: Full-page extensions that add an entry to the Portal navigation. A non-empty `pageExtensions` list just signals that a full-page slot exists; set `--mount-page` to a **hub path** — a bare hub name, or `hub/page` to nest a page inside a hub (see *Hubs vs. pages* below). The `routePrefix` (e.g. `!hub/`) is a discovery marker, not a literal prefix to concatenate. The `--mount-selector` is auto-assigned from `autoSelector`.
-- **componentExtensions**: Component slots that inject into an existing Portal page. Use `path` as `--mount-page` and pick one of the `selectors` as `--mount-selector`.
+The response has three sections:
+- **pageExtensions**: Full-page extensions that add an entry to the Portal navigation. A non-empty `pageExtensions` list just signals that a full-page slot exists; set `--mount-page` to a **hub path** — a bare hub name, or `hub/page` to nest a page inside a hub (see *Hubs vs. pages* below). The `routePrefix` (e.g. `!hub/`) is a discovery marker, not a literal prefix to concatenate. A page extension mounts into the `extension-page` site (its `siteIds`), assigned for you.
+- **componentExtensions**: The sites rendered at an existing Portal page (`path`), by `siteIds`.
+- **sites**: Every site, once each: its `id`, `presentation` (`stack`, `tabs` or `route-tabs`), `description`, and `renderedBy` (the extensions that render it, or `portal`). Pass a site's `id` as `--site` to mount into **every** instance of that site, wherever it renders.
+
+#### Sites
+
+A site is a typed kind of place, declared by the extension that renders it in its `package.json` and placed on screen by id:
+
+```jsonc
+"beamable": {
+  "sites":  [{ "id": "campaign-offer", "presentation": "stack", "description": "An offer a campaign lane sends with its message." }],
+  "mounts": [{ "siteIds": ["extension-page"], "page": "campaigns", "navLabel": "Campaigns" }]
+}
+```
+
+```tsx
+<BeamExtensionSite site="campaign-offer" />
+```
+
+- A mount lists the bare site ids it fills in `siteIds` — no `#`, no `@`. There is no `selector`.
+- `presentation` is one of `stack`, `tabs`, `route-tabs`; `description` is optional. The build fails on an unknown presentation, two `sites` entries with one id, or a `#`/`@` in a site id.
+- A `route-tabs` mount also gives `page`: the tab's page, relative to the route where the site renders (e.g. `stats`). `stack` and `tabs` mounts have no `page`.
 
 ### Hubs vs. pages: how full-page extensions are routed
 
@@ -68,7 +88,7 @@ substitute a real hub name:
 
 (This is what step 1's *"routePrefix + your custom route"* means: the `!hub/` marker is
 replaced by your hub path, not literally prepended.) For full-page extensions the
-`--mount-selector` is always auto-assigned from the page slot, so you never pass it.
+`extension-page` site is always assigned for you, so you never pass `--site`.
 
 #### Zone (`--zone`) extensions render in the zone view
 
@@ -89,13 +109,14 @@ For a **page extension** (new navigation page):
 beam_exec("project new portal-extension <Name> --mount-page \"<routePrefix><your-route>\" --mount-group \"<NavGroup>\" --mount-label \"<NavLabel>\" -q")
 ```
 - `--mount-group` and `--mount-label` are required for sidebar navigation
-- `--mount-selector` is auto-assigned; do not provide it
+- The `extension-page` site is assigned for you; do not provide `--site`
 
-For a **component extension** (slot on an existing page):
+For a **component extension** (mounts into a site):
 ```
-beam_exec("project new portal-extension <Name> --mount-page \"<path>\" --mount-selector \"<selector>\" -q")
+beam_exec("project new portal-extension <Name> --site \"<site-id>\" -q")
 ```
-- `--mount-selector` is REQUIRED and must match one of the selectors from step 1
+- `--site` is REQUIRED and should be one of the `sites[].id` from step 1; repeat it to fill several sites
+- For a `route-tabs` site, also pass `--mount-page \"<tab-page>\"`, relative to the route where the site renders
 - Do NOT provide `--mount-group` or `--mount-label`
 
 {{ if commands["project new portal-extension"] }}
@@ -155,10 +176,10 @@ Read the generated TypeScript files in the extension's `node_modules` to discove
 - **Styling** uses `variant` and `appearance` props — not hardcoded CSS colors. Read the component interfaces for available values.
 
 ## Common Pitfalls
-- **Never guess mount values.** Valid pages and selectors come from a remote config that changes between Portal versions. Always call `list-extension-options` first.
+- **Never guess mount values.** Valid pages and sites come from a remote config and the running extensions, and change between Portal versions. Always call `list-extension-options` first.
 - **Always pass `-q` (quiet mode)** when executing from MCP to avoid interactive prompts that will hang.
 - **Page extensions need `--mount-group` and `--mount-label`** for the sidebar entry. Component extensions do not use these.
-- **Mount page format differs by type**: page extensions use `routePrefix + custom-route`, component extensions use the exact `path` value.
+- **Mount page format differs by type**: page extensions use `routePrefix + custom-route`; a `route-tabs` mount uses its tab page, relative to the site's route; `stack` and `tabs` mounts have no page.
 - **Zone extensions render in the Portal's zone view** under `/zones/:zid/`. Declare their mount `page` **zone-relative** (e.g. `dashboards` or `dashboards/overview`) — the Portal owns the `:cid/zones/:zid/` prefix and auto-assumes it. Do not add a `:cid/` prefix, via `--mount-page` or by hand-editing the manifest.
 - **In React, import components from `@beamable/portal-toolkit/react`** — do NOT use `<beam-*>` web component tags directly in TSX. Use the typed React forwarders instead.
 - **Use Beamable components, not raw HTML.** Portal extensions render inside the Portal UI. Read the generated files in `node_modules/@beamable/portal-toolkit/src/generated/` for available components.
@@ -184,7 +205,7 @@ After completing the workflow, provide the user with a summary that covers:
    - If a microservice dependency was added: `extensions/<Name>/beamable/clients/` — auto-generated typed clients for calling microservice endpoints.
    - Service manifest: `.beamable/beamoLocalManifest.json` — tracks the extension alongside other services.
 3. **Why specific choices were made** — explain the reasoning:
-   - **Mount point chosen**: Why this `--mount-page` and `--mount-selector` — what Portal page it extends and where in the UI it appears. For page extensions, explain what the nav group and label mean for Portal navigation.
+   - **Mount point chosen**: Why this `--mount-page` and `--site` — what Portal page or site it extends and where in the UI it appears. For page extensions, explain what the nav group and label mean for Portal navigation.
    - **Page vs component**: Why this extension type was chosen — page extensions are standalone features with their own route, while component extensions augment existing Portal pages at specific insertion points.
    - **Microservice dependency**: If added, explain that `portal extension add-microservice` generated typed clients so the extension can call `[ClientCallable]` endpoints, and that the microservice must be running (locally or deployed) for those calls to work.
 4. **How to iterate**: Remind the user they can run `project run --ids <Name>` to start the dev server, open it with `portal open-extension <Name>`, and that changes hot-reload in the browser.

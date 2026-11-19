@@ -11,7 +11,7 @@
     "mounts": [
       {
         "page": "page-path",
-        "selector": "#extension-page",
+        "siteIds": ["extension-page"],
         "args": {},
         "navLabel": "",
         "navIcon": "robot",

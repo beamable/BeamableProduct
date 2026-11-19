@@ -445,6 +445,18 @@ namespace Beamable.Server.Content
 	      sw.Stop();
       }
 
+      /// <summary>
+      /// Refreshes the manifests already loaded, for when content may have been published while the realm event
+      /// subscription's connection was down.
+      /// </summary>
+      public void RefreshLoadedManifests()
+      {
+	      foreach (var manifest in _nameToManifest.Values)
+	      {
+		      manifest.RefreshManifest();
+	      }
+      }
+
       void HandleContentPublish(ContentManifestEvent manifestEvent)
       {
 	      GetManifestEntry().RefreshManifest();

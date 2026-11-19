@@ -118,6 +118,11 @@ namespace Beamable.Tests.Runtime.Api
 			throw new System.NotImplementedException();
 		}
 
+		public Promise<EmptyResponse> ConfirmPasswordUpdate(string email, string code, string newPassword)
+		{
+			throw new System.NotImplementedException();
+		}
+
 		public Promise<CustomerRegistrationResponse> RegisterCustomer(string email, string password, string projectName, string customerName, string alias)
 		{
 			throw new System.NotImplementedException();
