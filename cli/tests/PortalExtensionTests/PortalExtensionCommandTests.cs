@@ -1,12 +1,15 @@
 using cli;
 using cli.Portal;
 using cli.Services;
+using cli.Commands.Project;
 using cli.Utils;
 using Moq;
+using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using tests.Examples;
 using tests.MoqExtensions;
 
@@ -35,7 +38,7 @@ public class PortalExtensionCommandTests : CLITestExtensions
 					path = "!pathMatch",
 					selectors = new List<RemotePortalConfiguration.MountSiteSelector>
 					{
-						new() { selector = "#extension-page", type = "page" }
+						new() { selector = "extension-page", type = "page" }
 					}
 				},
 				new()
@@ -43,7 +46,7 @@ public class PortalExtensionCommandTests : CLITestExtensions
 					path = "extensions",
 					selectors = new List<RemotePortalConfiguration.MountSiteSelector>
 					{
-						new() { selector = "#realm-extensions", type = "component" }
+						new() { selector = "realm-extensions", type = "component" }
 					}
 				},
 				new()
@@ -51,8 +54,8 @@ public class PortalExtensionCommandTests : CLITestExtensions
 					path = "players",
 					selectors = new List<RemotePortalConfiguration.MountSiteSelector>
 					{
-						new() { selector = "#top", type = "component" },
-						new() { selector = "#bottom", type = "component" }
+						new() { selector = "top", type = "component" },
+						new() { selector = "bottom", type = "component" }
 					},
 					navContext = new List<string> { "Engage", "Players" }
 				},
@@ -61,7 +64,7 @@ public class PortalExtensionCommandTests : CLITestExtensions
 					path = "players/:playerId",
 					selectors = new List<RemotePortalConfiguration.MountSiteSelector>
 					{
-						new() { selector = "#top", type = "component" }
+						new() { selector = "top", type = "component" }
 					},
 					navContext = new List<string> { "Engage", "Players", "Player Profile" }
 				},
@@ -70,7 +73,7 @@ public class PortalExtensionCommandTests : CLITestExtensions
 					path = "players/:playerId/!pathMatch",
 					selectors = new List<RemotePortalConfiguration.MountSiteSelector>
 					{
-						new() { selector = "#extension-page", type = "page" }
+						new() { selector = "extension-page", type = "page" }
 					}
 				}
 			}
@@ -84,6 +87,10 @@ public class PortalExtensionCommandTests : CLITestExtensions
 			mock.Setup(x => x.GetRemotePortalConfig(It.IsAny<CommandArgs>()))
 				.ReturnsAsync(new RemotePortalConfiguration
 				{
+					sites = new List<RemotePortalConfiguration.SiteConfig>
+					{
+						new() { id = "top", presentation = "stack", renderedBy = new List<string> { "players" } }
+					},
 					mountSites = new List<RemotePortalConfiguration.MountSiteConfig>
 					{
 						new()
@@ -91,8 +98,8 @@ public class PortalExtensionCommandTests : CLITestExtensions
 							path = "players",
 							selectors = new List<RemotePortalConfiguration.MountSiteSelector>
 							{
-								new() { selector = "#top", type = "component" },
-								new() { selector = "#bottom", type = "component" }
+								new() { selector = "top", type = "component" },
+								new() { selector = "bottom", type = "component" }
 							},
 							navContext = new List<string> { "Engage", "Players" }
 						}
@@ -117,7 +124,7 @@ public class PortalExtensionCommandTests : CLITestExtensions
 							path = "!hub/!pathMatch",
 							selectors = new List<RemotePortalConfiguration.MountSiteSelector>
 							{
-								new() { selector = "#extension-page", type = "page" }
+								new() { selector = "extension-page", type = "page" }
 							}
 						}
 					}
@@ -232,8 +239,9 @@ public class PortalExtensionCommandTests : CLITestExtensions
 		var packageJson = BFile.ReadAllText("extensions/TestPageExt/package.json");
 		Assert.That(packageJson, Does.Contain("my-custom-page"),
 			"package.json must contain the mount page");
-		Assert.That(packageJson, Does.Contain("#extension-page"),
-			"package.json must contain the auto-assigned selector for page extensions");
+		Assert.That(SiteIdsOf(packageJson), Is.EqualTo(new[] { "extension-page" }),
+			"a page extension mounts into extension-page");
+		Assert.That(packageJson, Does.Not.Contain("selector"));
 		Assert.That(packageJson, Does.Contain("TestGroup"),
 			"package.json must contain the nav group");
 		Assert.That(packageJson, Does.Contain("TestLabel"),
@@ -326,8 +334,8 @@ public class PortalExtensionCommandTests : CLITestExtensions
 			"the page path must be stored verbatim");
 		Assert.That(packageJson, Does.Not.Contain("!hub"),
 			"the !hub/!pathMatch prefix must not leak into the stored page path");
-		Assert.That(packageJson, Does.Contain("#extension-page"),
-			"the page slot selector must be auto-assigned");
+		Assert.That(SiteIdsOf(packageJson), Is.EqualTo(new[] { "extension-page" }),
+			"the page site must be auto-assigned");
 	}
 
 	#endregion
@@ -342,21 +350,63 @@ public class PortalExtensionCommandTests : CLITestExtensions
 		MockRemotePortalConfigComponentOnly();
 
 		Run("project", "new", "portal-extension", "TestCompExt", "--quiet",
-			"--mount-page", "players",
-			"--mount-selector", "#top",
+			"--site", "top",
+			"--site", "other-site",
 			"--template", "react");
 
 		Assert.That(BFile.Exists("extensions/TestCompExt/package.json"),
 			"package.json must exist after scaffolding");
 
 		var packageJson = BFile.ReadAllText("extensions/TestCompExt/package.json");
-		Assert.That(packageJson, Does.Contain("players"),
-			"package.json must contain the mount page");
-		Assert.That(packageJson, Does.Contain("#top"),
-			"package.json must contain the selector");
+		Assert.That(SiteIdsOf(packageJson), Is.EqualTo(new[] { "top", "other-site" }),
+			"package.json must list every --site");
+		var mount = (JObject)JObject.Parse(packageJson)["beamable"]["mounts"][0];
+		Assert.That(mount.ContainsKey("page"), Is.False, "a stack mount has no page");
+		Assert.That(mount.ContainsKey("id"), Is.False, "the scaffolder writes no mount id");
+		Assert.That(mount.ContainsKey("selector"), Is.False);
+	}
+
+	[Test]
+	[TestCase("#top")]
+	[TestCase("top@2")]
+	public void NewPortalExtension_Fails_WhenSiteIdHasHashOrAt(string siteId)
+	{
+		InitWorkspace();
+		// The site ids are checked before the remote portal config is fetched, so it isn't mocked.
+		SetupBeamoServiceMock();
+
+		var exitCode = RunFull(new[]
+		{
+			"project", "new", "portal-extension", "BadSiteExt", "--quiet",
+			"--site", siteId,
+			"--template", "react"
+		});
+
+		Assert.That(exitCode, Is.EqualTo(1), "a site id with # or @ must be rejected");
+		Assert.That(BFile.Exists("extensions/BadSiteExt/package.json"), Is.False);
+	}
+
+	[Test]
+	public void ValidateMountArgs_PageOnlyMakesAPageExtension()
+	{
+		Assert.That(NewPortalExtensionCommand.ValidateMountArgs(null, "cars/ferrari", true),
+			Is.EqualTo(new[] { "extension-page" }));
+	}
+
+	[Test]
+	public void ValidateMountArgs_SiteNeedsNoPage_ExceptExtensionPage()
+	{
+		Assert.That(NewPortalExtensionCommand.ValidateMountArgs(new[] { "campaign-offer", "campaign-offer" }, null, true),
+			Is.EqualTo(new[] { "campaign-offer" }));
+		Assert.Throws<CliException>(() => NewPortalExtensionCommand.ValidateMountArgs(new[] { "extension-page" }, null, true));
+		Assert.Throws<CliException>(() => NewPortalExtensionCommand.ValidateMountArgs(null, null, true));
+		Assert.That(NewPortalExtensionCommand.ValidateMountArgs(null, null, false), Is.Empty, "the wizard picks the mount");
 	}
 
 	#endregion
+
+	private static string[] SiteIdsOf(string packageJson) =>
+		JObject.Parse(packageJson)["beamable"]["mounts"][0]["siteIds"].Select(t => (string)t).ToArray();
 
 	#region portal extension add-microservice
 

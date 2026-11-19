@@ -11,11 +11,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`context.scope`.** Every mount context carries the scope of its Host: `'realm'` on
   `ExtensionContext`, `'zone'` on `ZoneExtensionContext`, the same value the window registration
   already carries. Narrow on it to reach `realm` or `zid`.
+- **Declared sites.** `SiteDeclaration` (`id`, `presentation`, `description?`) and `SitePresentation`
+  (`'stack' | 'tabs' | 'route-tabs'`) type the `beamable.sites` entries an extension writes in its
+  package.json for the sites it renders. No code is generated from them; the portal resolves a site
+  id against its owner's declaration at render.
+- **`ExtensionMountPoint` gains `id?`, `siteIds`, `site?` and `filters?`.** `context.mount.id` is
+  always set (declared, or derived from the first site id and page) and `context.mount.site` names
+  the site id the instance renders in.
+- **Unplaced pages and explicit hubs.** `ExtensionMountPoint.siteIds` is optional: a mount with a
+  `page` and no `siteIds` is an unplaced page (`page: "config"`), with no URL and no menu entry until
+  a hub includes it. `hub?: boolean` marks a hub mount (`page` is the hub id, one segment; never with
+  `siteIds`), and `include?: HubInclude[]` on a hub copies unplaced pages under it (`"config"`, or
+  `{ path, label?, navGroup?, order? }` to relabel or regroup it there). One page can show in several
+  hubs without being declared several times.
+- **`context.hub`** — the hub the instance renders in. `context.navigate('./player-profile')` resolves
+  against it, so a page included by two hubs links inside the hub the user is in. An included page's
+  `context.mount.page` is its effective page (`social/config`). Types only: `navigate` still takes a
+  string, so bundles built against the previous RC keep working.
+
+### Removed (breaking)
+- **Inferred hubs.** A one-segment `extension-page` page no longer declares a hub, and a page under an
+  undeclared hub no longer invents one: a hub exists only as a `hub: true` mount, and such pages are
+  skipped with a dev warning.
+- **`ExtensionMountPoint.selector`.** A mount lists the site ids it fills in `siteIds`
+  (`["extension-page"]`, `["campaign-offer"]`): bare ids, no `#`, and no parent's Name in `page`.
+  A mount shows in every instance of its sites. `page` is now optional: a URL pattern for
+  `extension-page`, relative to the owner's route for a `route-tabs` site (`"stats"`), unused
+  otherwise.
+- **`<BeamExtensionSite selector mountKind>`.** It takes `site: string | string[]`, an id this
+  extension declares; the presentation comes from the declaration only.
 
 ### Changed
 - **Host-relative paths.** The `ExtensionNavigate` and `params` docs now describe paths relative to
   the Host the extension is mounted in, a realm or a zone. A zone extension's relative
   `context.navigate('foo')` resolves under `/<cid>/zones/<zid>/`, as the portal already did.
+- **`CandidateMetadata.sites`** lists the site ids the candidate declares, and
+  `getMountSiteCandidates` / `useMountSiteCandidates` take a site id: they return the mounts listing
+  it in `siteIds`.
 
 ## [0.5.0] - 2026-08-04
 
