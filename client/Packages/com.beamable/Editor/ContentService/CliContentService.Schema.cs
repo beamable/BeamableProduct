@@ -118,12 +118,17 @@ namespace Beamable.Editor.ContentService
             }
             if (hadPendingEdit)
             {
-                const string message = "Content changed on disk while your edit was being saved. Your latest change was not saved; the Inspector now shows the file.";
-                // The lost edit is newer than the save that found the change, so that save must not clear this.
-                _saveFailures[key] = new ContentSaveFailure(message, false, ++_lastEdit);
-                Debug.LogError($"Content edit was not saved. id=[{contentId}] {message}");
+                RecordDiscardedEdit(contentId, key, "Content changed on disk while your edit was being saved. Your latest change was not saved; the Inspector now shows the file.");
             }
             ManifestChangedCount++;
+        }
+
+        /// <summary>A reload replaced an Inspector edit that was still waiting to save.</summary>
+        private void RecordDiscardedEdit(string contentId, string key, string message)
+        {
+            // The lost edit is newer than any save in flight, so those saves must not clear this.
+            _saveFailures[key] = new ContentSaveFailure(message, false, ++_lastEdit);
+            Debug.LogError($"Content edit was not saved. id=[{contentId}] {message}");
         }
 
         private static string ReadContentText(string path)
@@ -266,21 +271,38 @@ namespace Beamable.Editor.ContentService
                 content.GetType() != preview.ModelType ||
                 SerializeMigration(preview.ContentId, preview.ModelType, preview.OriginalJson) != preview.ProposedProperties)
                 throw new InvalidOperationException("Content or model changed after the JSON preview. Review this item again.");
-            await _contentWrites.Run(GetContentWriteKey(preview.ContentId), () =>
-                WriteContentProperties(preview.ContentId, preview.ProposedProperties, expectedFileHash: preview.FileHash));
-            // The write landed. After a realm or namespace change nothing from the old scope is on screen to reload.
-            if (preview.Scope != GetContentScopeKey()) return;
-            var key = GetContentWriteKey(preview.ContentId);
-            _lastSavedPropertiesCache.Remove(key);
-            _saveFailures.Remove(key);
-            // Reload from the actual saved file; the watcher owns authoritative change status.
-            try { LoadContentObject(entry, content); }
-            catch (Exception error)
+            // The reload below replaces the Inspector values, so keep edits disabled until it finishes. This skips
+            // FinishActionProgress on purpose: its full content reload is far heavier than this one-item write.
+            BeginActionProgress("Apply JSON Changes", "Applying JSON changes...", false);
+            try
             {
-                // The file is already migrated and the watcher reloads it. Do not report the apply as failed.
-                Debug.LogException(error);
+                await _contentWrites.Run(GetContentWriteKey(preview.ContentId), () =>
+                    WriteContentProperties(preview.ContentId, preview.ProposedProperties, expectedFileHash: preview.FileHash));
+                // The write landed. After a realm or namespace change nothing from the old scope is on screen to reload.
+                if (preview.Scope != GetContentScopeKey()) return;
+                var key = GetContentWriteKey(preview.ContentId);
+                _lastSavedPropertiesCache.Remove(key);
+                _saveFailures.Remove(key);
+                // Edits can still arrive without the Inspector fields, for example through Undo or a script.
+                var hadPendingEdit = content.HasPendingEditorChangeNotification;
+                // Reload from the actual saved file; the watcher owns authoritative change status.
+                try { LoadContentObject(entry, content); }
+                catch (Exception error)
+                {
+                    // The file is already migrated and the watcher reloads it. Do not report the apply as failed.
+                    Debug.LogException(error);
+                }
+                if (hadPendingEdit)
+                {
+                    RecordDiscardedEdit(preview.ContentId, key, "JSON changes were applied while your edit was waiting to save. Your edit was not saved; the Inspector now shows the file.");
+                }
+                ManifestChangedCount++;
             }
-            ManifestChangedCount++;
+            finally
+            {
+                CurrentProgress.IsActive = false;
+                ProgressUpdateVersion++;
+            }
         }
 
         private void RequireSchemaMigrationReady(string contentId)

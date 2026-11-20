@@ -623,6 +623,31 @@ namespace Beamable.Editor.Tests
         }
 
         [Test]
+        public void Migration_blocks_Inspector_edits_and_reports_one_that_slips_through()
+        {
+            WithWatcher(() =>
+            {
+                LoadWithAmount(2);
+                File.WriteAllText(_path, File.ReadAllText(_path).Replace("\"properties\":{", "\"properties\":{\"future\":{\"data\":37},"));
+                var completion = _service.ApplySchemaMigration(_service.PreviewSchemaMigration(_content.Id));
+                Assert.That(_service.CurrentProgress.IsActive, Is.True, "The Inspector fields are disabled while JSON changes are applied.");
+                // An edit that does not come through the disabled fields, such as Undo or a script.
+                _content.amount = 4;
+                _content.CheckForNonDetectedChanges();
+                Assert.That(_content.HasPendingEditorChangeNotification, Is.True);
+                WriteAsCli(0);
+                LogAssert.Expect(LogType.Error, new Regex("Content edit was not saved"));
+                _commands.Properties.Single().Completion.CompleteSuccess();
+                completion.GetResult();
+                Assert.That(File.ReadAllText(_path), Does.Not.Contain("\"future\""));
+                Assert.That(_content.amount, Is.EqualTo(2), "The Inspector shows the migrated file.");
+                Assert.That(_service.TryGetSaveFailure(_content.Id, out var failure), Is.True, "The discarded edit must be reported.");
+                Assert.That(failure.Message, Does.Contain("JSON changes were applied"));
+                Assert.That(_service.CurrentProgress.IsActive, Is.False);
+            });
+        }
+
+        [Test]
         public void Schema_comparison_uses_serializer_payload_and_shows_preserved_metadata_separately()
         {
             PrepareFile();
