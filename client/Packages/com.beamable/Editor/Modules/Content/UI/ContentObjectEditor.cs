@@ -589,6 +589,13 @@ namespace Beamable.Editor.Content.UI
 					var errors = count == 1 ? "1 validation error" : $"{count} validation errors";
 					EditorGUILayout.HelpBox($"{property.displayName} contains {errors}. Expand the list to inspect the affected fields.", MessageType.Error);
 				}
+				// The Addressables drawer logs a warning on every repaint for a reference it cannot load,
+				// so unresolved references get their own row instead.
+				if (TryGetUnresolvedAssetReference(contentObject.GetType(), property, out var unresolved))
+				{
+					DrawUnresolvedAssetReference(property, unresolved);
+					continue;
+				}
 				// Retain Unity's default list controls and all existing nested property drawers.
 				using (new EditorGUI.DisabledScope(property.propertyPath == "m_Script"))
 				{
@@ -596,6 +603,177 @@ namespace Beamable.Editor.Content.UI
 				}
 			}
 			if (serializedObject.ApplyModifiedProperties()) _hasListValidationCache = false;
+		}
+
+		internal struct UnresolvedAssetReference
+		{
+			public Type referenceType;
+			public AssetReferenceState state;
+			public string guid;
+			public string assetPath;
+		}
+
+		private static readonly Dictionary<(Type, string), FieldInfo> _topLevelFieldCache = new Dictionary<(Type, string), FieldInfo>();
+
+		/// <summary>
+		/// True when <paramref name="property"/> is a top-level <c>AssetReference</c> field of <paramref name="contentType"/>
+		/// whose GUID does not resolve to an asset the reference accepts. Reading the property does not modify it.
+		/// </summary>
+		internal static bool TryGetUnresolvedAssetReference(Type contentType, SerializedProperty property, out UnresolvedAssetReference unresolved)
+		{
+			unresolved = default;
+			if (property.propertyType != SerializedPropertyType.Generic || property.depth != 0) return false;
+
+			var field = FindTopLevelField(contentType, property.name);
+			if (field == null || !AssetReferenceResolution.IsAssetReferenceType(field.FieldType)) return false;
+
+			var guidProperty = property.FindPropertyRelative(AssetReferenceResolution.GUID_PROPERTY);
+			if (guidProperty == null || guidProperty.hasMultipleDifferentValues) return false;
+
+			var guid = guidProperty.stringValue;
+			var state = AssetReferenceResolution.Resolve(field.FieldType, guid, out var assetPath);
+			if (state != AssetReferenceState.MissingAsset && state != AssetReferenceState.WrongType) return false;
+
+			unresolved = new UnresolvedAssetReference
+			{
+				referenceType = field.FieldType,
+				state = state,
+				guid = guid,
+				assetPath = assetPath
+			};
+			return true;
+		}
+
+		private static FieldInfo FindTopLevelField(Type contentType, string name)
+		{
+			var key = (contentType, name);
+			if (_topLevelFieldCache.TryGetValue(key, out var cached)) return cached;
+
+			FieldInfo field = null;
+			for (var type = contentType; type != null && field == null; type = type.BaseType)
+			{
+				field = type.GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+			}
+
+			_topLevelFieldCache[key] = field;
+			return field;
+		}
+
+		private static void DrawUnresolvedAssetReference(SerializedProperty property, UnresolvedAssetReference unresolved)
+		{
+			var label = new GUIContent(property.displayName, property.tooltip);
+			var summary = unresolved.state == AssetReferenceState.MissingAsset
+				? $"Missing asset ({unresolved.guid})"
+				: $"{System.IO.Path.GetFileName(unresolved.assetPath)} (not a {AssetReferenceResolution.DescribeExpectedType(unresolved.referenceType)})";
+			EditorGUILayout.LabelField(label, new GUIContent(summary, unresolved.guid));
+
+			EditorGUI.indentLevel++;
+			EditorGUILayout.HelpBox(AssetReferenceResolution.GetGuidance(unresolved.referenceType, unresolved.state, unresolved.guid, unresolved.assetPath), MessageType.Warning);
+
+			var replacement = EditorGUILayout.ObjectField("Replace With", null, GetReplacementPickerType(unresolved.referenceType), false);
+			if (replacement != null)
+			{
+				AssignAssetReference(property, unresolved.referenceType, replacement, UnityEditor.AddressableAssets.AddressableAssetSettingsDefaultObject.Settings);
+			}
+
+			EditorGUILayout.BeginHorizontal();
+			GUILayout.Space(EditorGUI.indentLevel * 15f);
+			if (unresolved.state == AssetReferenceState.WrongType && GUILayout.Button("Ping Asset"))
+			{
+				EditorGUIUtility.PingObject(AssetDatabase.LoadMainAssetAtPath(unresolved.assetPath));
+			}
+			if (unresolved.state == AssetReferenceState.MissingAsset && DefaultContentImporter.IsSeedSpriteGuid(unresolved.guid) && GUILayout.Button("Import Default Icons"))
+			{
+				// Refresh the AssetDatabase outside this GUI pass.
+				EditorApplication.delayCall += () => DefaultContentImporter.ImportDefaultIcons();
+			}
+			if (GUILayout.Button("Clear Reference"))
+			{
+				SetAssetReference(property, string.Empty, string.Empty, string.Empty);
+			}
+			EditorGUILayout.EndHorizontal();
+			EditorGUI.indentLevel--;
+		}
+
+		private static Type GetReplacementPickerType(Type referenceType)
+		{
+			if (typeof(UnityEngine.AddressableAssets.AssetReferenceAtlasedSprite).IsAssignableFrom(referenceType)) return typeof(UnityEngine.U2D.SpriteAtlas);
+			return AssetReferenceResolution.GetTargetType(referenceType) ?? typeof(UnityEngine.Object);
+		}
+
+		/// <summary>
+		/// Points the reference at <paramref name="asset"/>, the way the Addressables picker does: a sprite sliced
+		/// from a multi-sprite texture is stored as a sub-object, and the asset is made addressable.
+		/// </summary>
+		internal static void AssignAssetReference(SerializedProperty property, Type referenceType, UnityEngine.Object asset,
+			UnityEditor.AddressableAssets.Settings.AddressableAssetSettings settings)
+		{
+			// Unity's built-in assets (such as the UISprite and Background sprites the picker lists first) live
+			// outside Assets/ and Packages/ and cannot be Addressables references.
+			var assetPath = AssetDatabase.GetAssetPath(asset);
+			if (!IsProjectAssetPath(assetPath) || !AssetDatabase.TryGetGUIDAndLocalFileIdentifier(asset, out string guid, out long _))
+			{
+				Debug.LogWarning($"Cannot assign '{asset.name}' to {property.displayName}: only assets in the project's Assets or Packages folders can be Addressables references, not Unity built-in assets.");
+				return;
+			}
+
+			var state = AssetReferenceResolution.Resolve(referenceType, guid, out var path);
+			if (state != AssetReferenceState.Resolved)
+			{
+				Debug.LogWarning($"Cannot assign '{assetPath}' to {property.displayName}: it is not a {AssetReferenceResolution.DescribeExpectedType(referenceType)}.");
+				return;
+			}
+
+			string subObjectName = string.Empty, subObjectType = string.Empty;
+			if (AssetDatabase.IsSubAsset(asset))
+			{
+				if (!(asset is Sprite))
+				{
+					Debug.LogWarning($"Cannot assign '{asset.name}' to {property.displayName}: pick a standalone asset for this reference type.");
+					return;
+				}
+
+				var sprites = AssetDatabase.LoadAllAssetRepresentationsAtPath(path).OfType<Sprite>().ToArray();
+				if (sprites.Count(sprite => sprite.name == asset.name) != 1)
+				{
+					Debug.LogWarning($"Cannot assign '{asset.name}' to {property.displayName}: pick a sprite with a unique name.");
+					return;
+				}
+				if (sprites.Length > 1 || AssetReferenceResolution.GetTargetType(referenceType) != typeof(Sprite))
+				{
+					subObjectName = asset.name;
+					subObjectType = typeof(Sprite).AssemblyQualifiedName;
+				}
+			}
+
+			var entry = settings?.FindAssetEntry(guid, true);
+			if (entry == null && settings != null && settings.DefaultGroup != null)
+			{
+				entry = settings.CreateOrMoveEntry(guid, settings.DefaultGroup);
+			}
+			if (entry == null)
+			{
+				Debug.LogWarning($"Cannot assign '{assetPath}' to {property.displayName}: configure Addressables and register the asset, then try again.");
+				return;
+			}
+
+			SetAssetReference(property, guid, subObjectName, subObjectType);
+		}
+
+		private static bool IsProjectAssetPath(string assetPath)
+		{
+			return !string.IsNullOrEmpty(assetPath) &&
+			       (assetPath.StartsWith("Assets/", StringComparison.Ordinal) || assetPath.StartsWith("Packages/", StringComparison.Ordinal));
+		}
+
+		private static void SetAssetReference(SerializedProperty property, string guid, string subObjectName, string subObjectType)
+		{
+			property.FindPropertyRelative(AssetReferenceResolution.GUID_PROPERTY).stringValue = guid;
+			var nameProperty = property.FindPropertyRelative(AssetReferenceResolution.SUB_OBJECT_NAME_PROPERTY);
+			if (nameProperty != null) nameProperty.stringValue = subObjectName;
+			// m_SubObjectType only exists in newer Addressables versions.
+			var typeProperty = property.FindPropertyRelative(AssetReferenceResolution.SUB_OBJECT_TYPE_PROPERTY);
+			if (typeProperty != null) typeProperty.stringValue = subObjectType;
 		}
 
 		private void RefreshListValidation(ContentObject contentObject)

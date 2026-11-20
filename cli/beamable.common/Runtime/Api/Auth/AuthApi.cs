@@ -288,9 +288,21 @@ namespace Beamable.Common.Api.Auth
 			public string codeType;
 		}
 
+		[Obsolete("Password reset confirmation will require the email address. Use " + nameof(ConfirmPasswordUpdate) + "(email, code, newPassword) instead.")]
 		public Promise<EmptyResponse> ConfirmPasswordUpdate(string code, string newPassword)
 		{
 			var req = new ConfirmPasswordUpdateRequest { code = code, newPassword = newPassword };
+			return _requester.Request<EmptyResponse>(Method.POST, $"{ACCOUNT_URL}/password-update/confirm", req);
+		}
+
+		public Promise<EmptyResponse> ConfirmPasswordUpdate(string email, string code, string newPassword)
+		{
+			if (string.IsNullOrWhiteSpace(email))
+			{
+				return Promise<EmptyResponse>.Failed(new ArgumentException("A password reset email is required.", nameof(email)));
+			}
+
+			var req = new ConfirmPasswordUpdateWithEmailRequest { email = email, code = code, newPassword = newPassword };
 			return _requester.Request<EmptyResponse>(Method.POST, $"{ACCOUNT_URL}/password-update/confirm", req);
 		}
 
@@ -298,6 +310,24 @@ namespace Beamable.Common.Api.Auth
 		private class ConfirmPasswordUpdateRequest
 		{
 			public string code, newPassword;
+		}
+
+		/// <summary>
+		/// Request body for <c>POST /basic/accounts/password-update/confirm</c> that includes the email address.
+		/// Kept separate from <see cref="ConfirmPasswordUpdateRequest"/> so the legacy request never sends an
+		/// empty <c>email</c> field (JsonUtility writes null strings as <c>""</c>).
+		/// </summary>
+		[Serializable]
+		private class ConfirmPasswordUpdateWithEmailRequest
+		{
+			/// <summary>The email address the password reset code was sent to.</summary>
+			public string email;
+
+			/// <summary>The password reset code from the email.</summary>
+			public string code;
+
+			/// <summary>The password that replaces the old one.</summary>
+			public string newPassword;
 		}
 
 		public Promise<CustomerRegistrationResponse> RegisterCustomer(string email,

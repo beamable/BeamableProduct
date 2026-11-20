@@ -20,12 +20,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Websocket health checks: `WS_SEND_TIMEOUT_SECONDS` (default 30) for blocked sends, and `WS_STALL_TIMEOUT_SECONDS` (default 60) for connections that stop answering. `WS_KEEPALIVE_TIMEOUT_SECONDS` enables ping/pong keep-alive on .NET 9+ (off by default).
 - `BEAM_SOCKET_RELIABILITY_ENFORCE=true` makes timeouts fail with `RequestTimeoutException` and replaces broken connections. Off by default: these checks only log a warning and record a metric.
 - `beam.ws.*` metrics for timed-out, pending and connection-lost requests, and for unhealthy connections.
+- `IAuthApi.ConfirmPasswordUpdate(email, code, newPassword)` confirms a password reset with the email address the code was sent to. The overload without `email` is obsolete: the backend will soon require it.
 
 ### Changed
 
 - **Breaking:** `IFederatedPlayerInit.CreatePlayer` takes a `FederatedPlayerAccount` instead of the generated `Account`. The new type holds the fields the platform sends to player init (id, email, gamer tags, third parties, external identities, created and updated times, user name, country, language, role string, device ids, realm), with its own types for gamer tags, third parties and external identities, so the contract no longer changes with the account API's models. Implementations change the parameter type; the field names are the same.
 
 ### Fixed
+- A JSON serializer built from `UnitySerializationSettings` still runs `ISerializationCallbackReceiver.OnBeforeSerialize` after a failed write. The callback converter used to stay removed from a reused serializer when a value's serialization threw.
 - A request whose reply never arrives no longer waits forever, and a dropped connection fails the requests sent on it.
 - Replies and event acknowledgements no longer wait for re-authentication, and are only sent on the connection their request or event came from.
 - The authentication daemon no longer stalls when a `gateway/nonce` or `gateway/auth` reply is lost.

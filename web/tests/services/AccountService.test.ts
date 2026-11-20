@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { AccountService } from '@/services/AccountService';
+import {
+  AccountService,
+  type ConfirmPasswordUpdateParams,
+} from '@/services/AccountService';
 import * as apis from '@/__generated__/apis';
 import type { HttpRequester } from '@/network/http/types/HttpRequester';
 import type {
@@ -7,7 +10,6 @@ import type {
   CommonResponse,
   EmailUpdateConfirmation,
   EmptyResponse,
-  PasswordUpdateConfirmation,
 } from '@/__generated__/schemas';
 import { PlayerService } from '@/services/PlayerService';
 import { BeamBase } from '@/core/BeamBase';
@@ -696,8 +698,26 @@ describe('AccountService', () => {
   });
 
   describe('confirmPasswordUpdate', () => {
-    it('calls accountsPostPasswordUpdateConfirmBasic on the accounts API', async () => {
-      const params: PasswordUpdateConfirmation = {
+    it.each([{}, { email: null }, { email: '' }, { email: ' \t ' }])(
+      'rejects an invalid email before sending a request (%j)',
+      async (emailField) => {
+        const confirm = vi
+          .spyOn(apis, 'accountsPostPasswordUpdateConfirmBasic')
+          .mockClear();
+        const accountService = new AccountService({ beam: {} as BeamBase });
+        const params = { code: 'code123', newPassword: 'newPass123', ...emailField };
+
+        // JavaScript consumers can bypass the required TypeScript field.
+        await expect(
+          accountService.confirmPasswordUpdate(params as ConfirmPasswordUpdateParams),
+        ).rejects.toThrow('Email is required');
+        expect(confirm).not.toHaveBeenCalled();
+      },
+    );
+
+    it('calls accountsPostPasswordUpdateConfirmBasic on the accounts API with the email', async () => {
+      const params: ConfirmPasswordUpdateParams = {
+        email: 'player@example.com',
         code: 'code123',
         newPassword: 'newPass123',
       };
@@ -725,7 +745,7 @@ describe('AccountService', () => {
 
       expect(apis.accountsPostPasswordUpdateConfirmBasic).toHaveBeenCalledWith(
         mockRequester,
-        params,
+        expect.objectContaining({ email: 'player@example.com' }),
         '0',
       );
       expect(result).toBeUndefined();

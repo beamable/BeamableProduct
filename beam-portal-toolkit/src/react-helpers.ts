@@ -171,19 +171,20 @@ export function useStoredState<T>(
 // ---------------------------------------------------------------------------
 
 /**
- * Reactive candidate list for one of this extension's own mount sites. Wraps
+ * Reactive candidate list for one of this extension's own sites: the mounts
+ * listing the site id in `siteIds`. Wraps
  * `context.getMountSiteCandidates(site)` and re-renders as extensions deploy,
  * enable, or disable. Use it to build UI (e.g. a "which view" dropdown) or to
  * compute an `include` list for the matching `<BeamExtensionSite>`.
  *
  * @param context - The extension's runtime context.
- * @param site    - The site's `selector`, or the mount-site element itself
+ * @param site    - The site id, or the site element itself
  *                  (e.g. a `<BeamExtensionSite>` ref's `.current`).
  *
  * @example
- *   const candidates = useMountSiteCandidates(context, 'detail-tabs');
+ *   const candidates = useMountSiteCandidates(context, 'campaign-offer');
  *   // render a <select> of candidates (beamId + mount.navLabel), then:
- *   <BeamExtensionSite selector="detail-tabs" include={chosen ? [chosen] : []} />
+ *   <BeamExtensionSite site="campaign-offer" include={chosen ? [chosen] : []} />
  */
 export function useMountSiteCandidates(
   context: ExtensionContext,

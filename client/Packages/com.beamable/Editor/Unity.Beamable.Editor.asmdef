@@ -9,6 +9,7 @@
         "Beamable.JsonSerializable",
         "Beamable.SmallerJSON",
         "Beamable.Coroutines",
+        "Unity.Addressables",
         "Unity.Addressables.Editor",
         "Unity.TextMeshPro",
         "Unity.Beamable",
