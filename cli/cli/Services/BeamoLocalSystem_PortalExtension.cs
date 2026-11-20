@@ -420,6 +420,18 @@ public partial class BeamoLocalSystem
 
 	public static string BuildPortalExtensionReadyMessage(BindingContext binding, IAppContext context, string alias, PortalExtensionDef extension)
 	{
+		// An extension that only fills sites of other pages has no page to open.
+		var mounts = extension?.Properties?.Mounts ?? new List<PortalExtensionMountProperties>();
+		if (!mounts.Any(m => !string.IsNullOrEmpty(NormalizePortalExtensionMountPage(m?.Page))))
+		{
+			var sites = mounts.SelectMany(m => m?.SiteIds ?? new List<string>())
+				.Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().ToList();
+			if (sites.Count > 0)
+			{
+				return $"{ServiceLogs.PORTAL_EXTENSION_RUNNING} It has no page of its own; it mounts in: {string.Join(", ", sites)}";
+			}
+		}
+
 		var portalUrl = BuildPortalExtensionUrl(binding, context, alias, extension);
 		if (string.IsNullOrEmpty(portalUrl))
 		{
