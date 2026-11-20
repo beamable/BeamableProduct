@@ -134,6 +134,7 @@ namespace Beamable.AccountManagement
 	public class DeviceUserArg
 	{
 		public User ActiveUser;
+		[System.NonSerialized]
 		public List<UserBundle> OtherUsers;
 	}
 

@@ -81,7 +81,7 @@ namespace Beamable.UI.Scripts
 		/// <returns>The sprite, once loaded.</returns>
 		public static Promise<Sprite> SpriteFromHandle(AsyncOperationHandle<Sprite> handle)
 		{
-			var awaiter = handle.GetAwaiter().ToPromise();
+			var awaiter = AsyncOperationHandleExtensions.GetAwaiter(handle).ToPromise();
 			return awaiter;
 		}
 

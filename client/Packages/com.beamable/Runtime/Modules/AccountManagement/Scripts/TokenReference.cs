@@ -5,6 +5,7 @@ namespace Beamable.AccountManagement
 {
 	public class TokenReference : MonoBehaviour
 	{
+		[System.NonSerialized]
 		public UserBundle Bundle;
 	}
 }

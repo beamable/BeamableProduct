@@ -18,6 +18,7 @@ namespace Beamable.Tests.Content.Serialization.Support
 		}
 	}
 
+	[Serializable]
 	public class TestContentObject : IContentObject
 	{
 		public string Id { get; set; }

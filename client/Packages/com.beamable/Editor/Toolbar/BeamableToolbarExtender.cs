@@ -133,6 +133,11 @@ namespace Beamable.Editor.ToolbarExtender
 						{
 							var label = item.RenderLabel(_editorAPI);
 							if (label == null) return;
+							if (item is BeamablePortalMenuItem && !_editorAPI.IsAuthenticated)
+							{
+								menu.AddDisabledItem(label);
+								return;
+							}
 
 							menu.AddItem(label, false, data => item.OnItemClicked((BeamEditorContext) data),
 							             _editorAPI);

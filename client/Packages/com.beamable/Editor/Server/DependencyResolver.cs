@@ -138,7 +138,13 @@ namespace Beamable.Server
 			}
 			catch
 			{
-				var dll = System.IO.Path.GetFileName(t.Assembly.Location);
+#if UNITY_6000_6_OR_NEWER
+				var assemblyPath = t.Assembly.GetLoadedAssemblyPath();
+#else
+				var assemblyPath = t.Assembly.Location;
+#endif
+
+				var dll = System.IO.Path.GetFileName(assemblyPath);
 				var reference = _assemblies.Values.FirstOrDefault(asm => asm.DllReferences.Contains(dll));
 				var inAnyReference = reference != null;
 				return inAnyReference;

@@ -142,6 +142,7 @@ namespace Beamable.Player
 		private readonly PlayerInventory _inventory;
 		/// <summary>A promise that completes after this group's initial refresh.</summary>
 		/// <remarks>Refresh failures reject this promise. Use <see cref="Beamable.Common.Player.IRefreshable.Refresh"/> to request later refreshes.</remarks>
+		[System.NonSerialized]
 		public Promise OnReady;
 
 		/// <summary>

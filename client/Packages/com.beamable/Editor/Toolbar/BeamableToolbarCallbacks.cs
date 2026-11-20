@@ -86,16 +86,22 @@ namespace Beamable.Editor.ToolbarExtender
 					// the IMGUIContainer, this is mostly ok.
 					mRoot?.RegisterCallback<MouseDownEvent>(evt =>
 					{
-#if UNITY_2022_1_OR_NEWER
-						_ = (bool) m_SendEventToIMGUI.Invoke(_container, new object[]{evt, true, false});
+#if UNITY_6000_7_OR_NEWER
+						_ = (bool)m_SendEventToIMGUI.Invoke(_container, new object[] { evt, true });
+#elif UNITY_2022_1_OR_NEWER
+						_ = (bool)m_SendEventToIMGUI.Invoke(_container, new object[] { evt, true, false });
 #else
 						_container.HandleEvent(evt);
 #endif
-						
 					});
 					_container.RegisterCallback<MouseDownEvent>(evt =>
 					{
-						_ = (bool) m_SendEventToIMGUI.Invoke(_container, new object[]{evt, true, false});
+#if UNITY_6000_7_OR_NEWER
+						_ = (bool)m_SendEventToIMGUI.Invoke(
+							_container, new object[] { evt, true });
+#else
+						_ = (bool)m_SendEventToIMGUI.Invoke(_container, new object[] { evt, true, false });
+#endif
 					});
 
 #if UNITY_2020_1_OR_NEWER

@@ -530,6 +530,7 @@ namespace Beamable.Editor.Content
 		/// The attribute on the field being edited; it decides which comparators are offered.
 		/// Must be set before <see cref="ContentSearchWindowBase.Init"/>.
 		/// </summary>
+		[System.NonSerialized]
 		public Beamable.Common.Content.Validation.MustBeComparatorString Comparator;
 
 		protected override string SearchControlName => "comparatorSearchBar";

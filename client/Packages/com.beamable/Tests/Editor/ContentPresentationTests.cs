@@ -2026,6 +2026,17 @@ namespace Beamable.Editor.Tests
         const BindingFlags InstanceFields = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
         const BindingFlags StaticFields = BindingFlags.Static | BindingFlags.NonPublic;
 
+        static void BeginGui(UnityEngine.Object owner)
+        {
+            var beginGui = typeof(GUIUtility).GetMethod("BeginGUI", StaticFields);
+            // This private API switches to EntityId later than GetEntityId becomes available.
+            // Follow its actual parameter type instead of the public object-ID version boundary.
+            var idMethod = beginGui.GetParameters()[1].ParameterType == typeof(int)
+                ? "GetInstanceID" : "GetEntityId";
+            var id = typeof(UnityEngine.Object).GetMethod(idMethod).Invoke(owner, null);
+            beginGui.Invoke(null, new object[] { 1, id, 1 });
+        }
+
         [TestCase(false, false)]
         [TestCase(false, true)]
         [TestCase(true, false)]
@@ -2038,7 +2049,7 @@ namespace Beamable.Editor.Tests
             try
             {
                 Event.current = new Event { type = EventType.Layout };
-                typeof(GUIUtility).GetMethod("BeginGUI", StaticFields).Invoke(null, new object[] { 1, owner.GetInstanceID(), 1 });
+                BeginGui(owner);
                 var summaryType = typeof(ContentWindow).GetNestedType("PublishIssueSummary", BindingFlags.NonPublic);
                 var summary = Activator.CreateInstance(summaryType, new object[] { 6, 3, 1, 1, 1, 1, 1 });
                 var popupType = typeof(ContentWindow).GetNestedType("PublishIssuesPopup", BindingFlags.NonPublic);
@@ -2112,7 +2123,7 @@ namespace Beamable.Editor.Tests
                     try
                     {
                         Event.current = input;
-                        typeof(GUIUtility).GetMethod("BeginGUI", StaticFields).Invoke(null, new object[] { 1, window.GetInstanceID(), 1 });
+                        BeginGui(window);
                         // The normal Editor event loop resets layout cursors between events.
                         var layoutCache = typeof(GUILayoutUtility).GetField("current", StaticFields).GetValue(null);
                         layoutCache.GetType().GetMethod("ResetCursor").Invoke(layoutCache, null);
@@ -2251,7 +2262,7 @@ namespace Beamable.Editor.Tests
                     try
                     {
                         Event.current = new Event { type = eventType };
-                        typeof(GUIUtility).GetMethod("BeginGUI", StaticFields).Invoke(null, new object[] { 1, window.GetInstanceID(), 1 });
+                        BeginGui(window);
                         typeof(ContentReconciliationWindow).GetMethod("OnGUI", InstanceFields).Invoke(window, null);
                         if (eventType == EventType.Layout)
                             typeof(GUILayoutUtility).GetMethod("LayoutFromContainer", StaticFields).Invoke(null, new object[] { (float)width, (float)height });
