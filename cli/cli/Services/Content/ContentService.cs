@@ -868,55 +868,83 @@ public partial class ContentService
 	///
 	/// For updates of existing files, there are no restrictions. 
 	/// </summary>
-	public async Task BulkSaveLocalContent(LocalContentFiles localCache, string[] contentIds, string[] contentProperties, CancellationToken cancellationToken = default)
-	{
-		var createdOrUpdatedDocs = new List<ContentFile>(contentIds.Length);
-		for (int i = 0; i < contentIds.Length; i++)
-		{
-			// This command does not create new content objects; so, we check if the given id already exists before proceeding.
-			string id = contentIds[i];
-			var newProperties = contentProperties[i];
-
-			if (!localCache.PerIdContentFiles.TryGetValue(id, out ContentFile file))
-			{
-				file = new ContentFile();
-				file.Id = id;
-				file.LocalFilePath = GetPathForContentId(id, localCache.ManifestId);
-				file.FetchedFromManifestUid = localCache.TargetManifest.uid.GetOrElse("");
-				file.ReferenceContent = null;
-				file.Tags = JsonSerializer.SerializeToElement(Array.Empty<string>(), GetContentFileSerializationOptions());
-			}
-
-			// Make sure this is serialized properly and sorted
-			var newPropsJson = JsonSerializer.Deserialize<JsonElement>(newProperties);
-			newPropsJson = JsonSerializer.SerializeToElement(newPropsJson, GetContentFileSerializationOptions());
-
-			// Set this as the new JsonElement for the content file.
-			file.Properties = newPropsJson;
-			file.PropertiesChecksum = CalculateChecksum(file);
-
-			// Store the content file
-			createdOrUpdatedDocs.Add(file);
-		}
-
-		// Save the actual created or updated content
-		await _fileSystemOperationSemaphore.WaitAsync(cancellationToken);
-		try
-		{
-			var contentFolder = EnsureContentPathForRealmExists(out _, _requester.Pid, localCache.ManifestId);
-			var updateTasks = createdOrUpdatedDocs.Select(d => SaveContentFile(contentFolder, d, cancellationToken));
-			await Task.WhenAll(updateTasks);
-		}
-		catch (Exception e)
-		{
-			var err = $"Failed to save Content. Errors:{e.Message}";
-			throw new CliException(err, 5, true);
-		}
-		finally
-		{
-			_fileSystemOperationSemaphore.Release();
-		}
-	}
+    public async Task BulkSaveLocalContent(LocalContentFiles localCache, string[] contentIds, string[] contentProperties,
+        CancellationToken cancellationToken = default, string[] originalFiles = null, string[] modelProperties = null, string[] expectedFileHashes = null)
+    {
+        var patch = originalFiles?.Length > 0 || modelProperties?.Length > 0;
+        var reviewed = expectedFileHashes?.Length > 0;
+        if (contentIds.Length != contentProperties.Length ||
+            patch && (originalFiles?.Length != contentIds.Length || modelProperties?.Length != contentIds.Length) ||
+            reviewed && (expectedFileHashes.Length != contentIds.Length || patch))
+        {
+            throw new CliException("Content save requires parallel properties and review/baseline arrays.");
+        }
+        await _fileSystemOperationSemaphore.WaitAsync(cancellationToken);
+        try
+        {
+            var contentFolder = EnsureContentPathForRealmExists(out _, _requester.Pid, localCache.ManifestId);
+            var updates = new List<ContentFile>();
+            for (var i = 0; i < contentIds.Length; i++)
+            {
+                var id = contentIds[i];
+                var path = GetPathForContentId(id, localCache.ManifestId);
+                var text = File.Exists(path) ? await File.ReadAllTextAsync(path, cancellationToken) : null;
+                if ((patch || reviewed) && text == null)
+                {
+                    throw new CliException("Content was deleted. Reload before saving.");
+                }
+                if (reviewed && (string.IsNullOrEmpty(expectedFileHashes[i]) ||
+                    Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text))).ToLowerInvariant() != expectedFileHashes[i]))
+                {
+                    throw new CliException("Content changed after migration preview. Review the item again.");
+                }
+                var file = text == null ? new ContentFile
+                {
+                    Tags = JsonSerializer.SerializeToElement(Array.Empty<string>()),
+                    FetchedFromManifestUid = localCache.TargetManifest?.uid.GetOrElse("")
+                } : JsonSerializer.Deserialize<ContentFile>(text, GetContentFileSerializationOptions());
+                file.Id = id;
+                file.LocalFilePath = path;
+                var properties = contentProperties[i];
+                if (patch)
+                {
+                    var original = System.Text.Json.Nodes.JsonNode.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(originalFiles[i])));
+                    properties = ContentPropertyEdits.Apply(original["properties"],
+                        System.Text.Json.Nodes.JsonNode.Parse(modelProperties[i]),
+                        System.Text.Json.Nodes.JsonNode.Parse(properties),
+                        System.Text.Json.Nodes.JsonNode.Parse(file.Properties.GetRawText())).ToJsonString();
+                }
+                var proposed = JsonSerializer.Deserialize<JsonElement>(properties);
+                if (proposed.ValueKind != JsonValueKind.Object)
+                {
+                    throw new CliException("Content properties must be an object.");
+                }
+                var previousChecksum = text == null ? null : CalculateChecksum(file);
+                file.Properties = proposed;
+                file.PropertiesChecksum = CalculateChecksum(file);
+                if (previousChecksum == file.PropertiesChecksum)
+                {
+                    continue;
+                }
+                updates.Add(file);
+            }
+            // Validate the complete request before writing any item. This lock coordinates service writers;
+            // external processes can still race filesystem writes, as with other content operations.
+            try
+            {
+                foreach (var file in updates)
+                {
+                    await SaveContentFile(contentFolder, file, cancellationToken);
+                }
+            }
+            catch (Exception e)
+            {
+                // Keep the exit code and message this command has always used for a failed write.
+                throw new CliException($"Failed to save Content. Errors:{e.Message}", 5, true);
+            }
+        }
+        finally { _fileSystemOperationSemaphore.Release(); }
+    }
 
 	/// <summary>
 	/// Publishes the local changes made to the given <paramref name="manifestId"/> to the current <see cref="IAppContext.Pid"/>.

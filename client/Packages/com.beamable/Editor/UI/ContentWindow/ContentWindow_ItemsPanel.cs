@@ -692,11 +692,11 @@ namespace Beamable.Editor.UI.ContentWindow
 				renamedFrom: isRenamed ? renameInfo.OldName : null);
 
 			// Keep Inspector information icons; the table only emphasizes actionable differences.
-			if (!isInvalid && !schemaMismatch && !isRenamed && ContentWindow_TooltipsHelper.GetChangeKind(entry) == ContentChangeKind.UpToDate)
+			if (!isInvalid && !isRenamed && ContentWindow_TooltipsHelper.GetChangeKind(entry) == ContentChangeKind.UpToDate)
 				badge.image = null;
 			GUIContent[] icons = { null, badge };
 			var statusStyle = isInvalid ? _invalidStatusStyle : entry.IsInConflict ? _conflictStatusStyle :
-				schemaMismatch ? _invalidStatusStyle : ContentWindow_TooltipsHelper.IsIncoming(ContentWindow_TooltipsHelper.GetChangeKind(entry)) ? _incomingStatusStyle : labelStyle;
+				ContentWindow_TooltipsHelper.IsIncoming(ContentWindow_TooltipsHelper.GetChangeKind(entry)) ? _incomingStatusStyle : labelStyle;
 
 			bool[] isEditable = {isEditingName};
 			string[] editableId = {entry.FullId};
@@ -705,7 +705,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			if (isEditingName)
 			{
 				_editLabels = DrawTableRow(values, columnWidths, guiStyle, labelStyle, rowRect, icons, isEditable, editableId,
-					ContentWindow_TooltipsHelper.CanReviewEntry(entry) ? entry : (LocalContentManifestEntry?)null, statusStyle, indentLevel);
+					ContentWindow_TooltipsHelper.CanReviewEntry(entry) ? entry : (LocalContentManifestEntry?)null, statusStyle, indentLevel, schemaMismatch && !isEditingName ? entry.FullId : null);
 				
 				bool isEditLabelFocused = GUI.GetNameOfFocusedControl() == entry.FullId;
 				if (isEditLabelFocused && Event.current.type is EventType.KeyDown or EventType.KeyUp &&
@@ -728,7 +728,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			else
 			{
 				DrawTableRow(values, columnWidths, guiStyle, labelStyle, rowRect, icons, isEditable, editableId,
-					ContentWindow_TooltipsHelper.CanReviewEntry(entry) ? entry : (LocalContentManifestEntry?)null, statusStyle, indentLevel);
+					ContentWindow_TooltipsHelper.CanReviewEntry(entry) ? entry : (LocalContentManifestEntry?)null, statusStyle, indentLevel, schemaMismatch && !isEditingName ? entry.FullId : null);
 			}
 
 			_itemContentIdToRowRect[entry.FullId] = (int)rowRect.center.y;
@@ -1059,7 +1059,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		                              GUIStyle rowStyle,
 		                              GUIStyle fieldStyle,
 		                              Rect fullRect,
-		                              GUIContent[] icons = null, bool[] isEditLabel = null, string[] fieldID = null, LocalContentManifestEntry? reviewEntry = null, GUIStyle statusStyle = null, int indentLevel = -1)
+		                              GUIContent[] icons = null, bool[] isEditLabel = null, string[] fieldID = null, LocalContentManifestEntry? reviewEntry = null, GUIStyle statusStyle = null, int indentLevel = -1, string schemaContentId = null)
 		{
 			if (Event.current.type == EventType.Repaint)
 			{
@@ -1071,6 +1071,19 @@ namespace Beamable.Editor.UI.ContentWindow
 				string labelValue = labels[i];
 				var cellRect = new Rect(fullRect.x, fullRect.y, columnWidths[i], fullRect.height);
 				var nameRect = i == 0 && indentLevel >= 0 ? GetItemNameRect(cellRect, indentLevel) : GetTableLabelRect(cellRect, i);
+
+				if (i == 0 && schemaContentId != null && nameRect.width >= 20)
+				{
+					// Reserve the icon slot independently of the clipped label's measured width
+					// so ellipsis styling cannot collapse the space available for its name.
+					var warningRect = new Rect(nameRect.xMax - 18, nameRect.center.y - 8, 16, 16);
+					nameRect.xMax = warningRect.x - 2;
+					var warning = new GUIContent(EditorGUIUtility.IconContent("console.warnicon.sml").image,
+						ContentSchemaNotice.Title + "\nClick to review schema changes.");
+					using (new EditorGUI.DisabledScope(!CanHandleContentInput))
+						if (GUI.Button(warningRect, warning, GUIStyle.none))
+							PopupWindow.Show(warningRect, new ContentSchemaNotice(_contentService, schemaContentId));
+				}
 				var badge = icons != null && icons.Length > i ? icons[i] : null;
 				if (badge?.image != null)
 				{

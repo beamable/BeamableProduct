@@ -9,10 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `content save` leaves the file and its timestamp untouched when the saved properties are equivalent, writes items one at a time, and reports file and JSON errors with exit code 1 instead of 5.
 - Publishing blocks incoming content and unverified history until explicitly reconciled with a local/realm choice in `content resolve`. Preserve `referenceManifestId` in content JSON: empty/null requires review; omission fails file loading.
 
 ### Added
 
+- `content save` accepts `--original-files` and `--model-properties` to apply only the properties an engine edited while keeping JSON fields its model cannot represent, and `--expected-file-hashes` for reviewed per-item replacements. It refuses an edit it cannot apply safely with exit code 7, and an edit to content that changed on disk since it was loaded with exit code 8.
 - Added incoming-change classification, `--no-auto-sync` for `content ps` and `content history`, and reconciliation previews that reject stale local or realm revisions.
 - `beam local run` moves a step to the next free port when something outside the stack holds its own (the portal, the C# hosts and the Scala gateways), with a warning naming the holder, and repoints what reaches it: Caddy's routes, the C# hosts' `Legacy:Uri`, the Scala services' C# gateway URI and the portal URL. A detached re-run keeps carried-over services on the ports they moved to. Docker ports, Caddy's 8080 and a holder that is a leftover of a previous stack are still reported before launch. Needs BeamableAPI's matching `routes.caddy`/`docker-compose.yml` change.
 - Every `beam local run` stack now runs Grafana (`docker: observability`: the collector, Loki, Tempo, Prometheus and Grafana from BeamableAPI's compose) and forwards its logs there, including stacks without the backend's docker dependencies and stacks made with `beam local create`. `:no-logs` still leaves it out; machines without BeamableAPI skip it. Settings written before this get the step without `beam local setup`.
