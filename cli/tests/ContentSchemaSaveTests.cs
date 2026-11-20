@@ -119,7 +119,8 @@ public class ContentSchemaSaveTests
         await Save(Edited, original, Model);
         Assert.That(File.ReadAllText(path), Does.Contain("99"));
         var concurrent = original.Replace(":20", ":30"); await File.WriteAllTextAsync(path, concurrent);
-        Assert.ThrowsAsync<CliException>(() => Save(Edited, original, Model));
+        var stale = Assert.ThrowsAsync<CliException>(() => Save(Edited, original, Model));
+        Assert.That(stale.NonZeroOrOneExitCode, Is.EqualTo(ContentPropertyEdits.StaleEditExitCode), "Engines tell a stale edit apart by exit code.");
         Assert.That(File.ReadAllText(path), Is.EqualTo(concurrent));
     }
 
@@ -140,7 +141,8 @@ public class ContentSchemaSaveTests
         const string before = "{\"rows\":{\"data\":[{\"damage\":20}]}}";
         var original = FileJson("{\"rows\":{\"data\":[{\"damage\":20,\"future\":37}]}}");
         await File.WriteAllTextAsync(path, original);
-        Assert.ThrowsAsync<CliException>(() => Save(edited, original, before));
+        var unsafeEdit = Assert.ThrowsAsync<CliException>(() => Save(edited, original, before));
+        Assert.That(unsafeEdit.NonZeroOrOneExitCode, Is.EqualTo(ContentPropertyEdits.UnsafeEditExitCode), "Engines offer the schema review for this exit code.");
         Assert.That(File.ReadAllText(path), Is.EqualTo(original));
     }
 

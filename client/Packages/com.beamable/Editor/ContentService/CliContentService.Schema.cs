@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Beamable.Common;
+using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
 using UnityEngine;
@@ -30,6 +32,151 @@ namespace Beamable.Editor.ContentService
 
         private readonly Dictionary<string, Promise> _queuedPropertyWrites = new();
 
+        // Mirrors cli ContentPropertyEdits.UnsafeEditExitCode and StaleEditExitCode; the SDK and CLI ship together.
+        internal const int UnsafeEditExitCode = 7;
+        internal const int StaleEditExitCode = 8;
+
+        /// <summary>A content save the CLI refused. <see cref="ExitCode"/> tells the refusal kinds apart.</summary>
+        internal sealed class ContentSaveRejectedException : InvalidOperationException
+        {
+            public int ExitCode { get; }
+            public ContentSaveRejectedException(string message, int exitCode) : base(message) { ExitCode = exitCode; }
+        }
+
+        /// <summary>The last Inspector edit of an item that was not saved, kept until a later save succeeds or the user discards it.</summary>
+        internal readonly struct ContentSaveFailure
+        {
+            public readonly string Message;
+            public readonly bool CanReviewSchema;
+            public ContentSaveFailure(string message, bool canReviewSchema) { Message = message; CanReviewSchema = canReviewSchema; }
+        }
+
+        private readonly Dictionary<string, ContentSaveFailure> _saveFailures = new();
+
+        private readonly Dictionary<string, LocalContentManifestEntry> _deferredReloads = new();
+
+        /// <summary>
+        /// The watcher reports every save this editor makes. Reloading for it would overwrite edits made since
+        /// that save, so wait while this item's writes are in flight, and skip the reload when the file is
+        /// exactly the baseline our last save left. Returns false when a full reload is needed.
+        /// </summary>
+        private bool TryKeepEditsOverOwnSave(LocalContentManifestEntry entry, ContentObject contentObject)
+        {
+            var key = GetContentWriteKey(entry.FullId);
+            if (!_loadedContent.TryGetValue(key, out var loaded) || loaded.Content != contentObject || loaded.Path != entry.JsonFilePath) return false;
+            if (_contentWrites.HasWrites(key) || _queuedPropertyWrites.ContainsKey(key))
+            {
+                // The write in flight decides what the file means; ReloadAfterWrites runs with the latest entry.
+                _deferredReloads[key] = entry;
+                ApplyEntryState(entry, contentObject);
+                return true;
+            }
+            if (ReadContentText(entry.JsonFilePath) != loaded.FileJson) return false;
+            ApplyEntryState(entry, contentObject);
+            return true;
+        }
+
+        private void ApplyEntryState(LocalContentManifestEntry entry, ContentObject contentObject)
+        {
+            contentObject.Tags = entry.Tags.ToArray();
+            _contentIdTagsCache[entry.FullId] = entry.Tags.ToList();
+            contentObject.ContentStatus = entry.StatusEnum;
+            contentObject.IsInConflict = entry.IsInConflict;
+        }
+
+        /// <summary>Applies a watcher reload that arrived while this item was being written.</summary>
+        private void ReloadAfterWrites(string key)
+        {
+            if (!_deferredReloads.TryGetValue(key, out var deferred)) return;
+            // A later completion retries while writes for this item are still running.
+            if (_contentWrites.HasWrites(key) || _queuedPropertyWrites.ContainsKey(key)) return;
+            _deferredReloads.Remove(key);
+            if (GetContentWriteKey(deferred.FullId) != key || !EntriesCache.TryGetValue(deferred.FullId, out var current)) return;
+            CacheScriptableContent(current);
+            ManifestChangedCount++;
+        }
+
+        /// <summary>
+        /// Another writer changed fields the model shows around our save. Show the file now: edits queued behind
+        /// this save were made against the old values, so the new load refuses them instead of overwriting unseen.
+        /// </summary>
+        private void ShowOutsideChange(string contentId, string key)
+        {
+            if (!EntriesCache.TryGetValue(contentId, out var entry) || !_contentScriptableCache.TryGetValue(contentId, out var content) || content == null) return;
+            var hadPendingEdit = content.HasPendingEditorChangeNotification;
+            try { LoadContentObject(entry, content); }
+            catch (Exception error)
+            {
+                // The baseline stays at our previous load, so a later edit is still checked against the file.
+                Debug.LogException(error);
+                return;
+            }
+            if (hadPendingEdit)
+            {
+                const string message = "Content changed on disk while your edit was being saved. Your latest change was not saved; the Inspector now shows the file.";
+                _saveFailures[key] = new ContentSaveFailure(message, false);
+                Debug.LogError($"Content edit was not saved. id=[{contentId}] {message}");
+            }
+            ManifestChangedCount++;
+        }
+
+        private static string ReadContentText(string path)
+        {
+            try
+            {
+                using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (var reader = new StreamReader(stream))
+                    return reader.ReadToEnd();
+            }
+            catch (IOException) { return null; }
+            catch (UnauthorizedAccessException) { return null; }
+        }
+
+        private static string ModelPropertiesOf(string contentId, Type type, string fileJson)
+        {
+            try { return SerializeMigration(contentId, type, fileJson); }
+            catch (Exception) { return null; }
+        }
+
+        internal bool TryGetSaveFailure(string contentId, out ContentSaveFailure failure)
+        {
+            failure = default;
+            return !string.IsNullOrEmpty(contentId) && _saveFailures.TryGetValue(GetContentWriteKey(contentId), out failure);
+        }
+
+        private void RecordSaveFailure(string contentId, string writeKey, Exception error)
+        {
+            if (writeKey == null)
+            {
+                Debug.LogException(error);
+                return;
+            }
+            // Offer the review for this refusal regardless of the notice preference or a recorded difference:
+            // the review window computes its own preview.
+            var canReview = error is ContentSaveRejectedException rejected && rejected.ExitCode == UnsafeEditExitCode;
+            _saveFailures[writeKey] = new ContentSaveFailure(error.Message, canReview);
+            Debug.LogError($"Content edit was not saved. id=[{contentId}] {error.Message}");
+            ManifestChangedCount++;
+        }
+
+        private void ClearSaveFailure(string writeKey)
+        {
+            if (writeKey != null && _saveFailures.Remove(writeKey)) ManifestChangedCount++;
+        }
+
+        /// <summary>Drops a refused edit by reloading the item from its file.</summary>
+        internal void DiscardRejectedEdit(string contentId)
+        {
+            var key = GetContentWriteKey(contentId);
+            if (_contentWrites.HasWrites(key) || _queuedPropertyWrites.ContainsKey(key))
+                throw new InvalidOperationException("Content edits are still being saved. Wait for them to finish, then discard.");
+            _saveFailures.Remove(key);
+            if (EntriesCache.TryGetValue(contentId, out var entry) && entry.StatusEnum != ContentStatus.Deleted &&
+                _contentScriptableCache.TryGetValue(contentId, out var content) && content != null)
+                LoadContentObject(entry, content);
+            ManifestChangedCount++;
+        }
+
         private async Promise WriteLoadedContentProperties(string contentId, string properties, LoadedContent loaded)
         {
             var scope = GetContentScopeKey();
@@ -46,12 +193,20 @@ namespace Beamable.Editor.ContentService
                 // the baseline of an already queued edit; a reload requires a fresh edit.
                 if (!_loadedContent.TryGetValue(key, out var current) || current.Content != loaded.Content ||
                     !ReferenceEquals(current.LoadIdentity, loaded.LoadIdentity))
-                    throw new InvalidOperationException("Content was reloaded. Select the current item before editing.");
+                    throw new InvalidOperationException("Content was reloaded because it changed on disk. Check the item, then edit it again.");
                 if (current.ModelProperties == properties) return;
                 await WriteContentProperties(contentId, properties, current);
                 if (scope == GetContentScopeKey() && CanWriteContent(contentId) && File.Exists(current.Path) &&
                     _loadedContent.TryGetValue(key, out var active) && ReferenceEquals(active, current))
-                    _loadedContent[key] = new LoadedContent(current.Content, current.Path, File.ReadAllText(current.Path), properties, current.LoadIdentity);
+                {
+                    // Re-reading can also pick up a write made by someone else after ours. Only a file whose
+                    // model fields are exactly what we sent may become the baseline for edits queued behind us.
+                    var written = ReadContentText(current.Path);
+                    if (written != null && ModelPropertiesOf(contentId, current.Content.GetType(), written) == properties)
+                        _loadedContent[key] = new LoadedContent(current.Content, current.Path, written, properties, current.LoadIdentity);
+                    else
+                        ShowOutsideChange(contentId, key);
+                }
             }
             finally
             {
@@ -103,10 +258,19 @@ namespace Beamable.Editor.ContentService
                 throw new InvalidOperationException("Content or model changed after the JSON preview. Review this item again.");
             await _contentWrites.Run(GetContentWriteKey(preview.ContentId), () =>
                 WriteContentProperties(preview.ContentId, preview.ProposedProperties, expectedFileHash: preview.FileHash));
+            // The write landed. After a realm or namespace change nothing from the old scope is on screen to reload.
             if (preview.Scope != GetContentScopeKey()) return;
-            _lastSavedPropertiesCache.Remove(GetContentWriteKey(preview.ContentId));
+            var key = GetContentWriteKey(preview.ContentId);
+            _lastSavedPropertiesCache.Remove(key);
+            _saveFailures.Remove(key);
             // Reload from the actual saved file; the watcher owns authoritative change status.
-            LoadContentObject(entry, content);
+            try { LoadContentObject(entry, content); }
+            catch (Exception error)
+            {
+                // The file is already migrated and the watcher reloads it. Do not report the apply as failed.
+                Debug.LogException(error);
+            }
+            ManifestChangedCount++;
         }
 
         private void RequireSchemaMigrationReady(string contentId)

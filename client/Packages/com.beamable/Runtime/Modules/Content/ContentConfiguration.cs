@@ -62,7 +62,7 @@ namespace Beamable.Content
 			set => _runtimeManifestID = ValidateManifestID(value);
 		}
 		
-		[Tooltip("Show schema mismatch notices for the local C# model. Turning this off hides notices only. Unsupported fields remain protected during normal edits.")]
+		[Tooltip("Show schema mismatch notices for the local C# model. Turning this off hides notices only. Unsupported fields remain protected during normal edits, and an edit refused for that reason still offers the schema review.")]
 		public bool validateSchemaDifference = true;
 
 		[Tooltip("When enabled, the SDK asks the backend to omit content tags from the public manifest. This reduces manifest download size for games that use tags only for backend organization. Note: client-side tag-based ContentQuery filtering (e.g. \"tag:weapon\") will return no results when this is enabled, because the manifest does not carry tag data.")]

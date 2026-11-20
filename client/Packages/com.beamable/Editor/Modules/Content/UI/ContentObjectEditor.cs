@@ -447,7 +447,37 @@ namespace Beamable.Editor.Content.UI
 			DrawContentProperties(contentObject);
 			if (!busy) contentObject.CheckForNonDetectedChanges();
 			}
+			DrawSaveFailure();
 			DrawContentStatus();
+		}
+
+		private void DrawSaveFailure()
+		{
+			if (targets.Length != 1 || !BeamEditor.IsInitialized) return;
+			var content = target as ContentObject;
+			if (content == null || ContentHistoryInspectorPreview.IsReadOnly(content)) return;
+			var service = BeamEditorContext.Default.CliContentService;
+			if (!service.TryGetSaveFailure(content.Id, out var failure)) return;
+			GUILayout.Space(8);
+			EditorGUILayout.HelpBox($"Your last edit was not saved. {failure.Message}", MessageType.Error);
+			using (new EditorGUILayout.HorizontalScope())
+			using (new EditorGUI.DisabledScope(service.CurrentProgress.IsActive || EditorApplication.isCompiling))
+			{
+				var id = content.Id;
+				if (GUILayout.Button("Discard edit"))
+				{
+					// Reload outside this GUI pass; it rewrites the object being drawn.
+					EditorApplication.delayCall += () =>
+					{
+						try { service.DiscardRejectedEdit(id); }
+						catch (Exception error) { EditorUtility.DisplayDialog("Edit was not discarded", error.Message, "Close"); }
+					};
+				}
+				if (failure.CanReviewSchema && GUILayout.Button("Review schema changes…"))
+				{
+					EditorApplication.delayCall += () => ContentSchemaWindow.Open(service, id);
+				}
+			}
 		}
 
 		private GUIStyle _statusMessageStyle;

@@ -273,7 +273,12 @@ namespace Beamable.Editor.ContentService
 
 		public void SaveContent(ContentObject selectedContentObject)
 		{
-			SaveContentAsync(selectedContentObject).Error(Debug.LogException);
+			// Capture the key now: a failure must stay with the realm and namespace the edit was made in.
+			var contentId = selectedContentObject != null ? selectedContentObject.Id : null;
+			var writeKey = string.IsNullOrEmpty(contentId) ? null : GetContentWriteKey(contentId);
+			SaveContentAsync(selectedContentObject)
+				.Then(_ => ClearSaveFailure(writeKey))
+				.Error(error => RecordSaveFailure(contentId, writeKey, error));
 		}
 
 		/// <summary>
@@ -359,12 +364,16 @@ namespace Beamable.Editor.ContentService
 		private Promise SaveContentPropertiesAsync(string contentId, string contentPropertiesJson, Action onCompleted = null, LoadedContent loaded = null)
 		{
 			if (!CanWriteContent(contentId)) return Promise.Success;
-			return _contentWrites.Run(GetContentWriteKey(contentId), async () =>
+			var key = GetContentWriteKey(contentId);
+			var write = _contentWrites.Run(key, async () =>
 			{
 				if (loaded == null) await WriteContentProperties(contentId, contentPropertiesJson);
 				else await WriteLoadedContentProperties(contentId, contentPropertiesJson, loaded);
 				onCompleted?.Invoke();
 			});
+			// The tracker releases the key before this completes, so a reload the watcher deferred can run now.
+			write.Then(_ => ReloadAfterWrites(key)).Error(_ => ReloadAfterWrites(key));
+			return write;
 		}
 
 		private async Promise WriteContentProperties(string contentId, string contentPropertiesJson, LoadedContent loaded = null, string expectedFileHash = null)
@@ -379,7 +388,7 @@ namespace Beamable.Editor.ContentService
 				expectedFileHashes = expectedFileHash == null ? null : new[] { expectedFileHash }
 			});
 			Exception reportedError = null;
-			saveCommand.OnError(report => reportedError ??= new InvalidOperationException(report.data.message));
+			saveCommand.OnError(report => reportedError ??= new ContentSaveRejectedException(report.data.message, report.data.exitCode));
 			await saveCommand.Run();
 			if (reportedError != null) throw reportedError;
 		}
@@ -1475,6 +1484,7 @@ namespace Beamable.Editor.ContentService
 			if (entry.StatusEnum is ContentStatus.Deleted)
 			{
 				RemoveSchemaNotice(entry.FullId);
+				_saveFailures.Remove(GetContentWriteKey(entry.FullId));
 				TombstoneCachedContentObject(entry.FullId);
 				
 				var deletedObject = ScriptableObject.CreateInstance(type) as ContentObject;
@@ -1494,6 +1504,11 @@ namespace Beamable.Editor.ContentService
 			{
 				contentObject = ScriptableObject.CreateInstance(type) as ContentObject;
 				_contentScriptableCache[entry.FullId] = contentObject;
+			}
+			else if (TryKeepEditsOverOwnSave(entry, contentObject))
+			{
+				ValidateForInvalidFields(contentObject);
+				return;
 			}
 
 			contentObject = LoadContentObject(entry, contentObject);
