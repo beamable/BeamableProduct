@@ -2017,6 +2017,8 @@ namespace Beamable.Editor.Tests
             {
                 if (hadPreference) EditorPrefs.SetBool(preferenceKey, previousPreference);
                 else EditorPrefs.DeleteKey(preferenceKey);
+                // The preference is cached; the next read must see the restored value.
+                typeof(ContentConfiguration).GetMethod("ResetLocalContentPreferenceCache", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, null);
                 AssetDatabase.DeleteAsset(configPath);
                 AssetDatabase.DeleteAsset(unrelatedPath);
                 if (unrelated != null) UnityEngine.Object.DestroyImmediate(unrelated);

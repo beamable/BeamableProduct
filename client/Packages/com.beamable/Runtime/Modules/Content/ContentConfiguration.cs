@@ -44,35 +44,33 @@ namespace Beamable.Content
 		[Tooltip("When enabled, content checksum will be calculated based on default object property order.")]
 		public bool EnablePropertyOrderDependenceForContentChecksum = true;
 
-		// This is intentionally not serialized: pulling a teammate's configuration must not change
-		// this developer's content source. The old value is used only once on upgrade.
+		// Local Mode is a per-developer, per-project preference, never part of the shared asset:
+		// pulling a teammate's configuration must not change this developer's content source.
+		// Without a saved preference, Local Mode is off. Unsaved instances keep the value in memory.
 		[NonSerialized] private bool _transientLocalContent;
 #if UNITY_EDITOR
-		// Keep an existing Local Mode session safe when upgrading; subsequent asset changes
-		// never override the local preference. This field is not an editable project default.
-		[SerializeField, HideInInspector, UnityEngine.Serialization.FormerlySerializedAs("EnableLocalContentInEditor")]
-		private bool _legacyLocalContentInEditor;
+		[NonSerialized] private bool _isProjectAsset;
+		// One Editor per project and the setter is the only writer, so the value can be cached.
+		private static string _localContentPreferenceKey;
+		private static bool? _localContentPreference;
 #endif
 		public bool EnableLocalContentInEditor
 		{
 			get
 			{
 #if UNITY_EDITOR
-				if (UnityEditor.AssetDatabase.Contains(this))
-				{
-					var key = LocalContentPreferenceKey;
-					if (!UnityEditor.EditorPrefs.HasKey(key)) UnityEditor.EditorPrefs.SetBool(key, _legacyLocalContentInEditor);
-					return UnityEditor.EditorPrefs.GetBool(key, false);
-				}
+				if (IsProjectAsset)
+					return _localContentPreference ??= UnityEditor.EditorPrefs.GetBool(LocalContentPreferenceKey, false);
 #endif
 				return _transientLocalContent;
 			}
 			set
 			{
 #if UNITY_EDITOR
-				if (UnityEditor.AssetDatabase.Contains(this))
+				if (IsProjectAsset)
 				{
 					UnityEditor.EditorPrefs.SetBool(LocalContentPreferenceKey, value);
+					_localContentPreference = value;
 					return;
 				}
 #endif
@@ -81,7 +79,12 @@ namespace Beamable.Content
 		}
 
 #if UNITY_EDITOR
-		internal static string LocalContentPreferenceKey => LocalContentPreferenceKeyFor(Application.dataPath);
+		// An asset stays an asset for its lifetime; only unsaved instances keep asking.
+		private bool IsProjectAsset => _isProjectAsset || (_isProjectAsset = UnityEditor.AssetDatabase.Contains(this));
+		internal static string LocalContentPreferenceKey =>
+			_localContentPreferenceKey ??= LocalContentPreferenceKeyFor(Application.dataPath);
+		// For tests that write EditorPrefs directly.
+		internal static void ResetLocalContentPreferenceCache() => _localContentPreference = null;
 		internal static string LocalContentPreferenceKeyFor(string projectAssetsPath)
 		{
 			var path = System.IO.Path.GetFullPath(projectAssetsPath).Replace('\\', '/').TrimEnd('/');

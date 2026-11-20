@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Local Mode is saved per developer and project instead of in the shared configuration asset. The existing choice is preserved once on upgrade.
+- Local Mode is saved per developer and project instead of in the shared configuration asset. It is off until you turn it on; a value in the shared configuration asset is ignored.
 - Leaving Local Mode requires reviewing incoming changes and conflicts before auto-sync resumes. A final check uses the latest realm publication; unrelated local edits are preserved and nothing is published by exiting.
 - Local Mode pauses auto-sync while History tracks realm publications. Publishing requires resolving validation errors, conflicts, and incoming changes.
 - Unverified content requires an explicit local/realm choice in Issues. Preserve `referenceManifestId` in external JSON: empty/null requires review; omission fails loading.
