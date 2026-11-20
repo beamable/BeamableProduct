@@ -930,9 +930,17 @@ public partial class ContentService
             }
             // Validate the complete request before writing any item. This lock coordinates service writers;
             // external processes can still race filesystem writes, as with other content operations.
-            foreach (var file in updates)
+            try
             {
-                await SaveContentFile(contentFolder, file, cancellationToken);
+                foreach (var file in updates)
+                {
+                    await SaveContentFile(contentFolder, file, cancellationToken);
+                }
+            }
+            catch (Exception e)
+            {
+                // Keep the exit code and message this command has always used for a failed write.
+                throw new CliException($"Failed to save Content. Errors:{e.Message}", 5, true);
             }
         }
         finally { _fileSystemOperationSemaphore.Release(); }

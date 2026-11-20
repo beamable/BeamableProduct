@@ -276,9 +276,10 @@ namespace Beamable.Editor.ContentService
 			// Capture the key now: a failure must stay with the realm and namespace the edit was made in.
 			var contentId = selectedContentObject != null ? selectedContentObject.Id : null;
 			var writeKey = string.IsNullOrEmpty(contentId) ? null : GetContentWriteKey(contentId);
+			var edit = ++_lastEdit;
 			SaveContentAsync(selectedContentObject)
-				.Then(_ => ClearSaveFailure(writeKey))
-				.Error(error => RecordSaveFailure(contentId, writeKey, error));
+				.Then(_ => ClearSaveFailure(writeKey, edit))
+				.Error(error => RecordSaveFailure(contentId, writeKey, edit, error));
 		}
 
 		/// <summary>

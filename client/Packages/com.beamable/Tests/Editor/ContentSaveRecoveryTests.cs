@@ -1043,6 +1043,37 @@ namespace Beamable.Editor.Tests
         }
 
         [Test]
+        public void Outside_change_keeps_the_warning_for_an_edit_still_waiting_to_save()
+        {
+            WithWatcher(() =>
+            {
+                LoadWithAmount(2);
+                _content.amount = 3;
+                _service.SaveContent(_content);
+                // The next edit is still inside the save delay when another tool rewrites the field.
+                _content.amount = 4;
+                _content.CheckForNonDetectedChanges();
+                Assert.That(_content.HasPendingEditorChangeNotification, Is.True);
+                var outside = WriteOutsideAmount(99);
+                LogAssert.Expect(LogType.Error, new Regex("Content edit was not saved"));
+                _commands.Properties[0].Completion.CompleteSuccess();
+                Assert.That(_content.amount, Is.EqualTo(99), "The Inspector shows the outside change.");
+                Assert.That(File.ReadAllText(_path), Is.EqualTo(outside));
+                Assert.That(_content.HasPendingEditorChangeNotification, Is.False);
+                Assert.That(_service.TryGetSaveFailure(_content.Id, out var failure), Is.True,
+                    "The save that found the change must not clear the warning about the newer, lost edit.");
+                Assert.That(failure.Message, Does.Contain("changed on disk"));
+
+                _content.amount = 5;
+                _service.SaveContent(_content);
+                WriteAsCli(1);
+                _commands.Properties[1].Completion.CompleteSuccess();
+                Assert.That(_content.amount, Is.EqualTo(5));
+                Assert.That(_service.TryGetSaveFailure(_content.Id, out _), Is.False, "A newer successful save clears it.");
+            });
+        }
+
+        [Test]
         public void Outside_write_while_idle_still_reloads()
         {
             WithWatcher(() =>

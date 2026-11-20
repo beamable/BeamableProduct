@@ -82,6 +82,12 @@ internal static class ContentPropertyEdits
                     }
                     result.Remove(key);
                 }
+                // A missing member and an explicit null both read as null below, so compare presence first.
+                else if (oldObject.ContainsKey(key) != source.ContainsKey(key) &&
+                         !(source.ContainsKey(key) && JsonNode.DeepEquals(source[key], newObject[key])))
+                {
+                    throw Stale(path + "." + key);
+                }
                 else
                 {
                     result[key] = Merge(oldObject[key], newObject[key], source[key], path + "." + key);

@@ -43,15 +43,20 @@ namespace Beamable.Editor.ContentService
             public ContentSaveRejectedException(string message, int exitCode) : base(message) { ExitCode = exitCode; }
         }
 
-        /// <summary>The last Inspector edit of an item that was not saved, kept until a later save succeeds or the user discards it.</summary>
+        /// <summary>The last Inspector edit of an item that was not saved, kept until a newer save succeeds or the user discards it.</summary>
         internal readonly struct ContentSaveFailure
         {
             public readonly string Message;
             public readonly bool CanReviewSchema;
-            public ContentSaveFailure(string message, bool canReviewSchema) { Message = message; CanReviewSchema = canReviewSchema; }
+            /// <summary>The edit this failure is about. Only a save of this edit or a newer one clears it.</summary>
+            public readonly long Edit;
+            public ContentSaveFailure(string message, bool canReviewSchema, long edit) { Message = message; CanReviewSchema = canReviewSchema; Edit = edit; }
         }
 
         private readonly Dictionary<string, ContentSaveFailure> _saveFailures = new();
+
+        // Orders Inspector edits. A save that finishes must not clear a failure about an edit made after it started.
+        private long _lastEdit;
 
         private readonly Dictionary<string, LocalContentManifestEntry> _deferredReloads = new();
 
@@ -114,7 +119,8 @@ namespace Beamable.Editor.ContentService
             if (hadPendingEdit)
             {
                 const string message = "Content changed on disk while your edit was being saved. Your latest change was not saved; the Inspector now shows the file.";
-                _saveFailures[key] = new ContentSaveFailure(message, false);
+                // The lost edit is newer than the save that found the change, so that save must not clear this.
+                _saveFailures[key] = new ContentSaveFailure(message, false, ++_lastEdit);
                 Debug.LogError($"Content edit was not saved. id=[{contentId}] {message}");
             }
             ManifestChangedCount++;
@@ -144,7 +150,7 @@ namespace Beamable.Editor.ContentService
             return !string.IsNullOrEmpty(contentId) && _saveFailures.TryGetValue(GetContentWriteKey(contentId), out failure);
         }
 
-        private void RecordSaveFailure(string contentId, string writeKey, Exception error)
+        private void RecordSaveFailure(string contentId, string writeKey, long edit, Exception error)
         {
             if (writeKey == null)
             {
@@ -154,14 +160,18 @@ namespace Beamable.Editor.ContentService
             // Offer the review for this refusal regardless of the notice preference or a recorded difference:
             // the review window computes its own preview.
             var canReview = error is ContentSaveRejectedException rejected && rejected.ExitCode == UnsafeEditExitCode;
-            _saveFailures[writeKey] = new ContentSaveFailure(error.Message, canReview);
+            _saveFailures[writeKey] = new ContentSaveFailure(error.Message, canReview, edit);
             Debug.LogError($"Content edit was not saved. id=[{contentId}] {error.Message}");
             ManifestChangedCount++;
         }
 
-        private void ClearSaveFailure(string writeKey)
+        private void ClearSaveFailure(string writeKey, long edit)
         {
-            if (writeKey != null && _saveFailures.Remove(writeKey)) ManifestChangedCount++;
+            if (writeKey != null && _saveFailures.TryGetValue(writeKey, out var failure) && failure.Edit <= edit)
+            {
+                _saveFailures.Remove(writeKey);
+                ManifestChangedCount++;
+            }
         }
 
         /// <summary>Drops a refused edit by reloading the item from its file.</summary>
