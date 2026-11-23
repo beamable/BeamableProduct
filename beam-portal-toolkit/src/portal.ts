@@ -428,7 +428,6 @@ export interface ExtensionMountPoint {
    * the portal falls back to its default accent.
    */
   navColor?: string;
-  args?: Record<string, unknown>;
   /**
    * Conditional visibility. Each key is a dot-path into the signed-in account
    * (e.g. `"account.role"`), each value a regex alternation
@@ -466,7 +465,7 @@ export type MountSiteHandle = string | HTMLElement;
 export interface CandidateMetadata {
   /** The candidate extension's name / beam id. */
   beamId: string;
-  /** The mount entry that matched this site: `id`, `site`, `siteIds`, `args`, nav*, … */
+  /** The mount entry that matched this site: `id`, `site`, `siteIds`, `static`, nav*, … */
   mount: ExtensionMountPoint;
   /** The `@beamable/portal-toolkit` version the candidate was built against. */
   toolkitVersion: string;
@@ -537,25 +536,6 @@ export interface BaseExtensionContext<TBeam> extends Map<any, any> {
    * `useSite(context, id)` and `useSiteMounts(context, id)` wrap it for React.
    */
   site: ExtensionSite;
-  /**
-   * Replaced by {@link site} (`input`, `emit`); removed in a later release.
-   *
-   * Data supplied by the parent that mounted this extension, if any. Value
-   * comes from the `siteData` prop on the parent's `<BeamExtensionSite>` or
-   * `<BeamChildExtension>`. Snapshot at mount time — mutating the parent's
-   * value after mount does NOT update this field for existing mounts (a
-   * remount picks up the new value). For live-in-sync scenarios, the parent
-   * should pass a store (writable/readable) through `siteData` and the
-   * child subscribes to it.
-   *
-   * Typed as `unknown` — the mount site is a generic primitive and the
-   * type system can't know a given site's contract. Validate at the receive
-   * site with a companion type, a schema, or a defensive cast.
-   *
-   * Top-level (rather than nested under `mount`) because the value is
-   * supplied by the parent, not by this extension's own manifest.
-   */
-  siteData?: unknown;
   /**
    * Per-extension persistent storage across two tiers (`session`, `local`) —
    * see {@link ExtensionStorage}. Every value is isolated by this extension

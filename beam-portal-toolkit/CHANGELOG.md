@@ -65,6 +65,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   otherwise.
 - **`<BeamExtensionSite selector mountKind>`.** It takes `site: string | string[]`, an id this
   extension declares; the presentation comes from the declaration only.
+- **`siteData`.** `context.siteData` and the `siteData` prop on `<BeamExtensionSite>` and
+  `<BeamChildExtension>` are gone. An owner passes JSON through `<BeamExtensionSite input>` and listens to
+  the site's events with `useSiteMounts`; a mount reads `useSite(context, id)` (`static`, `input`, `emit`).
+- **`ExtensionMountPoint.args`.** Everything a mount hands its owner is its `static`, declared by the
+  site, validated at load and read with `useSite(...).static` or `useSiteMounts(...)[i].static`.
 
 ### Changed
 - **Host-relative paths.** The `ExtensionNavigate` and `params` docs now describe paths relative to

@@ -73,19 +73,6 @@ export type BeamCellComponent<T = unknown> = ComponentType<BeamCellProps<T>>;
 
 export interface BeamChildExtensionProps {
   extensionName: string;
-  /**
-   * Arbitrary in-process data to hand to the embedded extension. Shows up
-   * on the child's `context.siteData` as a snapshot at mount time.
-   *
-   * Use for one-shot parent→child handoff (a resolved id, a computed
-   * value). For live-in-sync scenarios, pass a store (`writable<T>`) —
-   * the child subscribes to it in its own React tree.
-   *
-   * Referentially unstable values (fresh object literal per render) cause
-   * new mounts to see a fresh snapshot; existing mounted children keep
-   * their own. `useMemo` the value if that's not what you want.
-   */
-  siteData?: unknown;
 }
 
 export function BeamChildExtension(
@@ -123,25 +110,6 @@ export interface BeamExtensionSiteProps {
    *   <BeamExtensionSite site="player-profile-tabs" />
    */
   site: string | string[];
-  /**
-   * Arbitrary in-process data to hand to every child extension mounted at
-   * this site. Shows up on the child's `context.siteData` as a snapshot at
-   * mount time — mutating the value after a child has mounted does NOT
-   * update that child; a remount picks up the new value.
-   *
-   * Typed as `unknown` — the mount site is a generic primitive and can't
-   * know a specific child's contract. Publish a companion type or schema
-   * if you want consumers to validate.
-   *
-   * For live-in-sync scenarios, pass a store (`writable<T>`) through
-   * `siteData` and the child subscribes to it. No new observable API is
-   * required — the store IS the observability boundary.
-   *
-   * Referentially unstable values (fresh object literal per render) cause
-   * new mounts to see a fresh snapshot; existing mounted children keep
-   * their own. `useMemo` the value if that's not what you want.
-   */
-  siteData?: unknown;
   /**
    * The input this instance of the site hands every mount (`context.site.input`, `useSite(...).input`):
    * JSON, checked against the site's `input` schema. A new value re-renders the mounts without
