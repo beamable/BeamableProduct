@@ -13,7 +13,17 @@
 
 import { createElement, useCallback, useEffect, useMemo, useRef, useState, StrictMode, type ComponentType, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { Portal, type CandidateMetadata, type ExtensionContext, type MountSiteHandle, type ZoneExtensionContext } from './portal';
+import {
+  Portal,
+  type CandidateMetadata,
+  type ExtensionContext,
+  type ExtensionMountPoint,
+  type ExtensionSite,
+  type MountSiteHandle,
+  type SiteFunctions,
+  type SiteMount,
+  type ZoneExtensionContext,
+} from './portal';
 import type { ExtensionStore, SetOptions } from './storage';
 import type { Beam, BeamZoneSdk } from '@beamable/sdk';
 
@@ -201,6 +211,86 @@ export function useMountSiteCandidates(
 }
 
 // ---------------------------------------------------------------------------
+// useSite / useSiteMounts
+// ---------------------------------------------------------------------------
+
+/** What {@link useSite} returns: this mount's side of the site it renders in. */
+export interface UseSiteResult<TStatic = unknown, TInput = unknown> {
+  /** This mount's `static` for the site, validated at load. */
+  static: TStatic;
+  /** The owner's current input; the component re-renders on each new one, without remounting. */
+  input: TInput;
+  /** Send the owner an event the site declares; validated by the portal before it arrives. */
+  emit: (event: string, payload?: unknown) => void;
+}
+
+/**
+ * The mount side of a site: this instance's `static`, the owner's `input` (re-rendering on each new
+ * value), and `emit`. A thin adapter over `context.site`. `id` is a check: it must be the site this
+ * instance renders in (`context.mount.site`); a mismatch is logged.
+ *
+ * The portal validates every crossing against the site's declaration, so the types are yours to state:
+ * `useSite<{ federationId: string }, Lane>(context, 'message-rail')`.
+ *
+ * @example
+ *   const { static: config, input, emit } = useSite<RailStatic, RailInput>(context, 'message-rail');
+ *   emit('draftChanged', { laneId: input.laneId, draft: buildDraft(form, config.federationId) });
+ */
+export function useSite<TStatic = unknown, TInput = unknown>(
+  context: { site: ExtensionSite; mount: ExtensionMountPoint },
+  id: string,
+): UseSiteResult<TStatic, TInput> {
+  const site = context.site;
+  const [input, setInput] = useState<TInput>(() => site.input.get() as TInput);
+  useEffect(() => {
+    setInput(site.input.get() as TInput);
+    return site.input.subscribe((value) => setInput(value as TInput));
+  }, [site]);
+  useEffect(() => {
+    if (context.mount.site !== id) {
+      console.error(`[useSite] "${id}" is not the site this instance renders in ("${context.mount.site ?? 'none'}").`);
+    }
+  }, [context.mount.site, id]);
+  return useMemo(
+    () => ({ static: site.static as TStatic, input, emit: site.emit }),
+    [site, input],
+  );
+}
+
+/**
+ * The owner side of one or more of this extension's own sites: the mounts filling them, each with its
+ * `static`, `api`, `on`, `render`, `activate`, `status` and the `site` id it matched. Re-renders when the
+ * mounts or their status change. A thin adapter over `context.site.mounts`.
+ *
+ * @example
+ *   const rails = useSiteMounts(context, 'message-rail');
+ *   useEffect(() => {
+ *     const offs = rails.map(m => m.on('draftChanged', ({ laneId, draft }) => patchLaneById(laneId, { draft })));
+ *     return () => offs.forEach(off => off());
+ *   }, [rails]);
+ *
+ * @example
+ *   // host site: build a palette from static, then activate and call a function with nothing mounted
+ *   const nodes = useSiteMounts(context, 'campaign-node');
+ *   await nodes[i].activate();
+ *   const errors = await nodes[i].api.validate(config);
+ */
+export function useSiteMounts(
+  context: { site: ExtensionSite },
+  id: string | string[],
+): SiteMount[] {
+  const key = Array.isArray(id) ? id.join(' ') : id;
+  const site = context.site;
+  const [mounts, setMounts] = useState<SiteMount[]>(() => site.mounts(key.split(' ')).get());
+  useEffect(() => {
+    const observable = site.mounts(key.split(' '));
+    setMounts(observable.get());
+    return observable.subscribe(setMounts);
+  }, [site, key]);
+  return mounts;
+}
+
+// ---------------------------------------------------------------------------
 // registerReactExtension
 // ---------------------------------------------------------------------------
 
@@ -227,6 +317,17 @@ export interface RegisterReactExtensionOptions {
    * `context` as props.
    */
   wrapper?: (props: { context: ExtensionContext; children: ReactNode }) => ReactNode;
+  /**
+   * The `output` functions this bundle implements, per site id — see `SiteFunctions`. Registered with the
+   * bundle, outside any component, so an owner calls them after `activate()` with nothing mounted.
+   *
+   * @example
+   *   registerReactExtension({
+   *     beamId: 'send-push-node', App,
+   *     functions: { 'campaign-node': { validate: async (config) => checkConfig(config) } },
+   *   });
+   */
+  functions?: SiteFunctions;
 }
 
 /**
@@ -252,9 +353,10 @@ export interface RegisterReactExtensionOptions {
  *   registerReactExtension({ beamId: 'my-extension', App });
  */
 export function registerReactExtension(options: RegisterReactExtensionOptions): void {
-  const { beamId, App, disableStrictMode, wrapper } = options;
+  const { beamId, App, disableStrictMode, wrapper, functions } = options;
   Portal.registerExtension({
     beamId,
+    ...(functions ? { functions } : {}),
     onMount: (container, context) => {
       const root = createRoot(container);
       const appEl = createElement(App, { context });
@@ -282,6 +384,8 @@ export interface RegisterReactZoneExtensionOptions {
   disableStrictMode?: boolean;
   /** Optional wrapper rendered around the App (providers, etc.). */
   wrapper?: (props: { context: ZoneExtensionContext; children: ReactNode }) => ReactNode;
+  /** The `output` functions this bundle implements, per site id — see `SiteFunctions`. */
+  functions?: SiteFunctions<BeamZoneSdk>;
 }
 
 /**
@@ -295,9 +399,10 @@ export interface RegisterReactZoneExtensionOptions {
  *   registerReactZoneExtension({ beamId: 'zone-overview', App });
  */
 export function registerReactZoneExtension(options: RegisterReactZoneExtensionOptions): void {
-  const { beamId, App, disableStrictMode, wrapper } = options;
+  const { beamId, App, disableStrictMode, wrapper, functions } = options;
   Portal.registerZoneExtension({
     beamId,
+    ...(functions ? { functions } : {}),
     onMount: (container, context) => {
       const root = createRoot(container);
       const appEl = createElement(App, { context });

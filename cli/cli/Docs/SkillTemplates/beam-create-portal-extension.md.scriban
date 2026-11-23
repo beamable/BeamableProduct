@@ -20,7 +20,7 @@ beam_exec("portal extension list-extension-options")
 The response has three sections:
 - **pageExtensions**: Full-page extensions that add an entry to the Portal navigation. A non-empty `pageExtensions` list just signals that a full-page slot exists; set `--mount-page` to a **hub path** — a bare hub name, or `hub/page` to nest a page inside a hub (see *Hubs vs. pages* below). The `routePrefix` (e.g. `!hub/`) is a discovery marker, not a literal prefix to concatenate. A page extension mounts into the `extension-page` site (its `siteIds`), assigned for you.
 - **componentExtensions**: The sites rendered at an existing Portal page (`path`), by `siteIds`.
-- **sites**: Every site, once each: its `id`, `presentation` (`stack`, `tabs` or `route-tabs`), `description`, and `renderedBy` (the extensions that render it, or `portal`). Pass a site's `id` as `--site` to mount into **every** instance of that site, wherever it renders.
+- **sites**: Every site, once each: its `id`, `presentation` (`stack`, `tabs`, `route-tabs` or `host`), `description`, and `renderedBy` (the extensions that render it, or `portal`). Pass a site's `id` as `--site` to mount into **every** instance of that site, wherever it renders.
 
 #### Sites
 
@@ -38,7 +38,7 @@ A site is a typed kind of place, declared by the extension that renders it in it
 ```
 
 - A mount lists the bare site ids it fills in `siteIds` — no `#`, no `@`. There is no `selector`.
-- `presentation` is one of `stack`, `tabs`, `route-tabs`; `description` is optional. The build fails on an unknown presentation, two `sites` entries with one id, or a `#`/`@` in a site id.
+- `presentation` is one of `stack`, `tabs`, `route-tabs`, `host` (the owner renders each mount itself); `description` is optional. The build fails on two `sites` entries with one id, or a `#`/`@` in a site id. The portal checks the presentation and the site's data schemas (`static`, `input`, `output`, `events`) when it loads the extension, and reports a mismatch as a site error.
 - A `route-tabs` mount also gives `page`: the tab's page, relative to the route where the site renders (e.g. `stats`). `stack` and `tabs` mounts have no `page`.
 
 ### Hubs vs. pages: how full-page extensions are routed

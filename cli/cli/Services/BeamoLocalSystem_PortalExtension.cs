@@ -575,7 +575,9 @@ public class PortalExtensionPackageProperties
 
 /// <summary>
 /// One entry of <c>beamable.sites</c>: a typed kind of place this extension renders. Fields this model
-/// doesn't declare (the site's schemas, from Step 2) pass through to metadata.json unchanged.
+/// doesn't declare (the site's data: <c>static</c>, <c>input</c>, <c>output</c>, <c>events</c>,
+/// <c>definitions</c>) pass through to metadata.json unchanged. Neither they nor the presentation are
+/// checked by the CLI: the portal checks them when it loads the extension.
 /// </summary>
 [Serializable]
 public class PortalExtensionSiteDeclaration
@@ -583,8 +585,6 @@ public class PortalExtensionSiteDeclaration
 	public const string PRESENTATION_STACK = "stack";
 	public const string PRESENTATION_TABS = "tabs";
 	public const string PRESENTATION_ROUTE_TABS = "route-tabs";
-
-	public static readonly string[] Presentations = { PRESENTATION_STACK, PRESENTATION_TABS, PRESENTATION_ROUTE_TABS };
 
 	// The portal's page site: a full-page mount lists it, with a page.
 	public const string ExtensionPageSiteId = "extension-page";

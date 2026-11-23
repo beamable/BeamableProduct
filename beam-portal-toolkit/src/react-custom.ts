@@ -143,6 +143,16 @@ export interface BeamExtensionSiteProps {
    */
   siteData?: unknown;
   /**
+   * The input this instance of the site hands every mount (`context.site.input`, `useSite(...).input`):
+   * JSON, checked against the site's `input` schema. A new value re-renders the mounts without
+   * remounting them. An invalid one is reported as this extension's fault and the mounts keep the last
+   * valid input. Reach the mounts' `api` and events with `useSiteMounts(context, site)`.
+   *
+   * @example
+   *   <BeamExtensionSite site="message-rail" input={{ laneId, laneName, realmPid, draft }} />
+   */
+  input?: unknown;
+  /**
    * Curate which candidates mount and in what order. `resolve` is the full
    * mechanism; `include` is sugar over it.
    *

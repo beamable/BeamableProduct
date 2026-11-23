@@ -2,9 +2,14 @@ namespace cli.Services.PortalExtension;
 
 /// <summary>
 /// The build-time checks on an extension's site declarations (<c>beamable.sites</c>) and the site ids its
-/// mounts list (<c>mounts[].siteIds</c>). Each finding is an error that fails the build: an unknown
-/// presentation, a site without an id, two sites with one id, and a <c>#</c> or <c>@</c> in a site id.
-/// A missing description is never reported.
+/// mounts list (<c>mounts[].siteIds</c>). Each finding is an error that fails the build: a site without an
+/// id, two sites with one id, and a <c>#</c> or <c>@</c> in a site id. A missing description is never
+/// reported.
+/// <para>
+/// The presentation and the site's data schemas (<c>static</c>, <c>input</c>, <c>output</c>, <c>events</c>,
+/// <c>definitions</c>) are not checked here: they pass through to metadata.json and the portal checks them
+/// when it loads the extension, so a new presentation or schema keyword needs no CLI release.
+/// </para>
 /// </summary>
 public static class PortalExtensionSiteDeclarationChecks
 {
@@ -19,9 +24,7 @@ public static class PortalExtensionSiteDeclarationChecks
 		var sites = properties.Sites ?? new List<PortalExtensionSiteDeclaration>();
 		for (var i = 0; i < sites.Count; i++)
 		{
-			var site = sites[i];
-			var id = site?.Id;
-			var label = string.IsNullOrEmpty(id) ? $"sites[{i}]" : $"site '{id}'";
+			var id = sites[i]?.Id;
 
 			if (string.IsNullOrWhiteSpace(id))
 				errors.Add($"sites[{i}] has no id.");
@@ -32,9 +35,6 @@ public static class PortalExtensionSiteDeclarationChecks
 				if (!seenIds.Add(id))
 					errors.Add($"site '{id}' is declared more than once in sites.");
 			}
-
-			if (!PortalExtensionSiteDeclaration.Presentations.Contains(site?.Presentation))
-				errors.Add($"{label} has an unknown presentation '{site?.Presentation}'. Expected one of: {string.Join(", ", PortalExtensionSiteDeclaration.Presentations)}.");
 		}
 
 		var mounts = properties.Mounts ?? new List<PortalExtensionMountProperties>();

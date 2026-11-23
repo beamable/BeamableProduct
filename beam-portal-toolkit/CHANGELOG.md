@@ -8,6 +8,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Site data.** A `SiteDeclaration` gains the data it exchanges with its mounts, each part optional and
+  each a `SiteSchema` (a small subset of JSON Schema the portal checks): `static` (what each mount
+  declares in its manifest, read at load), `input` (owner → mount, reactive), `output` (functions the
+  mount's bundle registers and the owner calls, with `args`, `result` and `timeoutMs`), `events`
+  (mount → owner) and `definitions` (shapes reused through `$ref: "#/definitions/<name>"`). The portal
+  validates every crossing in every mode; a declaration outside the subset renders no mounts.
+- **`context.site`** (`ExtensionSite`): `static`, `input` (an `ExtensionObservable`) and `emit` for the
+  site the instance renders in; `mounts(id | id[])` (an observable of `SiteMount`) for the sites it
+  declares; `validateValue(schema, value)`, the portal's validator, for owners that keep schemas as data.
+- **`useSite(context, id)`** returns `{ static, input, emit }` and re-renders on a new input without
+  remounting. **`useSiteMounts(context, id | id[])`** returns the `SiteMount`s of the extension's own
+  sites: `static` (with nothing mounted), `api` (after `activate()`), `on(event, fn)`, `render(el, input)`,
+  `activate()`, `status`, `error` and the `site` id each matched.
+- **`functions`** on `Portal.registerExtension` / `registerZoneExtension` and
+  `registerReactExtension` / `registerReactZoneExtension`: the bundle's `output` functions per site id
+  (`SiteFunctions`), published on the window registration. They get a `SiteFunctionContext` (the mount's
+  `static`, ids and SDK; no DOM), so an owner calls them after `activate()` with nothing mounted.
+- **`host` presentation.** The portal lays nothing out; the owner renders each mount itself with
+  `render(el, input)`, one instance per element.
+- **`SiteError`** and `SiteErrorKind`: the report of a crossing that doesn't fit — the side at fault, the
+  site, the extension, the field path, what was expected and what arrived. Every `api` call rejects with
+  one; `{ silent: true }` on a call keeps it from raising the portal's notification.
+- **`ExtensionMountPoint.static`**: the mount's static, the value itself with one site id, keyed by site id
+  with several.
+- **`<BeamExtensionSite input>`**: the input every mount of that instance receives.
 - **`context.scope`.** Every mount context carries the scope of its Host: `'realm'` on
   `ExtensionContext`, `'zone'` on `ZoneExtensionContext`, the same value the window registration
   already carries. Narrow on it to reach `realm` or `zid`.

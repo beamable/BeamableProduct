@@ -137,19 +137,6 @@ public class RemotePortalConfigServiceTests
 		Assert.That(PortalExtensionSiteDeclarationChecks.GetErrorMessage("x", properties), Is.Null);
 	}
 
-	[TestCase(null)]
-	[TestCase("grid")]
-	[TestCase("host")]
-	[TestCase("Stack")]
-	public void DeclarationChecks_UnknownPresentation_IsAnError(string presentation)
-	{
-		var errors = PortalExtensionSiteDeclarationChecks.GetErrors(
-			Package(new List<PortalExtensionSiteDeclaration> { Decl("campaign-offer", presentation) }));
-
-		Assert.That(errors, Has.Count.EqualTo(1));
-		Assert.That(errors[0], Does.Contain("campaign-offer").And.Contain("presentation"));
-	}
-
 	[Test]
 	public void DeclarationChecks_TwoSitesWithOneId_IsAnError()
 	{
@@ -197,9 +184,9 @@ public class RemotePortalConfigServiceTests
 	public void DeclarationChecks_ErrorMessage_NamesTheExtensionAndEveryError()
 	{
 		var message = PortalExtensionSiteDeclarationChecks.GetErrorMessage("campaigns", Package(
-			new List<PortalExtensionSiteDeclaration> { Decl("x", "grid") }, new[] { "#y" }));
+			new List<PortalExtensionSiteDeclaration> { Decl("x"), Decl("x", "tabs") }, new[] { "#y" }));
 
-		Assert.That(message, Does.Contain("campaigns").And.Contain("grid").And.Contain("#y"));
+		Assert.That(message, Does.Contain("campaigns").And.Contain("'x'").And.Contain("#y"));
 	}
 
 	// --- deserialize -------------------------------------------------------------------------------
