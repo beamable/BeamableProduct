@@ -976,6 +976,17 @@ namespace Beamable.Server
 
 		private static readonly AsyncLocal<TimeSpan?> ReplyTimeoutOverride = new AsyncLocal<TimeSpan?>();
 
+		private static readonly AsyncLocal<CancellationToken> RequestLifetime = new();
+
+		// Capture a startup attempt's lifetime even when a generated API uses a shared requester.
+		internal static T WithRequestLifetime<T>(CancellationToken lifetime, Func<T> send)
+		{
+			var previous = RequestLifetime.Value;
+			RequestLifetime.Value = lifetime;
+			try { return send(); }
+			finally { RequestLifetime.Value = previous; }
+		}
+
 		// TODO what does concurrency look like?
 		public string Cid => _requestContext.Cid;
 		public string Pid => _requestContext.Pid;
@@ -1154,7 +1165,7 @@ namespace Beamable.Server
 			var startedAt = Stopwatch.GetTimestamp();
 
 			var result = new Promise<T>();
-			Attempt(beamReq, activity, deadline?.Token ?? CancellationToken.None, enforceDeadline, startedAt, false)
+			Attempt(beamReq, activity, deadline?.Token ?? CancellationToken.None, enforceDeadline, startedAt, false, RequestLifetime.Value)
 				.Then(value =>
 				{
 					activity.StopAndDispose(ActivityStatusCode.Ok);
@@ -1172,7 +1183,7 @@ namespace Beamable.Server
 
 		/// <param name="retried">Whether this attempt is the retry after a gateway 403.</param>
 		private Promise<T> Attempt<T>(SDKRequesterOptions<T> beamReq, BeamActivity activity, CancellationToken deadline,
-			bool enforceDeadline, long startedAt, bool retried)
+			bool enforceDeadline, long startedAt, bool retried, CancellationToken lifetime)
 		{
 			var socketContext = CurrentSocketContext;
 			var uri = beamReq.uri;
@@ -1235,6 +1246,13 @@ namespace Beamable.Server
 			}
 
 			var attempt = socketContext.AddListener(req, uri, beamReq.parser, activity, deadline, enforceDeadline, startedAt);
+			if (lifetime.CanBeCanceled)
+			{
+				var id = req.id;
+				var registration = lifetime.Register(() => socketContext.FailIfPending(id, new OperationCanceledException(lifetime)));
+				attempt.Then(_ => registration.Dispose());
+				attempt.Error(_ => registration.Dispose());
+			}
 
 			var dict = new ArrayDict
 			{
@@ -1295,11 +1313,21 @@ namespace Beamable.Server
 				daemon.WakeAuthThread();
 				// The 403 ended this attempt's listener, so the deadline is checked here while re-authentication runs.
 				var giveUp = enforceDeadline ? deadline : CancellationToken.None;
-				return socketContext.WaitForAuthorization(default, msg, giveUp).ToPromise()
+				async Task AwaitAuthorization()
+				{
+					if (!lifetime.CanBeCanceled)
+					{
+						await socketContext.WaitForAuthorization(default, msg, giveUp);
+						return;
+					}
+					using var linked = CancellationTokenSource.CreateLinkedTokenSource(giveUp, lifetime);
+					await socketContext.WaitForAuthorization(default, msg, linked.Token);
+				}
+				return AwaitAuthorization().ToPromise()
 					.RecoverWith(waitEx => throw (giveUp.IsCancellationRequested ? Timeout(req, startedAt) : waitEx))
 					.FlatMap(_ => giveUp.IsCancellationRequested
 						? throw Timeout(req, startedAt)
-						: Attempt(beamReq, activity, deadline, enforceDeadline, startedAt, true));
+						: Attempt(beamReq, activity, deadline, enforceDeadline, startedAt, true, lifetime));
 			});
 		}
 

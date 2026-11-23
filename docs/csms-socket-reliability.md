@@ -144,6 +144,7 @@ the timeout is disabled. The daemon's retry loop exists for failed attempts, and
 | Service auth wait per send attempt | `WaitForAuthorization` | 10 s × 10 attempts | requests only, not replies |
 | Service startup auth wait | `SetupWebsocket` | 2 min, then exit 12 | initial authentication failure exits |
 | Startup socket lost before readiness | from first disconnect | 2 min shared, then exit 12 | includes all replacement backoff, connect and authentication waits. User initialization hooks keep their existing lifetime. |
+| Startup platform replies after authentication | per authenticated attempt | 2 min shared | Realm config (realm services), logging config (realm and zone), basic provider, federation and built-in event registration. Expiry replaces this connection with backoff when a sibling is serving, or exits 12 when none is serving. |
 | Service reconnect auth wait | `SetupWebsocket` | 2 min, then the connection is replaced | ends at once if the connection closes; a failed setup after initialization never exits (#4958) |
 | Service reconnect setup, as a whole | fixed | 3 min, then the connection is replaced | also ends at once if the connection closes; bounds the steps that wait for a reply while enforcement is off; not applied while starting |
 | **Service send blocked** | `WS_SEND_TIMEOUT_SECONDS` | **30 s**, 0 = off | |
@@ -151,6 +152,8 @@ the timeout is disabled. The daemon's retry loop exists for failed attempts, and
 | Service graceful close | fixed | 5 s, then abort | |
 | Service keep-alive | `KeepAliveInterval` fixed 20 s; `WS_KEEPALIVE_TIMEOUT_SECONDS` | 0 = unsolicited pong only | net9+ only |
 | Service reconnect backoff | `_retryIntervalsInSeconds` | 5, 5, 10, 10, 15, 45, 60 s | between failed connects, and between failed setups of a replacement |
+
+The startup reply clock advances while at least one platform reply is outstanding. Overlapping registration waits count once. User initialization, service setup callbacks, eager content loading and custom event-hook work have no deadline of their own. A retry receives a fresh reply budget after authentication. The existing socket-loss window still bounds replacement backoff, connection and authentication. With socket enforcement enabled, an individual request can still fail earlier under its configured outbound deadline. A missing startup reply at that deadline follows the same sibling rule. Explicit platform error responses keep their existing handling.
 
 **Ordering.** The outbound deadline (30 s) is below the reply stall (60 s), so one slow request expires before the
 connection is condemned. The stall is below the 120 s relay timeout seen in production, so a broken connection is

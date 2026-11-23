@@ -35,7 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A failed or blocked websocket send now closes the connection and reconnects, instead of silently stalling it. Shutdown no longer hangs on a blocked send.
 - Content, realm config and other realm-wide requests and events keep working when the first instance's connection breaks.
 - Faulted background tasks are logged.
-- A reconnect that fails to authenticate or register no longer ends the whole process with exit code 12, which also stopped the instances that were still serving. The connection is replaced, with backoff, until one works. A service that fails before it has started still exits with code 12.
+- A reconnect that fails to authenticate or register no longer ends the whole process with exit code 12, which also stopped the instances that were still serving. The connection is replaced, with backoff, until one works.
+- During startup, an authenticated instance has two minutes of combined platform reply waits. On expiry it retries its connection with backoff while a sibling is serving. With no serving sibling, startup exits 12. User initialization, custom event hooks and eager content loading keep their existing lifetimes.
 - After the first startup socket closes, all replacement attempts share two minutes to reconnect and authenticate before exit 12.
 - A connection that closes while it is being set up stops that setup, so it can no longer finish later alongside the replacement's.
 - A reconnect whose setup is still waiting for a reply after 3 minutes is dropped and replaced, instead of keeping its instance out of service for as long as the connection stays open.
