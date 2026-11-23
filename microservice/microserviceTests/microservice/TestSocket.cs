@@ -687,7 +687,9 @@ namespace Beamable.Microservice.Tests.Socket
         private List<MockTestRequestHandler> _handlers = new List<MockTestRequestHandler>();
 
 
-        public WebSocketState State => WebSocketState.Open;
+        /// <summary>What <see cref="State"/> reports. Set it to stand in for a connection that closed without a callback.</summary>
+        public WebSocketState MockState = WebSocketState.Open;
+        public WebSocketState State => MockState;
         private bool _failOnException = true;
         private Exception _failureEx;
 
