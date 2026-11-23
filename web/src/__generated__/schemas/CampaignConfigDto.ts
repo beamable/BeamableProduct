@@ -4,9 +4,9 @@
  */
 
 export type CampaignConfigDto = { 
-  acceptedRealms?: string[];
-  description?: string | null;
-  endAt?: Date | null;
+  acceptedRealms?: string[]; 
+  description?: string | null; 
+  endAt?: Date | null; 
   maxDrainDurationMs?: bigint | string | null; 
   name?: string; 
   options?: string[]; 
