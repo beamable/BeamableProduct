@@ -1321,7 +1321,15 @@ namespace Beamable.Server
 						return;
 					}
 					using var linked = CancellationTokenSource.CreateLinkedTokenSource(giveUp, lifetime);
-					await socketContext.WaitForAuthorization(default, msg, linked.Token);
+					try
+					{
+						await socketContext.WaitForAuthorization(default, msg, linked.Token);
+					}
+					catch (OperationCanceledException error) when (error.CancellationToken == linked.Token && lifetime.IsCancellationRequested)
+					{
+						// Let the startup coordinator identify cancellation by its own token.
+						throw new OperationCanceledException(error.Message, error, lifetime);
+					}
 				}
 				return AwaitAuthorization().ToPromise()
 					.RecoverWith(waitEx => throw (giveUp.IsCancellationRequested ? Timeout(req, startedAt) : waitEx))

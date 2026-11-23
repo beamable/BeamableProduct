@@ -48,6 +48,7 @@ public class StartupPlatformReplyTests : CommonTest
         private readonly ConcurrentDictionary<(int, Reply), TaskCompletionSource<Action>> _held = new();
         public readonly ConcurrentQueue<(BeamableMicroService Service, TestSocket Socket)> Connections = new();
 
+        public Action<int, TestSocket> ConfigureSocket { get; init; }
         public (int Attempt, Reply Step)? Gateway504 { get; init; }
         public int PrimaryPendingBeforeSecondStart { get; private set; }
 
@@ -83,6 +84,7 @@ public class StartupPlatformReplyTests : CommonTest
             Respond(Reply.EventProvider, Provider("event"), new MicroserviceProviderResponse());
             Respond(Reply.Federation, MessageMatcher.WithRouteContains("federation/traffic").WithPut(), new CommonResponse());
             SocketRecoveryTests.AddReconnectHandlers(socket);
+            ConfigureSocket?.Invoke(Connections.Count, socket);
             return socket;
         }
 
@@ -175,6 +177,69 @@ public class StartupPlatformReplyTests : CommonTest
         await ReconnectFailureTests.AssertAnswersARequest(platform.Connections.Last().Socket, 3, "replacement serves");
         await setup.OnShutdown(this, null);
         await authDelivery.WaitAsync(TimeSpan.FromSeconds(5));
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    [TimeoutWithTeardown(45_000)]
+    public async Task ReplyTimeoutAfterStartupSocketLossStartsANewConnectionAndAuthenticationWindow(bool stallFinalConnect)
+    {
+        var previousAuthLimit = BeamableMicroService.SetupAuthorizationTimeout;
+        BeamableMicroService.SetupAuthorizationTimeout = TimeSpan.FromSeconds(8);
+        BeamableMicroService.StartupPlatformReplyTimeout = TimeSpan.FromSeconds(4);
+        try
+        {
+            var connecting = new TaskCompletionSource<Action>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var platform = new Platform
+            {
+                ConfigureSocket = (attempt, socket) =>
+                {
+                    if (attempt != 4 || !stallFinalConnect) return;
+                    var complete = socket.MockConnect;
+                    socket.MockConnect = () => connecting.TrySetResult(complete);
+                }
+            };
+            var originalNonce = platform.Hold(2, Reply.Nonce);
+            var replacementProvider = platform.Hold(3, Reply.BasicProvider);
+            var setup = new TestSetup(platform);
+            var start = setup.Start<SimpleMicroservice>(new TestArgs { BeamInstanceCount = 2 }, Platform.Configure);
+            await originalNonce.WaitAsync(TimeSpan.FromSeconds(8));
+            var (secondary, originalSocket) = platform.Connections.Last();
+            var primarySocket = platform.Connections.First().Socket;
+            var sinceFirstClose = System.Diagnostics.Stopwatch.StartNew();
+            originalSocket.Fault();
+
+            // Five seconds of backoff precede authentication. The four-second provider wait
+            // then expires beyond the original eight-second window.
+            await replacementProvider.WaitAsync(TimeSpan.FromSeconds(10));
+            var replacement = platform.Connections.Last().Socket;
+            Assert.That(secondary.SocketContext.IsCurrentConnectionAuthenticated, Is.True);
+            Assert.That(await SocketRecoveryTests.Eventually(() => replacement.AbortReason != null,
+                TimeSpan.FromSeconds(8)), Is.True);
+            Assert.That(sinceFirstClose.Elapsed, Is.GreaterThan(BeamableMicroService.SetupAuthorizationTimeout));
+            Assert.That(secondary.HasInitialized, Is.False);
+            await ReconnectFailureTests.AssertAnswersARequest(primarySocket, 1, "primary serves during the next backoff");
+
+            if (stallFinalConnect)
+            {
+                var lateConnect = await connecting.Task.WaitAsync(TimeSpan.FromSeconds(12));
+                var finished = await Task.WhenAny(start, Task.Delay(TimeSpan.FromSeconds(12)));
+                lateConnect();
+                Assert.That(finished, Is.SameAs(start), "the runtime deadline must end the pending connect");
+                var error = Assert.CatchAsync(async () => await start);
+                Assert.That(error.GetBaseException(), Is.InstanceOf<OperationCanceledException>());
+                Assert.That(_exits, Is.EqualTo(new[] { 12 }));
+                Assert.That(secondary.HasInitialized, Is.False);
+                return;
+            }
+
+            await start.WaitAsync(TimeSpan.FromSeconds(12));
+            Assert.That(platform.Connections.Count, Is.EqualTo(4));
+            Assert.That(_exits, Is.Empty);
+            await ReconnectFailureTests.AssertAnswersARequest(platform.Connections.Last().Socket, 2, "secondary serves on its second replacement");
+            await setup.OnShutdown(this, null);
+        }
+        finally { BeamableMicroService.SetupAuthorizationTimeout = previousAuthLimit; }
     }
 
     [TestCase(false)]

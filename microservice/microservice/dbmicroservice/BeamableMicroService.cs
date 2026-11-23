@@ -483,7 +483,7 @@ namespace Beamable.Server
                lock (_connectionGate) closedAt = _connectionClosedAt;
                var closed = socket != null && (closedAt != 0 || lost.IsCancellationRequested || socket.State != WebSocketState.Open);
                // An open but unresponsive startup connection may be replaced while another instance serves.
-               // Its replacement still has the usual startup window to connect and authenticate.
+               // A reply retry starts a fresh window for replacement backoff, connection and authentication.
                var replyExpired = ex is StartupPlatformReplyTimeoutException && !closed;
                var retryReply = replyExpired && _startupContext.services.Any(service =>
                   service is BeamableMicroService sibling && sibling != this && sibling.IsServing());
@@ -1482,10 +1482,8 @@ namespace Beamable.Server
 	      }
 	      catch (Exception ex) when (!connectionLost.IsCancellationRequested && ex is not StartupPlatformReplyTimeoutException)
 	      {
-		      // Deliberately not fatal: throwing here would abort ProvideService before the event provider
-		      // is wired up, leaving a half-registered socket — a worse failure than a service that runs and
-		      // reports itself degraded. The distinct message is what `beam local run` watches for, so this
-		      // no longer disappears into the log.
+		      // The startup coordinator handles missing replies. For a federation error caught here,
+		      // continue event registration and report the unroutable federation to `beam local run`.
 		      Log.Error(
 			      Constants.Features.Services.Logs.FEDERATION_REGISTRATION_FAILED +
 			      " The service is running but its federations are NOT routable. attempts=[{attempts}] error=[{error}]",

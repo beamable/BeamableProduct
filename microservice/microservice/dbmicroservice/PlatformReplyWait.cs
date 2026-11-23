@@ -46,24 +46,7 @@ internal sealed class PlatformReplyWait
             if (remaining <= TimeSpan.Zero) throw Expire(step);
             using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(_connectionLost);
             lifetime.CancelAfter(remaining);
-            try
-            {
-                // A shared config client may send this request on a serving sibling's socket.
-                // End that listener as well as our wait, without closing the sending socket.
-                var reply = MicroserviceRequester.WithRequestLifetime(lifetime.Token, send);
-                var value = await AsTask(reply).WaitAsync(lifetime.Token);
-                lifetime.Token.ThrowIfCancellationRequested();
-                return value;
-            }
-            catch (Exception) when (lifetime.IsCancellationRequested && !_connectionLost.IsCancellationRequested)
-            {
-                throw Expire(step);
-            }
-            catch (RequestTimeoutException error) when (!_connectionLost.IsCancellationRequested)
-            {
-                // With enforcement on, this particular reply can expire before the shared budget.
-                throw Expire(step, error);
-            }
+            return await WaitForStartupReply(step, send, lifetime.Token);
         }
         finally
         {
@@ -71,6 +54,29 @@ internal sealed class PlatformReplyWait
             {
                 if (--_pending == 0) _waiting.Stop();
             }
+        }
+    }
+
+    internal async Task<T> WaitForStartupReply<T>(string step, Func<Promise<T>> send, CancellationToken lifetime)
+    {
+        try
+        {
+            // A shared config client may send this request on a serving sibling's socket.
+            // End that listener as well as our wait, without closing the sending socket.
+            var reply = MicroserviceRequester.WithRequestLifetime(lifetime, send);
+            var value = await AsTask(reply).WaitAsync(lifetime);
+            lifetime.ThrowIfCancellationRequested();
+            return value;
+        }
+        catch (OperationCanceledException error) when (error.CancellationToken == lifetime &&
+            lifetime.IsCancellationRequested && !_connectionLost.IsCancellationRequested)
+        {
+            throw Expire(step);
+        }
+        catch (RequestTimeoutException error) when (!_connectionLost.IsCancellationRequested)
+        {
+            // With enforcement on, this particular reply can expire before the shared budget.
+            throw Expire(step, error);
         }
     }
 
