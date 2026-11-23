@@ -103,9 +103,11 @@ namespace Beamable.Server
       private IConnection _connection;
       private Promise<IConnection> _webSocketPromise;
 
-      // Guards _connection with the two fields below, which change together with it.
+      // Guards _connection with the three fields below, which change together with it.
       private readonly object _connectionGate = new object();
-      // Cancelled when _connection closes, so that a setup still running on it stops.
+      // Stopwatch timestamp of the first disconnect for this socket. Zero while it is open.
+      private long _connectionClosedAt;
+      // Cancelled right after that, outside the gate, so that a setup still running on _connection stops.
       private CancellationTokenSource _connectionLost;
       // True while ConnectAndSetup runs, so only one runs at a time. It stays true after a shutdown or a failed start,
       // when nothing should reconnect again.
@@ -113,6 +115,12 @@ namespace Beamable.Server
 
       /// <summary>How long a connection's setup waits for authentication before it fails. Tests shorten it.</summary>
       internal static TimeSpan SetupAuthorizationTimeout = TimeSpan.FromMinutes(2);
+
+      /// <summary>
+      /// How long the whole setup of a replacement connection may take before the connection is dropped: the wait for
+      /// authentication, and a minute for the steps after it. Tests shorten it.
+      /// </summary>
+      internal static TimeSpan ReconnectSetupTimeout = TimeSpan.FromMinutes(3);
 
       /// <summary>Ends the process. Tests replace it, to observe an exit instead of dying with it.</summary>
       internal static Action<int> ExitProcess = Environment.Exit;
@@ -382,18 +390,20 @@ namespace Beamable.Server
 
       /// <summary>
       /// Connects, and sets the connection up, until one is ready for traffic. Only one of these runs at a time for an
-      /// instance, so setup work for a connection that was since replaced can't finish later and disturb its replacement.
+      /// instance. Each setup observes its own cancellation during platform waits. The coordinator publishes
+      /// readiness after registration completes and it verifies that the socket is still current.
       /// <para/>
       /// While the service is starting, a setup that fails ends the process, as it always has. A connection that closes
-      /// during that setup is replaced instead, for as long as the setup would have waited for authentication.
+      /// during startup starts one two-minute window for replacement backoff, connection and authentication.
       /// Once the service has started, nothing here ends the process: the other instances in it are still serving, so
       /// the connection is dropped and replaced until one works.
       /// </summary>
       private async Task ConnectAndSetup(bool initContent = false)
       {
-         // Decided here, not read later: the first setup marks the service initialized before it has finished.
+         // Startup and post-start recovery have different failure policies.
          var starting = !HasInitialized;
-         var began = Stopwatch.GetTimestamp();
+         using var startupRetryWindow = new CancellationTokenSource();
+         var retryingStartup = false;
          for (var failures = 0; !IsShuttingDown; failures++)
          {
             IConnection socket = null;
@@ -401,7 +411,8 @@ namespace Beamable.Server
             var settingUp = false;
             try
             {
-               _webSocketPromise = ConnectAfter(failures == 0 ? 0 : RetryDelaySeconds(failures - 1));
+               var retryToken = retryingStartup ? startupRetryWindow.Token : CancellationToken.None;
+               _webSocketPromise = ConnectAfter(failures == 0 ? 0 : RetryDelaySeconds(failures - 1), retryToken).ToPromise();
                socket = await _webSocketPromise;
                if (IsShuttingDown)
                {
@@ -413,23 +424,58 @@ namespace Beamable.Server
                lock (_connectionGate)
                {
                   _connection = socket;
+                  _connectionClosedAt = 0;
                   _connectionLost = lost;
                }
 
-               // Only while starting: this is false once the initialization hooks have run.
-               if (IsRealmScoped && !InstanceArgs.DisableCustomInitializationHooks && !_ranCustomUserInitializationHooks)
+               socket.OnDisconnect((s, wasClean) => CloseConnection(s, wasClean).GetAwaiter().GetResult());
+
+               // Once, while starting: a retry comes after this succeeded, and it is false once the hooks have run.
+               if (failures == 0 && IsRealmScoped && !InstanceArgs.DisableCustomInitializationHooks && !_ranCustomUserInitializationHooks)
                {
                   await SetupStorage();
                }
 
                settingUp = true;
-               await SetupWebsocket(socket, lost.Token, initContent);
+               using var setupLifetime = CancellationTokenSource.CreateLinkedTokenSource(lost.Token);
+               if (!starting) setupLifetime.CancelAfter(ReconnectSetupTimeout);
+               try
+               {
+                  await SetupWebsocket(socket, setupLifetime.Token, retryToken, initContent);
+                  setupLifetime.Token.ThrowIfCancellationRequested();
+               }
+               catch (OperationCanceledException) when (!starting && !lost.IsCancellationRequested && setupLifetime.IsCancellationRequested)
+               {
+                  throw new TimeoutException($"The setup of the connection did not finish within {ReconnectSetupTimeout.TotalSeconds:0}s.");
+               }
+
+               lock (_connectionGate)
+               {
+                  if (IsShuttingDown) return;
+                  if (_connectionClosedAt != 0) throw new OperationCanceledException("Connection closed during setup.");
+                  HasInitialized = true;
+               }
+               PublishReadiness();
             }
             // While starting, only a failed setup is handled here. Anything before it fails the start, as it always has.
-            catch (Exception ex) when (!starting || settingUp)
+            catch (Exception) when (IsShuttingDown)
             {
-               var closed = lost.IsCancellationRequested || (socket != null && socket.State != WebSocketState.Open);
-               if (starting && !(closed && Stopwatch.GetElapsedTime(began) < SetupAuthorizationTimeout))
+               return;
+            }
+            catch (Exception ex) when (!starting || settingUp || retryingStartup)
+            {
+               long closedAt;
+               lock (_connectionGate) closedAt = _connectionClosedAt;
+               var closed = socket != null && (closedAt != 0 || lost.IsCancellationRequested || socket.State != WebSocketState.Open);
+               if (starting && closed && !retryingStartup)
+               {
+                  var elapsed = closedAt == 0 ? TimeSpan.Zero : Stopwatch.GetElapsedTime(closedAt);
+                  var remaining = SetupAuthorizationTimeout - elapsed;
+                  if (remaining <= TimeSpan.Zero) startupRetryWindow.Cancel();
+                  else startupRetryWindow.CancelAfter(remaining);
+                  retryingStartup = true;
+               }
+               if (starting && (!closed || startupRetryWindow.IsCancellationRequested))
                {
                   var message = closed ? "The websocket connection closed while the service was starting. " + ex.Message : ex.Message;
                   Log.Fatal("Service failed to provide services. {message} {stack}", message, ex.StackTrace);
@@ -452,6 +498,8 @@ namespace Beamable.Server
                {
                   // Nothing may use a connection whose setup did not finish, and no reply can arrive on it. Aborting
                   // does nothing if it closed already, without a callback, so its requests are failed here as well.
+                  // Signal any remaining connection-bound waits before starting another attempt.
+                  lost.Cancel();
                   socket.Abort("its setup did not finish");
                   FailRequestsSentOn(socket, "its setup did not finish.");
                }
@@ -460,9 +508,10 @@ namespace Beamable.Server
             }
 
             starting = false;
+            retryingStartup = false;
             lock (_connectionGate)
             {
-               if (!lost.IsCancellationRequested)
+               if (_connectionClosedAt == 0)
                {
                   _establishing = false;
                   return;
@@ -478,23 +527,35 @@ namespace Beamable.Server
       /// Connects after a delay. The delay is part of the returned promise, so that a request made during it waits for
       /// the connection, as it does while connecting, instead of failing on the connection that was just dropped.
       /// </summary>
-      private async Promise<IConnection> ConnectAfter(int delaySeconds)
+      private async Task<IConnection> ConnectAfter(int delaySeconds, CancellationToken retryToken)
       {
-         if (delaySeconds > 0)
+         for (int attempt = 0; ; attempt++)
          {
-            await Task.Delay(TimeSpan.FromSeconds(delaySeconds));
-         }
+            if (delaySeconds > 0) await Task.Delay(TimeSpan.FromSeconds(delaySeconds), retryToken);
+            retryToken.ThrowIfCancellationRequested();
+            if (IsShuttingDown) throw new OperationCanceledException("Service is shutting down.");
+            var socket = Provider.GetService<IConnectionProvider>().Create(Host, InstanceArgs);
+            var connected = new TaskCompletionSource<IConnection>(TaskCreationOptions.RunContinuationsAsynchronously);
+            socket.OnConnect(ws => connected.TrySetResult(ws));
+            socket.OnDisconnect((_, _) => connected.TrySetResult(null));
+            using (retryToken.Register(() => socket.Abort("startup reconnect deadline expired")))
+            {
+               socket.Connect();
+               var result = await connected.Task.WaitAsync(retryToken);
+               retryToken.ThrowIfCancellationRequested();
+               if (result != null) return result;
+            }
 
-         return await AttemptConnection();
+            delaySeconds = RetryDelaySeconds(attempt);
+            Log.Error("Connection failed. Retrying in {delay} seconds.", delaySeconds);
+         }
       }
 
       private int RetryDelaySeconds(int attempt) =>
          _retryIntervalsInSeconds[Math.Min(attempt, _retryIntervalsInSeconds.Length - 1)];
 
-      async Task SetupWebsocket(IConnection socket, CancellationToken connectionLost, bool initContent = false)
+      private async Task SetupWebsocket(IConnection socket, CancellationToken connectionLost, CancellationToken retryToken, bool initContent)
       {
-         socket.OnDisconnect((s, wasClean) => CloseConnection(s, wasClean).Wait());
-
          socket.OnMessage(async void (s, message, messageNumber, sw) =>
          {
 	         try
@@ -514,13 +575,18 @@ namespace Beamable.Server
             throw new InvalidOperationException($"The connection closed before it was set up. state=[{socket.State}]");
          }
 
-	      _socketRequesterContext.Daemon.WakeAuthThread();
-         await _socketRequesterContext.WaitForAuthorization(SetupAuthorizationTimeout, "Registering services event.", connectionLost);
+         _socketRequesterContext.Daemon.WakeAuthThread();
+         using (var auth = CancellationTokenSource.CreateLinkedTokenSource(connectionLost, retryToken))
+         {
+            await _socketRequesterContext.WaitForAuthorization(SetupAuthorizationTimeout, "Registering services event.", auth.Token);
+            auth.Token.ThrowIfCancellationRequested();
+         }
          // Refresh settings on every connection to recover updates missed while disconnected.
          if (IsRealmScoped)
          {
             var realmService = InstanceArgs.ServiceScope.GetService<IRealmConfigService>();
-            var config = await realmService.GetRealmConfigSettings();
+            var config = await AsTask(realmService.GetRealmConfigSettings()).WaitAsync(connectionLost);
+            connectionLost.ThrowIfCancellationRequested();
             var contentService = Provider.GetService<ContentService>();
             bool BakingDisabled(RealmConfig settings) =>
                bool.TryParse(settings.GetSetting(ContentService.BakeConfigNamespace, ContentService.BakeDisableKey), out var disabled) && disabled;
@@ -557,25 +623,29 @@ namespace Beamable.Server
 				await RunServiceSetupCallbacks();
          }
 
-         var loggingContextService = InstanceArgs.ServiceScope.GetService<ILoggingContextService>();
-         await loggingContextService.GetAllLoggingContexts();
-
-         // Don't register a connection that closed while the steps above ran.
          connectionLost.ThrowIfCancellationRequested();
-         await ProvideService();
+         var loggingContextService = InstanceArgs.ServiceScope.GetService<ILoggingContextService>();
+         await AsTask(loggingContextService.GetAllLoggingContexts()).WaitAsync(connectionLost);
 
-         HasInitialized = true;
+         // Don't register a connection that closed, or whose setup was given up on, while the steps above ran.
+         connectionLost.ThrowIfCancellationRequested();
+         await ProvideService(connectionLost);
+      }
 
+      private static async Task<T> AsTask<T>(Promise<T> promise) => await promise;
+
+      private void PublishReadiness()
+      {
          var portalUrlLogline = "";
          if (TryBuildPortalUrl(out string url))
          {
 	         portalUrlLogline = $"portalURL={url}";
          }
-            
+
          Log.Information(Constants.Features.Services.Logs.READY_FOR_TRAFFIC_PREFIX + "baseVersion={baseVersion} executionVersion={executionVersion} " + portalUrlLogline, InstanceArgs.SdkVersionBaseBuild, InstanceArgs.SdkVersionExecution);
          if (IsRealmScoped)
          {
-         	InstanceArgs.ServiceScope.GetService<IRealmConfigService>().UpdateLogLevel();
+            InstanceArgs.ServiceScope.GetService<IRealmConfigService>().UpdateLogLevel();
          }
 
          _serviceInitialized.CompleteSuccess(PromiseBase.Unit);
@@ -772,41 +842,6 @@ namespace Beamable.Server
       public Promise<IConnection> GetWebsocketPromise()
       {
          return _webSocketPromise;
-      }
-
-      Promise<IConnection> AttemptConnection()
-      {
-         var connectionAttempt = 0;
-         var promise = new Promise<IConnection>();
-
-         Log.Debug("starting ws connection");
-         void Attempt()
-         {
-            Log.Debug($"connecting to ws ({Host}) ... ");
-            var ws = Provider.GetService<IConnectionProvider>().Create(Host, InstanceArgs);
-            ws.OnConnect(socket =>
-            {
-               Log.Debug("connection made.");
-               promise.CompleteSuccess(socket);
-            });
-            ws.OnDisconnect(async (socket, wasClean) =>
-            {
-               if (promise.IsCompleted) return; // ignore, this handler has no purpose anymore.
-               if (wasClean) return;
-
-               // try again!
-               var retryDelay = RetryDelaySeconds(connectionAttempt);
-               connectionAttempt++;
-               Log.Error("connection could not be re-established. Will attempt connection {attempt} in {delay} seconds", connectionAttempt, retryDelay);
-               await Task.Delay(retryDelay * 1000);
-               Attempt();
-            });
-
-            ws.Connect();
-         }
-
-         Attempt();
-         return promise;
       }
 
       Task MonitorTask(long messageNumber, Func<Task> taskProducer)
@@ -1248,6 +1283,7 @@ namespace Beamable.Server
          var shuttingDown = IsShuttingDown;
          Log.Debug("Closing socket connection... clean=[{clean}] isShuttingDown=[{shuttingDown}]", wasClean, shuttingDown);
          bool reconnect;
+         CancellationTokenSource lost;
          lock (_connectionGate)
          {
             if (!ReferenceEquals(ws, _connection))
@@ -1256,13 +1292,16 @@ namespace Beamable.Server
                return Task.CompletedTask;
             }
 
-            // Stops a setup still running on this connection, and tells a ConnectAndSetup that is running to go again.
-            // Cancelled before the requests below fail, so that setup sees a closed connection as the cause.
-            _connectionLost.Cancel();
+            // Tells a ConnectAndSetup that is running to go again, even if its setup finishes right now.
+            if (_connectionClosedAt == 0) _connectionClosedAt = Stopwatch.GetTimestamp();
+            lost = _connectionLost;
             reconnect = !shuttingDown && !_establishing;
             if (reconnect) _establishing = true;
          }
 
+         // Stops a setup still running on this connection. Outside the gate, because what waits on it resumes here.
+         // Before the requests below fail, so that setup sees a closed connection as the cause.
+         lost.Cancel();
          FailRequestsSentOn(ws, $"clean=[{wasClean}]");
 
          if (shuttingDown)
@@ -1277,7 +1316,7 @@ namespace Beamable.Server
          return ConnectAndSetup();
       }
 
-      private async Promise ProvideService()
+      private async Task ProvideService(CancellationToken connectionLost)
       {
 	      var req = new MicroserviceServiceProviderRequest
 	      {
@@ -1300,9 +1339,7 @@ namespace Beamable.Server
 		      method: Method.POST,
 		      uri: "gateway/provider",
 		      body: req.ToJson());
-	      _ = serviceProviderTask.Then(_ => Log.Debug(Constants.Features.Services.Logs.SERVICE_PROVIDER_INITIALIZED));
 
-	      
 	      var eventConfig = Provider.GetService<IEventSubscriptionConfiguration>();
 	      foreach (var evt in MicroserviceRequester.DefaultEventNames)
 	      {
@@ -1318,12 +1355,14 @@ namespace Beamable.Server
 	      };
 	      var eventProvider = hook.CreateSubscription(args);
 	      
-	      await serviceProviderTask;
-	      await RegisterFederation(routingKey);
-	      await eventProvider;
+	      await AsTask(serviceProviderTask).WaitAsync(connectionLost);
+	      connectionLost.ThrowIfCancellationRequested();
+	      Log.Debug(Constants.Features.Services.Logs.SERVICE_PROVIDER_INITIALIZED);
+	      await RegisterFederation(routingKey, connectionLost);
+	      await eventProvider.WaitAsync(connectionLost);
       }
 
-      private async Promise RegisterFederation(string routingKey)
+      private async Task RegisterFederation(string routingKey, CancellationToken connectionLost)
       {
 	      if (InstanceArgs.DisableCustomInitializationHooks) 
 		      return; // if this is a health-check, then we aren't going to auto-register federation at all.
@@ -1375,9 +1414,10 @@ namespace Beamable.Server
 	      var attempts = 0;
 	      try
 	      {
-		      var response = await Promise.RetryPromise(
+		      var registration = Promise.RetryPromise(
 			      () =>
 			      {
+				      connectionLost.ThrowIfCancellationRequested();
 				      var previousAttempts = attempts++;
 				      if (previousAttempts == 0)
 				      {
@@ -1387,22 +1427,28 @@ namespace Beamable.Server
 				      Log.Warning(
 					      "Federation registration was rejected because the service binding is not visible yet; retrying. attempt=[{attempt}] of [{maxAttempts}]",
 					      previousAttempts + 1, FEDERATION_REGISTRATION_MAX_ATTEMPTS);
-				      return Task.Delay(TimeSpan.FromMilliseconds(FEDERATION_REGISTRATION_BACKOFF_MS * previousAttempts))
+				      return Task.Delay(TimeSpan.FromMilliseconds(FEDERATION_REGISTRATION_BACKOFF_MS * previousAttempts), connectionLost)
 					      .ToPromise()
-					      .FlatMap(_ => api.PutMicroserviceFederationTraffic(federationRequest));
+					      .FlatMap(_ =>
+				      {
+					      connectionLost.ThrowIfCancellationRequested();
+					      return api.PutMicroserviceFederationTraffic(federationRequest);
+				      });
 			      },
 			      // Only the race is retryable. A 400 (e.g. MissingRoutingKeys, when the realm has no
 			      // local-traffic filtering configured) will fail identically forever, so it surfaces
 			      // immediately instead of after every backoff.
 			      ex => ex is RequesterException requesterException && requesterException.Status == 404,
 			      maxAttempts: FEDERATION_REGISTRATION_MAX_ATTEMPTS);
+		      var response = await AsTask(registration).WaitAsync(connectionLost);
+		      connectionLost.ThrowIfCancellationRequested();
 
 		      Log.Information(
 			      Constants.Features.Services.Logs.FEDERATION_REGISTERED + " result=[{result}], routes=[{routes}]",
 			      response.result,
 			      string.Join(",", response.data.Select(kvp => $"{kvp.Key}->{kvp.Value}")));
 	      }
-	      catch (Exception ex)
+	      catch (Exception ex) when (!connectionLost.IsCancellationRequested)
 	      {
 		      // Deliberately not fatal: throwing here would abort ProvideService before the event provider
 		      // is wired up, leaving a half-registered socket — a worse failure than a service that runs and
