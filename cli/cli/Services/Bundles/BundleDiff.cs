@@ -103,7 +103,7 @@ public static class BundleDiff
 			_ => $"version {c.schema.GetOrElse((SchemaReference)null)?.version.GetOrElse("")}",
 		};
 		var mounts = string.Join(",", c.mounts.GetOrElse(Array.Empty<BundleMount>())
-			.Select(m => $"{m.page.GetOrElse("")}>{m.extension.GetOrElse("")}>{m.selector.GetOrElse("")}")
+			.Select(m => $"{m.site.GetOrElse("")}>{m.page.GetOrElse("")}")
 			.OrderBy(m => m, StringComparer.Ordinal));
 		var site = c.site.HasValue ? c.site.Value.ToString().ToLowerInvariant() : "";
 		var source = c.sourceAvailable.GetOrElse(false) ? $", source {Short(c.sourceArchive.GetOrElse(""))}" : "";

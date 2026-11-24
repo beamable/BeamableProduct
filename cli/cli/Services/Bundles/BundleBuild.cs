@@ -168,10 +168,10 @@ public static class BundleBuild
 					c.extension = new OptionalPortalExtensionReference(reference);
 					c.mounts = new OptionalArrayOfBundleMount((definition.Properties?.Mounts ?? new List<PortalExtensionMountProperties>())
 						.SelectMany(m => (m.SiteIds is { Count: > 0 } ? m.SiteIds : new List<string> { null })
-							.Select(site => new BundleMount
+							.Select(siteId => new BundleMount
 							{
 								page = string.IsNullOrEmpty(m.Page) ? new OptionalString() : new OptionalString(m.Page),
-								selector = string.IsNullOrEmpty(site) ? new OptionalString() : new OptionalString(site),
+								site = string.IsNullOrEmpty(siteId) ? new OptionalString() : new OptionalString(siteId),
 							})).ToArray());
 				}));
 				built.Add(extension.name);

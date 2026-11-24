@@ -201,7 +201,7 @@ beam_exec("bundles notice update scores <notice id> --resolve -q")
 
 ### Catalog and marketplace
 
-`bundles list` shows the workspace's bundles and your org's catalog entries (private included). `search`, `info` and `placements` read public bundles; `placements` finds Beamable-listed bundles that mount into a portal page or extension.
+`bundles list` shows the workspace's bundles and your org's catalog entries (private included). `search`, `info` and `placements` read public bundles; `placements` finds Beamable-listed bundles that mount into a portal page (`--page`) or fill a site id (`--site`, the ids extensions list in their mounts' `siteIds`).
 {{ command_tables "bundles list" }}
 {{ command_tables "bundles search" }}
 {{ command_tables "bundles info" }}

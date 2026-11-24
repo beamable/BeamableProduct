@@ -243,13 +243,13 @@ public class BundleInfoCommand : AtomicCommand<BundleInfoCommandArgs, BundleInfo
 public class PlacementsCommandArgs : CommandArgs
 {
 	public List<string> pages = new List<string>();
-	public List<string> mounts = new List<string>();
+	public List<string> sites = new List<string>();
 }
 
 [Serializable]
 public class PlacedBundleInfo
 {
-	/// <summary>The page, or the host extension and selector, as asked.</summary>
+	/// <summary>The page, or the site id, as asked.</summary>
 	public string place;
 	public string bundle;
 	public long latestVersion;
@@ -268,10 +268,10 @@ public class PlacementsCommandOutput
 	public PlacedBundleInfo[] bundles = Array.Empty<PlacedBundleInfo>();
 }
 
-/// <summary>The bundles Beamable lists for portal pages, or for selectors inside other extensions.</summary>
+/// <summary>The bundles Beamable lists for portal pages, or for sites that portal extensions fill.</summary>
 public class PlacementsCommand : AtomicCommand<PlacementsCommandArgs, PlacementsCommandOutput>, ISkipManifest
 {
-	public PlacementsCommand() : base("placements", "Find the Beamable-listed bundles that add something to a portal page or extension mount")
+	public PlacementsCommand() : base("placements", "Find the Beamable-listed bundles that add something to a portal page or site")
 	{
 	}
 
@@ -279,14 +279,16 @@ public class PlacementsCommand : AtomicCommand<PlacementsCommandArgs, Placements
 	{
 		AddOption(new Option<List<string>>("--page", "A portal page, e.g. players/list (repeatable)") { AllowMultipleArgumentsPerToken = true },
 			(args, i) => args.pages = i ?? new List<string>());
-		AddOption(new Option<List<string>>("--mount", "A host extension and selector, Extension>selector, or just Extension (repeatable)") { AllowMultipleArgumentsPerToken = true },
-			(args, i) => args.mounts = i ?? new List<string>());
+		AddOption(new Option<List<string>>("--site", "A site id that portal extensions fill, e.g. campaign-offer (repeatable)") { AllowMultipleArgumentsPerToken = true },
+			(args, i) => args.sites = i ?? new List<string>());
 	}
 
 	public override async Task<PlacementsCommandOutput> GetResult(PlacementsCommandArgs args)
 	{
-		if (args.pages.Count + args.mounts.Count == 0)
-			throw new CliException("Give at least one --page or --mount.");
+		if (args.pages.Count + args.sites.Count == 0)
+		{
+			throw new CliException("Give at least one --page or --site.");
+		}
 		var api = args.Provider.GetService<IBeamBeamobundleApi>();
 		var places = new List<PlacementBundles>();
 		var cursor = new Optional<string>();
@@ -295,8 +297,8 @@ public class PlacementsCommand : AtomicCommand<PlacementsCommandArgs, Placements
 			var response = await api.GetMarketplacePlacements(
 				cursor,
 				new Optional<int>(),
-				args.mounts.Count > 0 ? args.mounts.ToArray() : new Optional<string[]>(),
-				args.pages.Count > 0 ? args.pages.ToArray() : new Optional<string[]>());
+				args.pages.Count > 0 ? args.pages.ToArray() : new Optional<string[]>(),
+				args.sites.Count > 0 ? args.sites.ToArray() : new Optional<string[]>());
 			places.AddRange(response.records.GetOrElse(Array.Empty<PlacementBundles>()));
 			var nextCursor = response.nextCursor.GetOrElse((string)null);
 			if (string.IsNullOrEmpty(nextCursor))
@@ -310,8 +312,7 @@ public class PlacementsCommand : AtomicCommand<PlacementsCommandArgs, Placements
 			bundles = places.SelectMany(p =>
 			{
 				var place = p.place.GetOrElse((Placement)null);
-				var label = place?.page.GetOrElse((string)null)
-				            ?? $"{place?.extension.GetOrElse("")}{(place?.selector.HasValue == true ? ">" + place.selector.Value : "")}";
+				var label = place?.page.GetOrElse((string)null) ?? place?.site.GetOrElse("");
 				return p.bundles.GetOrElse(Array.Empty<PlacedBundle>()).Select(b =>
 				{
 					var installation = b.installation.GetOrElse((PlacedInstallation)null);
