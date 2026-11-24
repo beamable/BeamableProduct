@@ -131,7 +131,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 			return replied.Task;
 		}
 
-		private static async Task AssertAnswersARequest(TestSocket socket, int requestId, string because)
+		internal static async Task AssertAnswersARequest(TestSocket socket, int requestId, string because)
 		{
 			var replied = ExpectReply(socket, requestId);
 			socket.SendToClient(ClientRequest.ClientCallable("micro_sample", nameof(SimpleMicroservice.Add), requestId, 1, 1, 2));
