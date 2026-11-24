@@ -11,6 +11,12 @@ export type CampaignAuditDto = {
   createdBySystem?: string; 
   lastUpdatedAt?: Date; 
   lastUpdatedBy?: AuthorDto; 
+  overrodeConflicts?: boolean; 
   publishedAt?: Date | null; 
   publishedBy?: AuthorDto; 
+  reviewNote?: string | null; 
+  reviewedAt?: Date | null; 
+  reviewedBy?: AuthorDto; 
+  submittedAt?: Date | null; 
+  submittedBy?: AuthorDto; 
 };

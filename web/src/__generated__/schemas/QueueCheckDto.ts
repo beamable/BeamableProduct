@@ -3,7 +3,8 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export enum DeactivateMode {
-  Drain = "Drain",
-  Hard = "Hard"
-}
+import type { QueueConflictDto } from './QueueConflictDto';
+
+export type QueueCheckDto = { 
+  conflicts?: QueueConflictDto[]; 
+};

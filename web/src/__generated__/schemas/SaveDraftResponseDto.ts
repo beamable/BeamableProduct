@@ -8,4 +8,5 @@ import type { CampaignChangeErrorDto } from './CampaignChangeErrorDto';
 export type SaveDraftResponseDto = { 
   errors?: CampaignChangeErrorDto[]; 
   ok?: boolean; 
+  warnings?: CampaignChangeErrorDto[] | null; 
 };
