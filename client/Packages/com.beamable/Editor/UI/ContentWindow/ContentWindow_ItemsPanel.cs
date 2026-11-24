@@ -64,7 +64,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		}
 
 		private readonly Dictionary<string, bool> _itemsExpandedStates = new();
-		private (string id, string scope, int[] selection, Promise save)? _createdItemSelection;
+		private (string id, string scope, Object[] selection, Promise save)? _createdItemSelection;
 		private GUIStyle _itemPanelHeaderRowStyle;
 		private GUIStyle _itemPanelHeaderFieldStyle;
 		private GUIStyle _itemLabelStyle;
@@ -1032,7 +1032,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			try
 			{
 				var save = _contentService.SaveNewContent(draft);
-				if (select) _createdItemSelection = (draft.Id, _contentService.GetContentScopeKey(), Selection.instanceIDs, save);
+				if (select) _createdItemSelection = (draft.Id, _contentService.GetContentScopeKey(), Selection.objects, save);
 				await save;
 			}
 			catch (Exception error)
@@ -1053,7 +1053,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			if (!_createdItemSelection.HasValue) return;
 			var request = _createdItemSelection.Value;
 			if (request.save.IsFailed || request.scope != _contentService.GetContentScopeKey() ||
-			    !request.selection.SequenceEqual(Selection.instanceIDs))
+			    !request.selection.SequenceEqual(Selection.objects))
 			{
 				_createdItemSelection = null;
 				return;
