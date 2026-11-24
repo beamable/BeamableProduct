@@ -130,6 +130,7 @@ namespace Beamable.Editor.ContentService
 		{
 			var key = GetContentWriteKey(contentId);
 			_loadErrors.Remove(key);
+			_deferredReloads.Remove(key);
 			_loadedContent.Remove(key);
 			_lastSavedPropertiesCache.Remove(key);
 			_saveFailures.Remove(key);
@@ -170,6 +171,7 @@ namespace Beamable.Editor.ContentService
 			if (difference == SchemaDifference.None) { RemoveSchemaNotice(entry.FullId); return; }
 			if (_schemaDifferences.TryGetValue(key, out var previous) && previous.Difference == difference && previous.Reference == entry.ReferenceManifestUid) return;
 			_schemaDifferences[key] = (difference, entry.ReferenceManifestUid);
+			ManifestChangedCount++;
 			SaveSchemaNotices();
 		}
 
@@ -217,7 +219,9 @@ namespace Beamable.Editor.ContentService
 		private void RemoveSchemaNotice(string contentId)
 		{
 			LoadSchemaNotices();
-			if (_schemaDifferences.Remove(GetContentWriteKey(contentId))) SaveSchemaNotices();
+			if (!_schemaDifferences.Remove(GetContentWriteKey(contentId))) return;
+			ManifestChangedCount++;
+			SaveSchemaNotices();
 		}
 
 		private void PruneSchemaNotices(LocalContentManifest manifest)
@@ -294,9 +298,11 @@ namespace Beamable.Editor.ContentService
 			var contentId = selectedContentObject != null ? selectedContentObject.Id : null;
 			var writeKey = string.IsNullOrEmpty(contentId) ? null : GetContentWriteKey(contentId);
 			var edit = ++_lastEdit;
+			var loadIdentity = writeKey != null && _loadedContent.TryGetValue(writeKey, out var loaded) &&
+			                   loaded.Content == selectedContentObject ? loaded.LoadIdentity : null;
 			SaveContentAsync(selectedContentObject)
 				.Then(_ => ClearSaveFailure(writeKey, edit))
-				.Error(error => RecordSaveFailure(contentId, writeKey, edit, error));
+				.Error(error => RecordSaveFailure(contentId, writeKey, edit, loadIdentity, error));
 		}
 
 		/// <summary>
@@ -314,8 +320,8 @@ namespace Beamable.Editor.ContentService
 			if (TryGetLoadError(contentId, out var loadError)) throw new InvalidOperationException(loadError);
 			string propertiesJson = ClientContentSerializer.SerializeProperties(selectedContentObject);
 			_loadedContent.TryGetValue(GetContentWriteKey(contentId), out var loaded);
-			if ((_loadedObjectKeys != null && _loadedObjectKeys.TryGetValue(selectedContentObject, out var loadedKey) &&
-				(loadedKey != GetContentWriteKey(contentId) || loaded == null)) ||
+			if ((_displayedLoads != null && _displayedLoads.TryGetValue(selectedContentObject, out var displayed) &&
+				(displayed.Key != GetContentWriteKey(contentId) || loaded == null)) ||
 				(loaded != null && loaded.Content != selectedContentObject)) throw new InvalidOperationException("Content was reloaded. Select the current item before editing.");
 			// Keep this edit's tags, but discard them if a newer edit supersedes this save.
 			string[] tags = (selectedContentObject.Tags ?? Array.Empty<string>()).ToArray();
@@ -384,15 +390,18 @@ namespace Beamable.Editor.ContentService
 		{
 			if (!CanWriteContent(contentId)) return Promise.Success;
 			var key = GetContentWriteKey(contentId);
-			var write = _contentWrites.Run(key, async () =>
+			return RunWatchedWrite(key, async () =>
 			{
 				if (loaded == null) await WriteContentProperties(contentId, contentPropertiesJson);
 				else await WriteLoadedContentProperties(contentId, contentPropertiesJson, loaded);
 				onCompleted?.Invoke();
 			});
-			// The tracker releases the key before this completes, so a reload the watcher deferred can run now.
-			write.Then(_ => ReloadAfterWrites(key)).Error(_ => ReloadAfterWrites(key));
-			return write;
+		}
+
+		private async Promise RunWatchedWrite(string key, Func<Promise> write)
+		{
+			try { await _contentWrites.Run(key, write); }
+			finally { ReloadAfterWrites(key); }
 		}
 
 		private async Promise WriteContentProperties(string contentId, string contentPropertiesJson, LoadedContent loaded = null, string expectedFileHash = null)
@@ -555,7 +564,7 @@ namespace Beamable.Editor.ContentService
 			var key = GetContentWriteKey(contentId);
 			_pendingTagSaves.Remove(key);
 			if (_contentWrites.HasWrites(key)) _lastSavedPropertiesCache.Remove(key);
-			return _contentWrites.Run(key, () => WriteContentTags(contentId, tags));
+			return RunWatchedWrite(key, () => WriteContentTags(contentId, tags));
 		}
 
 		private async Promise WriteContentTags(string contentId, string[] tags)
@@ -581,7 +590,20 @@ namespace Beamable.Editor.ContentService
 			setContentTagCommand.OnError(report => reportedError ??= new InvalidOperationException(report.data.message));
 			await setContentTagCommand.Run();
 			if (reportedError != null) throw reportedError;
-			if (scope == GetContentScopeKey() && CanWriteContent(contentId)) _contentIdTagsCache[contentId] = tags.ToList();
+			if (scope != GetContentScopeKey() || !CanWriteContent(contentId)) return;
+			_contentIdTagsCache[contentId] = tags.ToList();
+			if (_loadedContent.TryGetValue(GetContentWriteKey(contentId), out var loaded) &&
+			    EntriesCache.TryGetValue(contentId, out entry) && loaded.Path == entry.JsonFilePath)
+			{
+				var written = ReadContentText(loaded.Path);
+				if (written == loaded.WatcherFileJson) return;
+				var model = ReadSavedModel(contentId, loaded.Content.GetType(), written);
+				if (model.Properties == loaded.ModelProperties && model.Version == loaded.Content.Version)
+				{
+					loaded.WatcherFileJson = written;
+					UpdateSchemaDifference(entry, model.Difference);
+				}
+			}
 		}
 
 		internal async Promise SaveNewContent(ContentObject content)
@@ -1225,6 +1247,7 @@ namespace Beamable.Editor.ContentService
 			_contentIdTagsCache.Clear();
 			_lastSavedPropertiesCache.Clear();
 			_loadedContent.Clear();
+			_deferredReloads.Clear();
 			_loadErrors.Clear();
 			_renameRegistry.Clear();
 		}
@@ -1569,10 +1592,11 @@ namespace Beamable.Editor.ContentService
 				ApplyEntryState(entry, contentObject);
 				contentObject.ResetEditorChangeTracking();
 				_lastSavedPropertiesCache.Remove(key);
-				_loadedContent[key] = new LoadedContent(contentObject, entry.JsonFilePath, fileContent, properties);
-				_loadedObjectKeys ??= new System.Runtime.CompilerServices.ConditionalWeakTable<ContentObject, string>();
-				_loadedObjectKeys.Remove(contentObject);
-				_loadedObjectKeys.Add(contentObject, key);
+				var identity = new ContentLoadIdentity(key);
+				_loadedContent[key] = new LoadedContent(contentObject, entry.JsonFilePath, fileContent, properties, identity);
+				_displayedLoads ??= new();
+				_displayedLoads.Remove(contentObject);
+				_displayedLoads.Add(contentObject, identity);
 				contentObject.OnEditorChanged = () => SaveContent(contentObject);
 				_loadErrors.Remove(key);
 				return contentObject;

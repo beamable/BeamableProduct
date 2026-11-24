@@ -103,7 +103,11 @@ namespace Beamable.Editor.UI.ContentWindow
             }
             catch (Exception ex)
             {
-                if (this == null) return;
+                if (this == null)
+                {
+                    Debug.LogError($"Could not apply JSON changes to '{_id}'. See the Beam CLI command history for details.");
+                    return;
+                }
                 _error = ex.Message;
                 // Never reuse a failed/stale preview. A fresh review requires an explicit user action.
                 _preview = null;

@@ -291,9 +291,9 @@ namespace Beamable.Editor.Tests
 			PrepareFile();
 			var config = ScriptableObject.CreateInstance<global::Beamable.Content.ContentConfiguration>();
 			Set(_service, "_contentConfiguration", config);
-			var revision = _service.ManifestChangedCount;
 			config.validateSchemaDifference = true;
 			_service.UpdateSchemaDifference(_service.EntriesCache[_content.Id], SchemaDifference.UnknownFieldsInJson);
+			var revision = _service.ManifestChangedCount;
 			Action callback = () => _service.SaveContent(_content);
 			_content.OnEditorChanged = callback;
 			Exception error = null;
@@ -867,6 +867,41 @@ namespace Beamable.Editor.Tests
             finally { if (window != null) window.Close(); }
         }
 
+        [TestCase(false)]
+        [TestCase(true)]
+        public void Schema_popup_reports_a_refused_apply_even_after_close(bool closeBeforeRefusal)
+        {
+            PrepareFile();
+            var original = ClientContentSerializer.SerializeContent(_content)
+                .Replace("\"properties\":{", "\"properties\":{\"future\":{\"data\":37},");
+            File.WriteAllText(_path, original);
+            var window = ContentSchemaWindow.Open(_service, _content.Id);
+            try
+            {
+                typeof(ContentSchemaWindow).GetMethod("Apply", Fields).Invoke(window, null);
+                var command = _commands.Properties.Single();
+                if (closeBeforeRefusal)
+                {
+                    window.Close();
+                    Assert.That(window == null, Is.True);
+                    LogAssert.Expect(LogType.Error, $"Could not apply JSON changes to '{_content.Id}'. See the Beam CLI command history for details.");
+                }
+
+                var outside = original.Replace("\"future\":{\"data\":37}", "\"future\":{\"data\":38}");
+                File.WriteAllText(_path, outside);
+                const string refusal = "Content changed after migration preview. Review the item again.";
+                command.Reject(refusal, 1);
+                if (!closeBeforeRefusal)
+                {
+                    Assert.That(window != null, Is.True);
+                    Assert.That(Get(window, "_error"), Is.EqualTo(refusal));
+                    Assert.That(Get(window, "_preview"), Is.Null, "A refused preview must be reviewed again.");
+                }
+                Assert.That(File.ReadAllText(_path), Is.EqualTo(outside));
+            }
+            finally { if (window != null) window.Close(); }
+        }
+
         [TestCase(720, 500, 0)]
         [TestCase(720, 500, 1)]
         [TestCase(1000, 700, 0)]
@@ -1119,12 +1154,209 @@ namespace Beamable.Editor.Tests
                 LogAssert.Expect(LogType.Error, new Regex("Content edit was not saved"));
                 _service.SaveContent(_content);
                 _commands.Properties[0].Reject("Cannot safely edit properties.rows", CliContentService.UnsafeEditExitCode);
-                _service.DiscardRejectedEdit(_content.Id);
+                Assert.That(_service.TryGetSaveFailure(_content.Id, out var failure), Is.True);
+                _service.DiscardRejectedEdit(_content.Id, failure);
                 Assert.That(_content.amount, Is.EqualTo(2));
                 Assert.That(_service.TryGetSaveFailure(_content.Id, out _), Is.False);
                 Assert.That(_commands.Properties.Count, Is.EqualTo(1), "Discarding writes nothing.");
             }
             finally { UnityEngine.Object.DestroyImmediate(config); }
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void Delayed_discard_during_a_tag_write_reports_busy_only_for_the_displayed_refusal(bool reloaded)
+        {
+            WithWatcher(() =>
+            {
+                LoadWithAmount(2);
+                var id = _content.Id;
+                _content.amount = 3;
+                LogAssert.Expect(LogType.Error, new Regex("Content edit was not saved"));
+                _service.SaveContent(_content);
+                _commands.Properties.Single().Reject("Cannot safely edit properties.rows", CliContentService.UnsafeEditExitCode);
+                Assert.That(_service.TryGetSaveFailure(id, out var clicked), Is.True);
+                Assert.That(_service.CanDiscardEdit(id, clicked), Is.True);
+
+                // The Inspector already scheduled the click. A reload can retire it before the tag write starts.
+                if (reloaded)
+                {
+                    WriteOutsideAmount(50);
+                    Watch();
+                }
+                var disk = File.ReadAllText(_path);
+                _service.SetContentTags(id, new[] { "changed" });
+                Assert.That(_service.CanDiscardEdit(id, clicked), Is.False);
+                if (reloaded)
+                    Assert.DoesNotThrow(() => _service.DiscardRejectedEdit(id, clicked));
+                else
+                {
+                    var busy = Assert.Throws<InvalidOperationException>(() => _service.DiscardRejectedEdit(id, clicked));
+                    Assert.That(busy.Message, Does.Contain("Wait for them to finish, then discard"));
+                }
+                Assert.That(_content.amount, Is.EqualTo(reloaded ? 50 : 3));
+                Assert.That(File.ReadAllText(_path), Is.EqualTo(disk));
+                Assert.That(_service.TryGetSaveFailure(id, out var retained), Is.True);
+                Assert.That(retained.Edit, Is.EqualTo(clicked.Edit));
+
+                _commands.Tags.Single().Completion.CompleteSuccess();
+                Assert.That(_service.CanDiscardEdit(id, clicked), Is.EqualTo(!reloaded));
+                _service.DiscardRejectedEdit(id, clicked);
+                Assert.That(_content.amount, Is.EqualTo(reloaded ? 50 : 2));
+                Assert.That(_service.TryGetSaveFailure(id, out _), Is.EqualTo(reloaded));
+                Assert.That(File.ReadAllText(_path), Is.EqualTo(disk));
+                Assert.That(_commands.Properties.Count, Is.EqualTo(1));
+            });
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void Reload_replaces_the_refused_value_and_retires_only_its_discard_action(bool fullRefresh)
+        {
+            WithWatcher(() =>
+            {
+                LoadWithAmount(2);
+                var id = _content.Id;
+                var entry = _service.EntriesCache[id];
+                var original = File.ReadAllText(_path);
+                _content.amount = 3;
+                LogAssert.Expect(LogType.Error, new Regex("Content edit was not saved"));
+                _service.SaveContent(_content);
+                _commands.Properties.Single().Reject("Cannot safely edit properties.rows", CliContentService.UnsafeEditExitCode);
+                Assert.That(_service.TryGetSaveFailure(id, out var refused), Is.True);
+                Assert.That(_service.CanDiscardEdit(id, refused), Is.True);
+                Assert.That(_content.amount, Is.EqualTo(3));
+
+                // A failed discard leaves the refused value on screen and the action available for a retry.
+                File.WriteAllText(_path, "[]");
+                LogAssert.Expect(LogType.Error, new Regex("Could not load content from json file"));
+                Assert.Catch(() => _service.DiscardRejectedEdit(id, refused));
+                Assert.That(_content.amount, Is.EqualTo(3));
+                Assert.That(_service.CanDiscardEdit(id, refused), Is.True);
+                File.WriteAllText(_path, original);
+
+                if (fullRefresh)
+                {
+                    typeof(CliContentService).GetMethod("ClearCaches", Fields).Invoke(_service, null);
+                    _service.EntriesCache[id] = entry;
+                }
+                var expected = fullRefresh ? original : WriteOutsideAmount(50);
+                Watch();
+                Assert.That(_content.amount, Is.EqualTo(fullRefresh ? 2 : 50));
+                Assert.That(_service.TryGetSaveFailure(id, out var historical), Is.True);
+                Assert.That(historical.Message, Is.EqualTo(refused.Message));
+                Assert.That(_service.CanDiscardEdit(id, historical), Is.False);
+
+                _content.amount = 77;
+                _content.CheckForNonDetectedChanges();
+                _service.DiscardRejectedEdit(id, refused);
+                Assert.That(_content.amount, Is.EqualTo(77));
+                Assert.That(_content.HasPendingEditorChangeNotification, Is.True);
+                Assert.That(File.ReadAllText(_path), Is.EqualTo(expected));
+                Assert.That(_commands.Properties.Count, Is.EqualTo(1));
+            });
+        }
+
+        [Test]
+        public void Completed_migration_clears_only_its_original_realm_failure_after_a_switch()
+        {
+            WithWatcher(() =>
+            {
+                var cli = ((BeamEditorContext)Get(_service, "_beamContext")).BeamCli;
+                cli.pidToRealm["realm-b"] = new RealmView { Cid = "test", Pid = "realm-b" };
+                var id = _content.Id;
+                var entryA = _service.EntriesCache[id];
+                var entryB = entryA;
+                entryB.JsonFilePath = Path.GetTempFileName();
+                var itemB = ScriptableObject.CreateInstance<SaveRecoveryContent>();
+                try
+                {
+                    void SelectRealm(string pid, LocalContentManifestEntry entry, SaveRecoveryContent item)
+                    {
+                        cli.latestConfig.pid = pid;
+                        typeof(CliContentService).GetMethod("ClearCaches", Fields).Invoke(_service, null);
+                        _service.EntriesCache[id] = entry;
+                        ((Dictionary<string, ContentObject>)Get(_service, "_contentScriptableCache"))[id] = item;
+                        Watch();
+                    }
+
+                    void RefuseEdit(SaveRecoveryContent item, string message)
+                    {
+                        item.amount++;
+                        LogAssert.Expect(LogType.Error, new Regex("Content edit was not saved"));
+                        _service.SaveContent(item);
+                        _commands.Properties.Last().Reject(message, CliContentService.UnsafeEditExitCode);
+                        Assert.That(_service.TryGetSaveFailure(id, out var refusal), Is.True);
+                        Assert.That(_service.CanDiscardEdit(id, refusal), Is.True);
+                    }
+
+                    const string jsonB = "{\"properties\":{\"amount\":{\"data\":10},\"rows\":{\"data\":[]}},\"tags\":[\"old\"]}";
+                    File.WriteAllText(entryB.JsonFilePath, jsonB);
+                    SelectRealm("realm-b", entryB, itemB);
+                    RefuseEdit(itemB, "Realm B refusal");
+
+                    const string jsonA = "{\"properties\":{\"amount\":{\"data\":2},\"rows\":{\"data\":[]},\"future\":{\"data\":37}},\"tags\":[\"old\"]}";
+                    File.WriteAllText(_path, jsonA);
+                    SelectRealm("realm", entryA, _content);
+                    RefuseEdit(_content, "Realm A refusal");
+                    var completion = _service.ApplySchemaMigration(_service.PreviewSchemaMigration(id));
+                    Assert.That(_commands.Properties.Count, Is.EqualTo(3));
+                    SelectRealm("realm-b", entryB, itemB);
+                    Assert.That(_service.TryGetSaveFailure(id, out var before), Is.True);
+                    Assert.That(before.Message, Is.EqualTo("Realm B refusal"));
+                    itemB.amount = 20;
+                    itemB.CheckForNonDetectedChanges();
+
+                    WriteAsCli(2);
+                    _commands.Properties[2].Completion.CompleteSuccess();
+                    completion.GetResult();
+                    Assert.That(_service.TryGetSaveFailure(id, out var after), Is.True);
+                    Assert.That(after.Message, Is.EqualTo(before.Message));
+                    Assert.That(itemB.amount, Is.EqualTo(20));
+                    Assert.That(itemB.HasPendingEditorChangeNotification, Is.True);
+                    Assert.That(File.ReadAllText(entryB.JsonFilePath), Is.EqualTo(jsonB));
+                    Assert.That(File.ReadAllText(_path), Does.Not.Contain("\"future\""));
+
+                    SelectRealm("realm", entryA, _content);
+                    Assert.That(_service.TryGetSaveFailure(id, out _), Is.False);
+                    Assert.That(_content.amount, Is.EqualTo(2));
+                    Assert.That(_commands.Properties.Count, Is.EqualTo(3));
+                }
+                finally
+                {
+                    itemB.CancelPendingEditorChangeNotification();
+                    UnityEngine.Object.DestroyImmediate(itemB);
+                    File.Delete(entryB.JsonFilePath);
+                }
+            });
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void Migration_settles_a_watcher_event_with_the_latest_entry(bool refused)
+        {
+            WithWatcher(() =>
+            {
+                LoadWithAmount(2);
+                var id = _content.Id;
+                Exception failure = null;
+                _service.ApplySchemaMigration(_service.PreviewSchemaMigration(id)).Error(error => failure = error);
+                var entry = _service.EntriesCache[id];
+                entry.Tags = new[] { "outside" };
+                _service.EntriesCache[id] = entry;
+                var amount = refused ? 99 : 2;
+                var file = "{\"properties\":{\"amount\":{\"data\":" + amount + "},\"rows\":{\"data\":[]}},\"tags\":[\"outside\"]}";
+                File.WriteAllText(_path, file);
+                Watch();
+                Assert.That(_content.amount, Is.EqualTo(2));
+                if (refused) _commands.Properties.Single().Reject("Content changed after migration preview", 1);
+                else _commands.Properties.Single().Completion.CompleteSuccess();
+                Assert.That(failure != null, Is.EqualTo(refused));
+                Assert.That(_content.amount, Is.EqualTo(amount));
+                Assert.That(_content.Tags, Is.EqualTo(entry.Tags));
+                Assert.That(File.ReadAllText(_path), Is.EqualTo(file));
+                Assert.That(_commands.Properties.Count, Is.EqualTo(1));
+            });
         }
 
         [Test]
@@ -1146,6 +1378,168 @@ namespace Beamable.Editor.Tests
                 Assert.DoesNotThrow(() => completion.GetResult());
             }
             finally { UnityEngine.Object.DestroyImmediate(config); }
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void Tag_completion_replays_the_deferred_outside_change(bool refused)
+        {
+            WithWatcher(() =>
+            {
+                LoadWithAmount(2);
+                _service.SetContentTags(_content.Id, new[] { "changed" });
+                var outside = WriteOutsideAmount(99);
+                Watch();
+                Assert.That(_content.amount, Is.EqualTo(2), "The watcher must wait for the held tag command.");
+                if (refused)
+                {
+                    LogAssert.Expect(LogType.Exception, new Regex("tag failed"));
+                    _commands.Tags.Single().Completion.CompleteError(new InvalidOperationException("tag failed"));
+                }
+                else _commands.Tags.Single().Completion.CompleteSuccess();
+                Assert.That(_content.amount, Is.EqualTo(99));
+                Assert.That(File.ReadAllText(_path), Is.EqualTo(outside));
+                Assert.That(_commands.Properties, Is.Empty);
+                Assert.That(_content.HasPendingEditorChangeNotification, Is.False);
+            });
+        }
+
+        [UnityTest]
+        public System.Collections.IEnumerator Tag_echo_keeps_the_debounced_property_edit_and_both_reach_disk()
+        {
+            var config = SetUpWatcher();
+            try
+            {
+                // CLI tag writes sort the properties, indent the file and preserve unsupported fields.
+                const string before = "{\"properties\":{\"rows\":{\"data\":[]},\"future\":{\"data\":12345678901234567890},\"amount\":{\"data\":2}},\"tags\":[\"old\"]}";
+                // Serialized with ContentService.GetContentFileSerializationOptions on the parent CLI.
+                const string tagged = @"{
+  ""properties"": {
+    ""amount"": {
+      ""data"": 2
+    },
+    ""future"": {
+      ""data"": 12345678901234567890
+    },
+    ""rows"": {
+      ""data"": []
+    }
+  },
+  ""tags"": [
+    ""changed""
+  ],
+  ""referenceManifestId"": ""EmptyManifest""
+}";
+                File.WriteAllText(_path, before);
+                Watch();
+                _service.SetContentTags(_content.Id, new[] { "changed" });
+                File.WriteAllText(_path, tagged);
+                _commands.Tags.Single().Completion.CompleteSuccess();
+
+                _content.amount = 7;
+                _content.CheckForNonDetectedChanges();
+                Watch();
+                Assert.That(_content.amount, Is.EqualTo(7));
+                Assert.That(_content.Tags, Is.EqualTo(new[] { "changed" }));
+                Assert.That(_content.HasPendingEditorChangeNotification, Is.True);
+                Assert.That(_commands.Properties, Is.Empty);
+
+                var timeout = EditorApplication.timeSinceStartup + 5;
+                while (_commands.Properties.Count == 0 && EditorApplication.timeSinceStartup < timeout) yield return null;
+                var args = _commands.PropertyArgs.Single();
+                Assert.That(args.contentProperties.Single(), Does.Contain("\"amount\":{\"data\":7}"));
+                Assert.That(System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(args.originalFiles.Single())), Is.EqualTo(before),
+                    "Only the watcher may recognize the tag echo. The CLI still gets the file the Inspector loaded.");
+                var saved = tagged.Replace("\"data\": 2", "\"data\": 7");
+                File.WriteAllText(_path, saved);
+                _commands.Properties.Single().Completion.CompleteSuccess();
+                Watch();
+                Assert.That(File.ReadAllText(_path), Is.EqualTo(saved));
+                Assert.That(_content.amount, Is.EqualTo(7));
+                Assert.That(_content.HasPendingEditorChangeNotification, Is.False);
+                Assert.That(_service.TryGetSaveFailure(_content.Id, out _), Is.False);
+                Assert.That(_commands.Tags.Count, Is.EqualTo(1));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(config); }
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void Tag_write_preserves_unseen_raw_property_changes_for_the_CLI_conflict_check(bool sameField)
+        {
+            WithWatcher(() =>
+            {
+                const string before = "{\"properties\":{\"rows\":{\"data\":[]},\"amount\":{\"data\":2},\"future\":{\"data\":12345678901234567890}},\"tags\":[\"old\"]}";
+                File.WriteAllText(_path, before);
+                Watch();
+                _content.Tags = new[] { "changed" };
+                _service.SetContentTags(_content.Id, _content.Tags);
+                var tagged = before.Replace("\"old\"", "\"changed\"");
+                var outside = sameField ? tagged.Replace("\"data\":2", "\"data\":9") :
+                    tagged.Replace("12345678901234567890", "12345678901234567891");
+                File.WriteAllText(_path, outside);
+                _commands.Tags.Single().Completion.CompleteSuccess();
+                _content.amount = 3;
+                _service.SaveContent(_content);
+                var args = _commands.PropertyArgs.Single();
+                Assert.That(System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(args.originalFiles.Single())), Is.EqualTo(before));
+                Assert.That(File.ReadAllText(_path), Is.EqualTo(outside));
+                if (sameField)
+                {
+                    LogAssert.Expect(LogType.Error, new Regex("Content edit was not saved"));
+                    _commands.Properties.Single().Reject("Content changed on disk", CliContentService.StaleEditExitCode);
+                    Assert.That(File.ReadAllText(_path), Is.EqualTo(outside));
+                    Assert.That(_service.TryGetSaveFailure(_content.Id, out var failure), Is.True);
+                    Assert.That(_service.CanDiscardEdit(_content.Id, failure), Is.True);
+                }
+                else
+                {
+                    var merged = outside.Replace("\"data\":2", "\"data\":3");
+                    File.WriteAllText(_path, merged);
+                    _commands.Properties.Single().Completion.CompleteSuccess();
+                    Assert.That(File.ReadAllText(_path), Is.EqualTo(merged));
+                    Assert.That(_service.TryGetSaveFailure(_content.Id, out _), Is.False);
+                }
+            });
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void Saving_a_missing_field_updates_schema_feedback_from_disk_without_disturbing_the_next_edit(bool otherDifference)
+        {
+            WithWatcher(() =>
+            {
+                var config = (global::Beamable.Content.ContentConfiguration)Get(_service, "_contentConfiguration");
+                config.validateSchemaDifference = true;
+                var extra = otherDifference ? "\"future\":{\"data\":17}," : "";
+                var before = "{\"properties\":{" + extra + "\"rows\":{\"data\":[]}},\"tags\":[\"old\"]}";
+                File.WriteAllText(_path, before);
+                Watch();
+                var initial = _service.GetSchemaDifference(_content.Id);
+                Assert.That(initial & SchemaDifference.MissingFieldsInJson, Is.EqualTo(SchemaDifference.MissingFieldsInJson));
+                _content.amount = 3;
+                _service.SaveContent(_content);
+                _content.amount = 4;
+                _content.CheckForNonDetectedChanges();
+                var saved = before.Replace("\"rows\":", "\"amount\":{\"data\":3},\"rows\":");
+                File.WriteAllText(_path, saved);
+                File.SetLastWriteTimeUtc(_path, new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+                var stamp = File.GetLastWriteTimeUtc(_path);
+                var revision = _service.ManifestChangedCount;
+                _commands.Properties.Single().Completion.CompleteSuccess();
+
+                var difference = _service.GetSchemaDifference(_content.Id);
+                Assert.That(difference, Is.EqualTo(otherDifference ? SchemaDifference.UnknownFieldsInJson : SchemaDifference.None));
+                Assert.That(_service.ManifestChangedCount, Is.GreaterThan(revision), "Wake the Inspector and table to repaint.");
+                var table = new ContentWindow_TooltipsHelper().GetContentStatusBadge(_service, _service.EntriesCache[_content.Id]);
+                Assert.That(table.tooltip.Contains(ContentSchemaNotice.Title), Is.EqualTo(otherDifference));
+                Assert.That(_content.amount, Is.EqualTo(4));
+                Assert.That(_content.HasPendingEditorChangeNotification, Is.True);
+                Assert.That(File.ReadAllText(_path), Is.EqualTo(saved));
+                Assert.That(File.GetLastWriteTimeUtc(_path), Is.EqualTo(stamp));
+                Assert.That(_commands.Properties.Count, Is.EqualTo(1));
+                Assert.That(_commands.Tags, Is.Empty);
+            });
         }
 
         [Test]
@@ -1306,6 +1700,13 @@ namespace Beamable.Editor.Tests
 
         private void WithWatcher(Action test)
         {
+            var config = SetUpWatcher();
+            try { test(); }
+            finally { UnityEngine.Object.DestroyImmediate(config); }
+        }
+
+        private global::Beamable.Content.ContentConfiguration SetUpWatcher()
+        {
             PrepareFile();
             var entry = _service.EntriesCache[_content.Id];
             entry.TypeName = "saveRecovery";
@@ -1316,12 +1717,8 @@ namespace Beamable.Editor.Tests
             ((Dictionary<Type, string>)Get(reflection, "_classToContentType"))[typeof(SaveRecoveryContent)] = "saveRecovery";
             Set(_service, "_contentTypeReflectionCache", reflection);
             var config = ScriptableObject.CreateInstance<global::Beamable.Content.ContentConfiguration>();
-            try
-            {
-                Set(_service, "_contentConfiguration", config);
-                test();
-            }
-            finally { UnityEngine.Object.DestroyImmediate(config); }
+            Set(_service, "_contentConfiguration", config);
+            return config;
         }
 
         private void Watch() => typeof(CliContentService).GetMethod("CacheScriptableContent", Fields)

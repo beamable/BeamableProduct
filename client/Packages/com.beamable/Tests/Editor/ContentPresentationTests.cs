@@ -967,6 +967,7 @@ namespace Beamable.Editor.Tests
             Set("_schemaDifferences", Activator.CreateInstance(typeof(CliContentService).GetField("_schemaDifferences", fields).FieldType));
             Set("_loadErrors", new Dictionary<string, string>());
             Set("_saveFailures", Activator.CreateInstance(typeof(CliContentService).GetField("_saveFailures", fields).FieldType));
+            Set("_loadedContent", Activator.CreateInstance(typeof(CliContentService).GetField("_loadedContent", fields).FieldType));
             Set("_deferredReloads", Activator.CreateInstance(typeof(CliContentService).GetField("_deferredReloads", fields).FieldType));
             Set("_contentScriptableCache", new Dictionary<string, ContentObject>());
             Set("_pendingTagSaves", Activator.CreateInstance(typeof(CliContentService).GetField("_pendingTagSaves", fields).FieldType));
