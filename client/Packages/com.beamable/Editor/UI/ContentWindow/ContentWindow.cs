@@ -105,6 +105,7 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private void OnDisable()
 		{
+			_createdItemSelection = null;
 			ResetButtonTooltip();
 			EditorApplication.update -= OnEditorUpdate;
 			ResetHistorySelection();

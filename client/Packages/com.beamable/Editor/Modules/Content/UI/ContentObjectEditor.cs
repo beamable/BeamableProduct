@@ -51,7 +51,10 @@ namespace Beamable.Editor.Content.UI
 			var pending = name ? _pendingNameEdit : _pendingTagEdit;
 			if (name) { _pendingNameEdit = null; _updateNameCoroutine = null; }
 			else { _pendingTagEdit = null; _updateTagCoroutine = null; }
-			try { pending?.Invoke(); }
+			try
+			{
+				if (pending != null && !_editingService.TryGetLoadError(_editingContentId, out _)) pending();
+			}
 			finally { ReleasePendingEditsObserver(); }
 		}
 
@@ -75,13 +78,21 @@ namespace Beamable.Editor.Content.UI
 		private int _listDirtyCount;
 		private string _validationStatusDetails;
 
+		private string SelectionLoadError(CliContentService service)
+		{
+			foreach (var selected in targets)
+				if (selected is ContentObject content && !ContentHistoryInspectorPreview.IsReadOnly(content) &&
+				    service.TryGetLoadError(content.Id, out var error)) return error;
+			return null;
+		}
+
 		protected override void OnHeaderGUI()
 		{
 			var contentObject = target as ContentObject;
 			if (contentObject == null) return;
 			var contentService = BeamEditorContext.Default.ServiceScope.GetService<CliContentService>();
 			ObservePendingEdits(contentService);
-			using (new EditorGUI.DisabledScope(ContentHistoryInspectorPreview.IsReadOnly(contentObject) || contentService.CurrentProgress.IsActive))
+			using (new EditorGUI.DisabledScope(ContentHistoryInspectorPreview.IsReadOnly(contentObject) || contentService.CurrentProgress.IsActive || SelectionLoadError(contentService) != null))
 			{
 			var isEditingMultiple = targets.Length > 1;
 
@@ -408,7 +419,10 @@ namespace Beamable.Editor.Content.UI
 		{
 			var contentObject = target as ContentObject;
 			if (contentObject == null) return;
-			var busy = BeamEditorContext.Default.CliContentService.CurrentProgress.IsActive;
+			var service = BeamEditorContext.Default.CliContentService;
+			var loadError = SelectionLoadError(service);
+			if (loadError != null) EditorGUILayout.HelpBox(loadError, MessageType.Error);
+			var busy = service.CurrentProgress.IsActive || loadError != null;
 			using (new EditorGUI.DisabledScope(ContentHistoryInspectorPreview.IsReadOnly(contentObject) || busy))
 			{
 
@@ -447,7 +461,37 @@ namespace Beamable.Editor.Content.UI
 			DrawContentProperties(contentObject);
 			if (!busy) contentObject.CheckForNonDetectedChanges();
 			}
+			DrawSaveFailure();
 			DrawContentStatus();
+		}
+
+		private void DrawSaveFailure()
+		{
+			if (targets.Length != 1 || !BeamEditor.IsInitialized) return;
+			var content = target as ContentObject;
+			if (content == null || ContentHistoryInspectorPreview.IsReadOnly(content)) return;
+			var service = BeamEditorContext.Default.CliContentService;
+			if (!service.TryGetSaveFailure(content.Id, out var failure)) return;
+			GUILayout.Space(8);
+			EditorGUILayout.HelpBox($"Your last edit was not saved. {failure.Message}", MessageType.Error);
+			using (new EditorGUILayout.HorizontalScope())
+			using (new EditorGUI.DisabledScope(service.CurrentProgress.IsActive || EditorApplication.isCompiling))
+			{
+				var id = content.Id;
+				if (GUILayout.Button("Discard edit"))
+				{
+					// Reload outside this GUI pass; it rewrites the object being drawn.
+					EditorApplication.delayCall += () =>
+					{
+						try { service.DiscardRejectedEdit(id); }
+						catch (Exception error) { EditorUtility.DisplayDialog("Edit was not discarded", error.Message, "Close"); }
+					};
+				}
+				if (failure.CanReviewSchema && GUILayout.Button("Review schema changes…"))
+				{
+					EditorApplication.delayCall += () => ContentSchemaWindow.Open(service, id);
+				}
+			}
 		}
 
 		private GUIStyle _statusMessageStyle;
@@ -512,20 +556,36 @@ namespace Beamable.Editor.Content.UI
 				ContentConfiguration.Instance.EnableLocalContentInEditor, out var conflict, invalidCount,
 				_hasListValidationCache && targets.Length == 1 && (target as ContentObject)?.ContentStatus != ContentStatus.Deleted
 					? _validationStatusDetails : null);
-			if (schemaCount > 0)
-				message = ContentWindow_TooltipsHelper.GetSchemaWarningDescription(schemaDifferences, schemaCount, targets.Length > 1) + "\n\n" + message;
+			var schemaMessage = ContentWindow_TooltipsHelper.GetSchemaWarningDescription(schemaDifferences, schemaCount, targets.Length > 1);
+			var canReviewSchema = schemaCount > 0 && targets.Length == 1 && historical == 0;
 			_statusMessageStyle ??= new GUIStyle(EditorStyles.wordWrappedLabel) { padding = new RectOffset(8, 8, 8, 8) };
 			GUILayout.Space(8);
 			var text = new GUIContent(message);
 			var width = Mathf.Max(60, EditorGUIUtility.currentViewWidth - 60);
 			var height = Mathf.Max(42, _statusMessageStyle.CalcHeight(text, width));
-			var rect = EditorGUILayout.GetControlRect(false, height);
+			var schemaHeight = schemaCount > 0 ? _statusMessageStyle.CalcHeight(new GUIContent(schemaMessage), width) : 0;
+			var buttonHeight = canReviewSchema ? EditorGUIUtility.singleLineHeight + 4 : 0;
+			var rect = EditorGUILayout.GetControlRect(false, height + schemaHeight + buttonHeight);
 			EditorGUI.DrawRect(rect, conflict || invalidCount > 0 ? new Color(.7f, .15f, .15f, .24f) : new Color(.15f, .4f, .75f, .24f));
 			var icon = conflict || invalidCount > 0 ? "console.erroricon.sml" : hasChanges || schemaCount > 0 ? "console.warnicon.sml" : "console.infoicon.sml";
 			GUI.Label(new Rect(rect.x + 6, rect.y + 8, 20, 20), onlyIncoming && invalidCount == 0 && schemaCount == 0
 				? new GUIContent(ContentWindow_TooltipsHelper.GetStatusIcon(entries[0]))
 				: EditorGUIUtility.IconContent(icon));
 			rect.xMin += 28;
+			if (schemaCount > 0)
+			{
+				GUI.Label(new Rect(rect.x, rect.y, rect.width, schemaHeight), schemaMessage, _statusMessageStyle);
+				rect.yMin += schemaHeight;
+				if (canReviewSchema)
+				{
+					var service = BeamEditorContext.Default.CliContentService;
+					var id = entries[0].FullId;
+					using (new EditorGUI.DisabledScope(service.CurrentProgress.IsActive || EditorApplication.isCompiling || entries[0].StatusEnum == ContentStatus.Deleted))
+						if (GUI.Button(new Rect(rect.x + 8, rect.y, rect.width - 16, EditorGUIUtility.singleLineHeight), "Review schema changes\u2026"))
+							ContentSchemaWindow.Open(service, id);
+					rect.yMin += buttonHeight;
+				}
+			}
 			GUI.Label(rect, text, _statusMessageStyle);
 		}
 

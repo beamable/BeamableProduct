@@ -561,7 +561,7 @@ namespace Beamable.Editor.Tests
                     .SetValue(service, new ContentPsWrapper { Command = new ResolveCommand() });
                 typeof(CliContentService).GetField("_contentWatcherCompletion", fields).SetValue(service, shutdown.Task);
                 var method = typeof(CliContentService).GetMethod(tags ? "SetContentTagsAsync" : "SaveContentPropertiesAsync", fields);
-                var args = tags ? new object[] { "currency.test", new[] { "new" } } : new object[] { "currency.test", "{}", null };
+                var args = tags ? new object[] { "currency.test", new[] { "new" } } : new object[] { "currency.test", "{}", null, null };
                 var write = (Promise)method.Invoke(service, args);
                 write.Error(_ => { });
                 var operation = service.ReconcileContentWithProgress("currency.test", false);
@@ -636,7 +636,7 @@ namespace Beamable.Editor.Tests
             var service = CreateService(commands);
             var method = typeof(CliContentService).GetMethod(tags ? "SetContentTagsAsync" : "SaveContentPropertiesAsync",
                 BindingFlags.Instance | BindingFlags.NonPublic);
-            var args = tags ? new object[] { "currency.test", new[] { "new" } } : new object[] { "currency.test", "{}", null };
+            var args = tags ? new object[] { "currency.test", new[] { "new" } } : new object[] { "currency.test", "{}", null, null };
             var write = (Promise)method.Invoke(service, args);
             write.Error(_ => { });
             var operation = service.ReconcileContentWithProgress("currency.test", false);
@@ -962,8 +962,12 @@ namespace Beamable.Editor.Tests
                 .SetValue(context, new DependencyBuilder().AddSingleton(cli).Build());
             Set("_beamContext", context);
             Set("_contentWrites", new ContentWriteTracker());
+            Set("_contentIdTagsCache", new Dictionary<string, List<string>>());
             Set("_invalidContents", new Dictionary<string, LocalContentManifestEntry>());
             Set("_schemaDifferences", Activator.CreateInstance(typeof(CliContentService).GetField("_schemaDifferences", fields).FieldType));
+            Set("_loadErrors", new Dictionary<string, string>());
+            Set("_saveFailures", Activator.CreateInstance(typeof(CliContentService).GetField("_saveFailures", fields).FieldType));
+            Set("_deferredReloads", Activator.CreateInstance(typeof(CliContentService).GetField("_deferredReloads", fields).FieldType));
             Set("_contentScriptableCache", new Dictionary<string, ContentObject>());
             Set("_pendingTagSaves", Activator.CreateInstance(typeof(CliContentService).GetField("_pendingTagSaves", fields).FieldType));
             Set("_lastSavedPropertiesCache", Activator.CreateInstance(typeof(CliContentService).GetField("_lastSavedPropertiesCache", fields).FieldType));
@@ -1359,9 +1363,9 @@ namespace Beamable.Editor.Tests
             Assert.That(ContentWindow_TooltipsHelper.GetStatusLabel(entry, false), Is.Not.EqualTo("Validation Error"));
         }
 
-        [TestCase(ContentChangeKind.LocalEdit, "Schema mismatch")]
-        [TestCase(ContentChangeKind.UpToDate, "Schema mismatch")]
-        [TestCase(ContentChangeKind.IncomingChange, "Schema mismatch")]
+        [TestCase(ContentChangeKind.LocalEdit, "Local edit")]
+        [TestCase(ContentChangeKind.UpToDate, "Up to date")]
+        [TestCase(ContentChangeKind.IncomingChange, "Incoming change")]
         [TestCase(ContentChangeKind.Conflict, "Conflict")]
         public void Schema_status_is_visible_without_hiding_blockers_or_changing_sync_state(ContentChangeKind kind, string label)
         {
@@ -1377,11 +1381,12 @@ namespace Beamable.Editor.Tests
         public void Schema_warning_explains_the_detected_reason_and_publishing_consequence(SchemaDifference difference)
         {
             var message = ContentWindow_TooltipsHelper.GetSchemaWarningDescription(difference, 1, false);
-            Assert.That(message, Does.StartWith("Schema mismatch"));
+            Assert.That(message, Does.StartWith(ContentSchemaNotice.Title));
             Assert.That(message.Contains("UnknownFieldsInJson"), Is.EqualTo((difference & SchemaDifference.UnknownFieldsInJson) != 0));
             Assert.That(message.Contains("MissingFieldsInJson"), Is.EqualTo((difference & SchemaDifference.MissingFieldsInJson) != 0));
-            Assert.That(message, Does.Contain("when loaded"));
-            Assert.That(message, Does.Contain("publishing can remove"));
+            Assert.That(message, Does.Contain("Normal edits preserve unsupported fields"));
+            Assert.That(message, Does.Contain("let Unity compile"));
+            Assert.That(message, Does.Not.Contain("loader saves"));
         }
 
         [Test]

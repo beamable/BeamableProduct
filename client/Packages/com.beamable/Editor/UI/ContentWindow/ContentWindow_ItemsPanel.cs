@@ -64,6 +64,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		}
 
 		private readonly Dictionary<string, bool> _itemsExpandedStates = new();
+		private (string id, string scope, Object[] selection, Promise save)? _createdItemSelection;
 		private GUIStyle _itemPanelHeaderRowStyle;
 		private GUIStyle _itemPanelHeaderFieldStyle;
 		private GUIStyle _itemLabelStyle;
@@ -428,15 +429,8 @@ namespace Beamable.Editor.UI.ContentWindow
 			                                .Max() + 1;
 			contentObject.SetContentName($"{baseName}{nextNumber}");
 			contentObject.ContentStatus = ContentStatus.Created;
-			contentObject.OnEditorChanged = () =>
-			{
-				_contentService.SaveContent(contentObject);
-			};
-			_contentService.ValidateForInvalidFields(contentObject);
-			_contentService.SaveContent(contentObject);
-			Selection.activeObject = contentObject;
+			SaveNewItem(contentObject, select: true);
 			_itemsExpandedStates[itemType] = true;
-			GUI.changed = true;
 		}
 
 		private void DrawItemsPanelHeader()
@@ -692,11 +686,11 @@ namespace Beamable.Editor.UI.ContentWindow
 				renamedFrom: isRenamed ? renameInfo.OldName : null);
 
 			// Keep Inspector information icons; the table only emphasizes actionable differences.
-			if (!isInvalid && !schemaMismatch && !isRenamed && ContentWindow_TooltipsHelper.GetChangeKind(entry) == ContentChangeKind.UpToDate)
+			if (!isInvalid && !isRenamed && ContentWindow_TooltipsHelper.GetChangeKind(entry) == ContentChangeKind.UpToDate)
 				badge.image = null;
 			GUIContent[] icons = { null, badge };
 			var statusStyle = isInvalid ? _invalidStatusStyle : entry.IsInConflict ? _conflictStatusStyle :
-				schemaMismatch ? _invalidStatusStyle : ContentWindow_TooltipsHelper.IsIncoming(ContentWindow_TooltipsHelper.GetChangeKind(entry)) ? _incomingStatusStyle : labelStyle;
+				ContentWindow_TooltipsHelper.IsIncoming(ContentWindow_TooltipsHelper.GetChangeKind(entry)) ? _incomingStatusStyle : labelStyle;
 
 			bool[] isEditable = {isEditingName};
 			string[] editableId = {entry.FullId};
@@ -705,7 +699,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			if (isEditingName)
 			{
 				_editLabels = DrawTableRow(values, columnWidths, guiStyle, labelStyle, rowRect, icons, isEditable, editableId,
-					ContentWindow_TooltipsHelper.CanReviewEntry(entry) ? entry : (LocalContentManifestEntry?)null, statusStyle, indentLevel);
+					ContentWindow_TooltipsHelper.CanReviewEntry(entry) ? entry : (LocalContentManifestEntry?)null, statusStyle, indentLevel, schemaMismatch && !isEditingName ? entry.FullId : null);
 				
 				bool isEditLabelFocused = GUI.GetNameOfFocusedControl() == entry.FullId;
 				if (isEditLabelFocused && Event.current.type is EventType.KeyDown or EventType.KeyUp &&
@@ -728,7 +722,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			else
 			{
 				DrawTableRow(values, columnWidths, guiStyle, labelStyle, rowRect, icons, isEditable, editableId,
-					ContentWindow_TooltipsHelper.CanReviewEntry(entry) ? entry : (LocalContentManifestEntry?)null, statusStyle, indentLevel);
+					ContentWindow_TooltipsHelper.CanReviewEntry(entry) ? entry : (LocalContentManifestEntry?)null, statusStyle, indentLevel, schemaMismatch && !isEditingName ? entry.FullId : null);
 			}
 
 			_itemContentIdToRowRect[entry.FullId] = (int)rowRect.center.y;
@@ -1000,21 +994,10 @@ namespace Beamable.Editor.UI.ContentWindow
 				{
 					ClearSelection();
 
-					// TODO: it would be better to pre-calculate all of the file names for the new content
-					//       and then temporarily disable the content watcher.
 					foreach (var entry in entries)
 					{
-						if (_contentService.TryGetContentObject(entry.FullId, out var contentObject))
-						{
-							var duplicatedObject = Instantiate(contentObject);
-							string baseName = $"{contentObject.ContentName}_Copy";
-							int itemsWithBaseNameCount = _contentService
-							                             .GetContentsFromType(contentObject.GetType())
-							                             .Count(item => item.Name.StartsWith(baseName));
-							duplicatedObject.SetContentName($"{baseName}{itemsWithBaseNameCount}");
-							duplicatedObject.ContentStatus = ContentStatus.Created;
-							_contentService.SaveContent(duplicatedObject);
-						}
+						if (_contentService.TryMakeDuplicate(entry, out var duplicate))
+							SaveNewItem(duplicate, select: false);
 					}
 
 				}));
@@ -1040,11 +1023,49 @@ namespace Beamable.Editor.UI.ContentWindow
 		private void DuplicateContent(LocalContentManifestEntry entry)
 		{
 			if (!CanHandleContentInput) return;
-			if (_contentService.DuplicateContent(entry, out var duplicatedObject))
+			if (_contentService.TryMakeDuplicate(entry, out var duplicate))
+				SaveNewItem(duplicate, select: true);
+		}
+
+		private async void SaveNewItem(ContentObject draft, bool select)
+		{
+			try
 			{
-				SetEntryIdAsSelected(duplicatedObject.Id);
+				var save = _contentService.SaveNewContent(draft);
+				if (select) _createdItemSelection = (draft.Id, _contentService.GetContentScopeKey(), Selection.objects, save);
+				await save;
 			}
-			
+			catch (Exception error)
+			{
+				Debug.LogException(error);
+				if (this != null) ShowNotification(new GUIContent(error.Message));
+			}
+			finally
+			{
+				draft.CancelPendingEditorChangeNotification();
+				DestroyImmediate(draft);
+				if (select) SelectCreatedItemWhenReady();
+			}
+		}
+
+		private void SelectCreatedItemWhenReady()
+		{
+			if (!_createdItemSelection.HasValue) return;
+			var request = _createdItemSelection.Value;
+			if (request.save.IsFailed || request.scope != _contentService.GetContentScopeKey() ||
+			    !request.selection.SequenceEqual(Selection.objects))
+			{
+				_createdItemSelection = null;
+				return;
+			}
+			// Only the watcher's object has the disk baseline needed for the first Inspector edit.
+			if (request.save.IsCompleted && _contentService.EntriesCache.TryGetValue(request.id, out var entry) &&
+			    entry.StatusEnum != ContentStatus.Deleted &&
+			    _contentService.TryGetContentObject(request.id, out var content))
+			{
+				_createdItemSelection = null;
+				Selection.activeObject = content;
+			}
 		}
 
 		private void StartEditEntryName(LocalContentManifestEntry entry)
@@ -1059,7 +1080,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		                              GUIStyle rowStyle,
 		                              GUIStyle fieldStyle,
 		                              Rect fullRect,
-		                              GUIContent[] icons = null, bool[] isEditLabel = null, string[] fieldID = null, LocalContentManifestEntry? reviewEntry = null, GUIStyle statusStyle = null, int indentLevel = -1)
+		                              GUIContent[] icons = null, bool[] isEditLabel = null, string[] fieldID = null, LocalContentManifestEntry? reviewEntry = null, GUIStyle statusStyle = null, int indentLevel = -1, string schemaContentId = null)
 		{
 			if (Event.current.type == EventType.Repaint)
 			{
@@ -1071,6 +1092,19 @@ namespace Beamable.Editor.UI.ContentWindow
 				string labelValue = labels[i];
 				var cellRect = new Rect(fullRect.x, fullRect.y, columnWidths[i], fullRect.height);
 				var nameRect = i == 0 && indentLevel >= 0 ? GetItemNameRect(cellRect, indentLevel) : GetTableLabelRect(cellRect, i);
+
+				if (i == 0 && schemaContentId != null && nameRect.width >= 20)
+				{
+					// Reserve the icon slot independently of the clipped label's measured width
+					// so ellipsis styling cannot collapse the space available for its name.
+					var warningRect = new Rect(nameRect.xMax - 18, nameRect.center.y - 8, 16, 16);
+					nameRect.xMax = warningRect.x - 2;
+					var warning = new GUIContent(EditorGUIUtility.IconContent("console.warnicon.sml").image,
+						ContentSchemaNotice.Title + "\nClick to review schema changes.");
+					using (new EditorGUI.DisabledScope(!CanHandleContentInput))
+						if (GUI.Button(warningRect, warning, GUIStyle.none))
+							PopupWindow.Show(warningRect, new ContentSchemaNotice(_contentService, schemaContentId));
+				}
 				var badge = icons != null && icons.Length > i ? icons[i] : null;
 				if (badge?.image != null)
 				{
@@ -1118,6 +1152,7 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private void SetEditorSelection()
 		{
+			SelectCreatedItemWhenReady();
 			if (Selection.activeObject is ContentObject contentObject)
 			{
 				if(!_contentService.TryGetContentObject(contentObject.Id, out _))
