@@ -273,6 +273,7 @@ namespace Beamable
 				provider => provider.GetService<PubnubSubscriptionManager>());
 			DependencyBuilder.AddSingleton<INotificationService>(
 				provider => provider.GetService<NotificationService>());
+			DependencyBuilder.AddSingleton<NotificationTransport>();
 
 			DependencyBuilder.AddSingleton<IBeamableConnection, WebSocketConnection>();
 			DependencyBuilder.AddSingleton<BeamableSubscriptionManager>();
