@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Cancelling or timing out a Local Mode exit check keeps Local Mode enabled and allows cleanup to be retried without leaving the watcher transition locked.
+- Cancelling or timing out a Local Mode exit check keeps Local Mode enabled and allows cleanup to be retried without leaving the watcher transition locked. Opening the exit review or cancelling the final check preserves a refused Inspector edit so you can correct or discard it.
 - Fixed development/pinned CLI version matching and repeated server launches. Discovery reports incompatible or unavailable servers and allows recovery after configuration changes.
 - Play Mode resolves the selected namespace, including unpublished content, from a read-only local snapshot loaded in the background. Restart Play Mode to reload edits. Content stays on the context's realm; shutdown cancels loads and stops manifest refreshes.
 - Fixed content watcher recovery across mode changes, script reloads, and failures, and prevented telemetry discovery from stopping active CLI servers.

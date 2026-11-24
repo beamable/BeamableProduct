@@ -1062,7 +1062,13 @@ namespace Beamable.Editor.ContentService
 			isReloading = true;
 			try
 			{
-				ClearCaches();
+				// During an exit review, edits can still arrive before the first watcher response.
+				var exitReviewScope = _exitReviewReloadScope;
+				if (exitReviewScope == null || exitReviewScope != GetContentScopeKey() || !_contentConfiguration.EnableLocalContentInEditor)
+				{
+					_exitReviewReloadScope = exitReviewScope = null;
+					ClearCaches();
+				}
 				await StopContentWatcher(preserveRequest: true);
 				if (!_contentWatchRequested || _watchersDisposed)
 				{
@@ -1093,12 +1099,16 @@ namespace Beamable.Editor.ContentService
 
 					var reportData = report.data;
 					var isFullRebuild = reportData.EventType == CONTENT_PS_EVENT_TYPE_FULL_REBUILD;
+					var changesManifest = reportData.RelevantManifestsAgainstLatest.FirstOrDefault(ValidateManifest);
+					Dictionary<string, LoadedContent> reviewEdits = null;
 					if (isFullRebuild)
 					{
-						// A full rebuild is a replacement snapshot, not an incremental merge.
+						if (exitReviewScope != null && exitReviewScope == GetContentScopeKey() && changesManifest != null &&
+						    exitReviewScope == $"{changesManifest.OwnerCid}/{changesManifest.OwnerPid}/{changesManifest.ManifestId}")
+							reviewEdits = GetExitReviewEdits(changesManifest);
+						if (exitReviewScope != null) _exitReviewReloadScope = exitReviewScope = null;
 						ClearCaches();
 					}
-					var changesManifest = reportData.RelevantManifestsAgainstLatest.FirstOrDefault(ValidateManifest);
 					var removeManifest = reportData.ToRemoveLocalEntries.FirstOrDefault(ValidateManifest);
 
 					bool hasChangeManifest = changesManifest != null && changesManifest.Entries.Length > 0;
@@ -1113,7 +1123,9 @@ namespace Beamable.Editor.ContentService
 								RemoveContentFromCache(oldEntry);
 							}
 
-							AddContentToCache(entry);
+							LoadedContent edit = null;
+							reviewEdits?.TryGetValue(entry.FullId, out edit);
+							AddContentToCache(entry, edit);
 						}
 					}
 
@@ -1470,7 +1482,7 @@ namespace Beamable.Editor.ContentService
 			return string.IsNullOrEmpty(manifestIdOverride) ? null : manifestIdOverride;
 		}
 
-		private void AddContentToCache(LocalContentManifestEntry entry)
+		private void AddContentToCache(LocalContentManifestEntry entry, LoadedContent reviewEdit = null)
 		{
 			if (entry.StatusEnum is not ContentStatus.Deleted &&
 			    (string.IsNullOrEmpty(entry.JsonFilePath) || !File.Exists(entry.JsonFilePath)))
@@ -1513,7 +1525,18 @@ namespace Beamable.Editor.ContentService
 			
 			EntriesCache[entry.FullId] = entry;
 
-			CacheScriptableContent(entry);
+			if (reviewEdit == null)
+				CacheScriptableContent(entry);
+			else
+			{
+				// The Inspector still owns this edit. Keep its original writable baseline so
+				// a retry is checked against the file the developer actually edited.
+				_loadedContent[reviewEdit.LoadIdentity.Key] = reviewEdit;
+				ApplyEntryState(entry, reviewEdit.Content);
+				if (HasPendingWrites(reviewEdit.LoadIdentity.Key))
+					_deferredReloads[reviewEdit.LoadIdentity.Key] = entry;
+				ValidateForInvalidFields(reviewEdit.Content);
+			}
 
 			if (entry.StatusEnum is not ContentStatus.Deleted)
 			{

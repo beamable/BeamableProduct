@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Beamable.Common;
@@ -12,6 +13,8 @@ namespace Beamable.Editor.ContentService
 {
 	public partial class CliContentService
 	{
+		// Keep ownership across failed cancellation acknowledgements until a watcher delivers its replacement snapshot.
+		private string _exitReviewReloadScope;
 		private IBeamCommand _localModeExitCheck;
 		private Task _localModeExitCheckCompletion;
 		private Task _localModeExitCheckStop;
@@ -22,6 +25,23 @@ namespace Beamable.Editor.ContentService
 		internal static bool RequiresLocalModeReview(LocalContentManifestEntry entry) =>
 			entry.IsInConflict || (ContentChangeKind)entry.ChangeKind is not
 				(ContentChangeKind.UpToDate or ContentChangeKind.LocalEdit);
+
+		private Dictionary<string, LoadedContent> GetExitReviewEdits(LocalContentManifest manifest)
+		{
+			var edits = new Dictionary<string, LoadedContent>();
+			foreach (var entry in manifest.Entries)
+			{
+				var key = GetContentWriteKey(entry.FullId);
+				if (entry.StatusEnum == ContentStatus.Deleted || _contentWrites.IsDeleting(key) ||
+				    !_loadedContent.TryGetValue(key, out var loaded) || loaded.Path != entry.JsonFilePath ||
+				    !_contentScriptableCache.TryGetValue(entry.FullId, out var content) || content == null || loaded.Content != content)
+					continue;
+				if (content.HasPendingEditorChangeNotification || HasPendingWrites(key) ||
+				    (TryGetSaveFailure(entry.FullId, out var failure) && CanDiscardEdit(entry.FullId, failure)))
+					edits.Add(entry.FullId, loaded);
+			}
+			return edits;
+		}
 
 		private void RequireLocalModeExitScope(string scope, Func<bool> cancelled)
 		{
@@ -34,14 +54,17 @@ namespace Beamable.Editor.ContentService
 			{
 				RequireSavedInspectorEdits(id);
 				var key = GetContentWriteKey(id);
-				if (_contentWrites.HasWrites(key) || _contentWrites.IsDeleting(key))
+				if (HasPendingWrites(key) || _contentWrites.IsDeleting(key))
 					throw new InvalidOperationException("Content edits are still being saved. Wait for them to finish, then review again.");
+				if (TryGetSaveFailure(id, out var failure) && CanDiscardEdit(id, failure))
+					throw new InvalidOperationException($"The Inspector edit for {id} was not saved. Save or discard it in the Inspector before leaving Local Mode.");
 			}
 		}
 
 		internal async Promise RefreshLocalModeExit(string reviewedScope, Func<bool> cancelled)
 		{
 			RequireLocalModeExitScope(reviewedScope, cancelled);
+			_exitReviewReloadScope = reviewedScope;
 			await Reload();
 			RequireLocalModeExitScope(reviewedScope, cancelled);
 		}
@@ -67,6 +90,7 @@ namespace Beamable.Editor.ContentService
 			{
 				// Persist the safe intent even if a failed command cannot be stopped yet.
 				_contentConfiguration.EnableLocalContentInEditor = true;
+				_exitReviewReloadScope = reviewedScope;
 				try { await ApplyLocalContentMode(); } catch { /* The watcher state exposes the failure for retry. */ }
 				throw;
 			}

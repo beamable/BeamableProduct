@@ -861,12 +861,13 @@ namespace Beamable.Editor.Tests
         }
         static void Set(object target, string name, object value) => target.GetType().GetField(name, Fields).SetValue(target, value);
 
-        class Commands : BeamCommands
+        internal class Commands : BeamCommands
         {
             public readonly List<HeldCommand> Content = new();
             public readonly List<HeldCommand> History = new();
             public readonly List<HeldCommand> Manifests = new();
             public readonly List<HeldCommand> Checks = new();
+            public readonly List<LocalContentManifest> WatchedManifests = new();
             public LocalContentManifestEntry[] ExitEntries = Array.Empty<LocalContentManifestEntry>();
             public string ExitManifestId = "global";
             public bool DelayExitCheck;
@@ -914,7 +915,7 @@ namespace Beamable.Editor.Tests
                 }
                 var command = new HeldCommand(args.noAutoSync, new BeamContentPsCommandEvent
                 {
-                    EventType = 0, RelevantManifestsAgainstLatest = new List<LocalContentManifest>(),
+                    EventType = 0, RelevantManifestsAgainstLatest = WatchedManifests,
                     ToRemoveLocalEntries = new List<LocalContentManifest>()
                 });
                 command.DelayInitial = DelayInitialContent;
@@ -942,7 +943,7 @@ namespace Beamable.Editor.Tests
                 return new ContentListManifestsWrapper { Command = command };
             }
         }
-        class HeldCommand : IBeamCommand
+        internal class HeldCommand : IBeamCommand
         {
             public readonly Promise Completion = new();
             public readonly bool Local;

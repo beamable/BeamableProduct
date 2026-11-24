@@ -1698,6 +1698,135 @@ namespace Beamable.Editor.Tests
             });
         }
 
+        [Test]
+        public void Opening_exit_review_preserves_a_refused_Inspector_edit()
+        {
+            var config = SetUpWatcher();
+            try
+            {
+                StartLocalModeWatcher(config);
+                var disk = File.ReadAllBytes(_path);
+                var refusal = RefuseAmountEdit();
+
+                // Opening the exit window immediately invokes this refresh.
+                var refresh = _service.RefreshLocalModeExit(_service.GetContentScopeKey(), null);
+                Exception error = null;
+                refresh.Error(e => error = e);
+                Assert.That(refresh.IsCompleted, Is.True);
+                Assert.That(error, Is.TypeOf<InvalidOperationException>());
+                Assert.That(error.Message, Does.Contain(_content.Id).And.Contain("Save or discard"));
+                Assert.That(config.EnableLocalContentInEditor, Is.True);
+                Assert.That(_service.AutoSyncState, Is.EqualTo(ContentAutoSyncState.Paused));
+                AssertCanDiscardToDisk(refusal, disk);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(config); }
+        }
+
+        [UnityTest]
+        public System.Collections.IEnumerator Cancelling_exit_preserves_an_edit_refused_during_the_final_check() =>
+            CancelExitWithRefusedEdit(retryCleanup: false);
+
+        [UnityTest]
+        public System.Collections.IEnumerator Retrying_exit_cleanup_preserves_the_refused_Inspector_edit() =>
+            CancelExitWithRefusedEdit(retryCleanup: true);
+
+        private System.Collections.IEnumerator CancelExitWithRefusedEdit(bool retryCleanup)
+        {
+            var config = SetUpWatcher();
+            try
+            {
+                StartLocalModeWatcher(config);
+                var disk = File.ReadAllBytes(_path);
+                _commands.DelayExitCheck = true;
+                if (retryCleanup)
+                {
+                    _commands.CompleteExitCheckOnCancel = false;
+                    Set(_service, "_localModeExitStopTimeoutMs", 25);
+                }
+                bool cancelled = false;
+                Exception error = null;
+                var exit = _service.ExitLocalMode(_service.GetContentScopeKey(), () => cancelled);
+                exit.Error(e => error = e);
+                Assert.That(_commands.Checks.Count, Is.EqualTo(1), "The final realm check must be in flight.");
+                var refusal = RefuseAmountEdit();
+
+                cancelled = true;
+                var deadline = EditorApplication.timeSinceStartup + 10;
+                while (!exit.IsCompleted && EditorApplication.timeSinceStartup < deadline)
+                {
+                    EditorApplication.QueuePlayerLoopUpdate();
+                    yield return null;
+                }
+                Assert.That(exit.IsCompleted, Is.True);
+                if (retryCleanup)
+                {
+                    Assert.That(error, Is.TypeOf<TimeoutException>());
+                    Assert.That(_service.AutoSyncState, Is.EqualTo(ContentAutoSyncState.Failed));
+                    AssertRefusedAmountIsPreserved(refusal, disk);
+                    _commands.Checks.Single().Completion.CompleteSuccess();
+                    // The Content Window's Retry button calls this public entry point.
+                    _service.ApplyLocalContentMode().GetResult();
+                }
+                else
+                {
+                    Assert.That(error, Is.TypeOf<OperationCanceledException>());
+                }
+                Assert.That(config.EnableLocalContentInEditor, Is.True);
+                Assert.That(_service.AutoSyncState, Is.EqualTo(ContentAutoSyncState.Paused));
+                Assert.That(_commands.Content.Count, Is.EqualTo(2));
+                Assert.That(_commands.Content.Last().Local, Is.True, "Recovery must restore a no-auto-sync watcher.");
+                AssertCanDiscardToDisk(refusal, disk);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(config); }
+        }
+
+        private void StartLocalModeWatcher(global::Beamable.Content.ContentConfiguration config)
+        {
+            config.EnableLocalContentInEditor = true;
+            LoadWithAmount(2);
+            var entry = _service.EntriesCache[_content.Id];
+            entry.ChangeKind = (int)ContentChangeKind.UpToDate;
+            _commands.ExitEntries = new[] { entry };
+            _commands.WatchedManifests.Add(new LocalContentManifest
+            {
+                OwnerCid = "test", OwnerPid = "realm", ManifestId = "global", Entries = new[] { entry }
+            });
+            Set(_service, "_watchersDisposed", false);
+            _service.Reload().GetResult();
+            var watcher = _commands.Content.Single();
+            watcher.OnCancel = () => watcher.Completion.CompleteSuccess();
+        }
+
+        private CliContentService.ContentSaveFailure RefuseAmountEdit()
+        {
+            _content.amount = 3;
+            LogAssert.Expect(LogType.Error, new Regex("Content edit was not saved"));
+            _service.SaveContent(_content);
+            _commands.Properties.Single().Reject("Cannot safely edit properties.rows", CliContentService.UnsafeEditExitCode);
+            Assert.That(_service.TryGetSaveFailure(_content.Id, out var refusal), Is.True);
+            Assert.That(_service.CanDiscardEdit(_content.Id, refusal), Is.True);
+            Assert.That(_content.amount, Is.EqualTo(3));
+            return refusal;
+        }
+
+        private void AssertRefusedAmountIsPreserved(CliContentService.ContentSaveFailure refusal, byte[] disk)
+        {
+            Assert.That(File.ReadAllBytes(_path), Is.EqualTo(disk));
+            Assert.That(_content.amount, Is.EqualTo(3), "Only an explicit discard should restore the on-disk value of 2.");
+            Assert.That(_service.CanDiscardEdit(_content.Id, refusal), Is.True);
+        }
+
+        private void AssertCanDiscardToDisk(CliContentService.ContentSaveFailure refusal, byte[] disk)
+        {
+            AssertRefusedAmountIsPreserved(refusal, disk);
+            _service.DiscardRejectedEdit(_content.Id, refusal);
+            Assert.That(_content.amount, Is.EqualTo(2));
+            Assert.That(_service.TryGetSaveFailure(_content.Id, out _), Is.False);
+            Assert.That(File.ReadAllBytes(_path), Is.EqualTo(disk));
+            Assert.That(_commands.Properties.Count, Is.EqualTo(1), "Discard must not submit a new save.");
+            Assert.That(_commands.Tags, Is.Empty);
+        }
+
         private void WithWatcher(Action test)
         {
             var config = SetUpWatcher();
@@ -1772,13 +1901,13 @@ namespace Beamable.Editor.Tests
 		private static object Get(object obj, string name) => obj.GetType().GetField(name, Fields).GetValue(obj);
 		private static void Set(object obj, string name, object value) => obj.GetType().GetField(name, Fields).SetValue(obj, value);
 
-		private class HeldCommands : BeamCommands
+		private class HeldCommands : ContentWatcherSwitchingTests.Commands
 		{
 			public readonly List<HeldCommand> Properties = new();
             public readonly List<ContentSaveArgs> PropertyArgs = new();
 			public readonly List<HeldCommand> Tags = new();
 			public readonly List<string> TagValues = new();
-			public HeldCommands() : base(null, null) { }
+
 			public override ContentSaveWrapper ContentSave(ContentSaveArgs args)
 			{
 				var command = new HeldCommand(); Properties.Add(command); PropertyArgs.Add(args);
