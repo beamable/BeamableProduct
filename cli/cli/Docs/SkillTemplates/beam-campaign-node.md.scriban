@@ -1,0 +1,539 @@
+---
+name: beam-campaign-node
+description: Write a campaign node type for the Campaign Node Editor — a zone portal extension that sets how one Campaign System node kind is shown, edited and written, replacing the built-in one by priority.
+---
+
+# Campaign Node Types
+
+> For the extension project itself (scaffold, build, deploy), load `beam-create-portal-extension`. For the campaign graph a node belongs to (node kinds, outcomes, publish, versions), load `beam-campaign-api`. A Send node's message comes from a rail (`beam-message-rail-federation`) and its offers from offer providers (`beam-offer-federation`).
+
+## High-Level Architecture
+
+```
+Campaign Node Editor (zone extension, owner of the `campaign-node` site, presentation `host`)
+  │  canvas · Add node menu · Inspector panel · working graph in the browser
+  │
+  ├─ per node kind, the `campaign-node` mount with the highest `priority` ──▶ node type extension
+  │     describe({ config })                                    → lines, outputs, errors   (the editor draws the node)
+  │     decode({ node })                                        → config                   (load)
+  │     encode({ nodeId, campaignId, config, connectedOutputs }) → body, outcomes, pids      (save)
+  │     Inspector: rendered by the editor for the selected node ──configChanged──▶ editor
+  │
+  └─ Save / Publish ──▶ POST /api/campaigns/draft | /api/campaigns/publish ──▶ Campaign System
+                                                       (validates, versions, runs the graph)
+```
+
+## Code Mapping
+
+| Part | File |
+|---|---|
+| Your node type: manifest (mount + static) | `package.json` → `beamable.mounts` |
+| Your node type: contract (copied) | `src/campaignNode.ts` |
+| Your node type: describe / decode / encode | `src/<kind>Node.ts` |
+| Your node type: entrypoint | `src/main.tsx` |
+| Your node type: Inspector | `src/App.tsx` |
+| Your node type: round-trip test | `src/__tests__/<kind>Node.test.ts` |
+| Site declaration (agentic-portal) | `bundles/features/player-engagement/portal-extensions/campaign-node-editor/package.json` → `beamable.sites` |
+| Priority rule (agentic-portal) | `bundles/features/player-engagement/portal-extensions/campaign-node-editor/src/model/pickTypes.ts` |
+| Graph written on Save (agentic-portal) | `bundles/features/player-engagement/portal-extensions/campaign-node-editor/src/model/save.ts` |
+| Built-in node types (agentic-portal) | `bundles/extensions-libs/campaign-node/src/nodes/` (`entry`, `segment`, `schedule`, `gate`, `send`) |
+| Built-in Schedule extension (agentic-portal) | `bundles/features/player-engagement/portal-extensions/campaign-node-schedule/` |
+
+## Business Goals Constraints
+
+- Operators author campaigns as a graph. Each Campaign System node kind — `Entry`, `Segment`, `Schedule`, `AnalyticsGate`, `Send` — is edited through one node type extension.
+- A team changes how a kind is edited (its Inspector, its defaults, what the node shows) by shipping a node type with a higher `priority`. The editor needs no change.
+- Behavior belongs to the Campaign System. A node type authors one of the five kinds and can only declare outcomes the runtime produces for it.
+- One type per kind is active. A stored node records no type: the active type for its kind reads it.
+
+## Performance Constraints
+
+| Limit | Value | Where |
+|---|---|---|
+| Timeout per `describe` / `decode` / `encode` call | 10 000 ms | portal site channel |
+| `describe` calls | one per node on load, one per config change | editor |
+| `decode` calls | one per stored node on load; one per new node (an empty node of its kind) | editor |
+| `encode` calls | one per edited or new node on Save / Publish | editor |
+| `activate()` | once per kind (the active type), nothing mounted | editor |
+| Inspector instances | one: the selected node's | editor |
+| Nodes / edges per campaign | 500 / 2 000 | Campaign System |
+| Goals / offers / offer groups per Send | 32 / 48 / 48 | Campaign System |
+| `customProperties` per node | 64 entries; key ≤ 256 chars; value ≤ 65 536 chars | Campaign System |
+
+## Usage Guide
+
+### Steps
+
+1. Create a **zone** portal extension in a Beamable workspace, like any portal extension (`beam-create-portal-extension`), with the project files below.
+2. Add the mount to `package.json` (below). No `sites` declaration is needed: the editor owns `campaign-node`.
+3. Copy the contract file to `src/campaignNode.ts`.
+4. Write `src/<kind>Node.ts`: `describe`, `decode`, `encode`. Start from the Schedule reference.
+5. Register the functions in `src/main.tsx`.
+6. Write the Inspector in `src/App.tsx` with `useNodeConfig`.
+7. Write the round-trip test against nodes as the built-in type writes them; run it with `vitest`.
+8. Run the extension in a zone with the Campaign Node Editor: in the local stack, or deployed (`beam-build-and-deploy`). The Add node menu shows your type in place of the built-in one. A static, input, result or event that doesn't fit the site schema is reported as a site error in the browser console and in the extension's gear dialog.
+
+### Project files
+
+`package.json` (besides `beamable`, below):
+
+```json
+"name": "acme-schedule",
+"private": true,
+"version": "1.0.0",
+"type": "module",
+"scripts": { "build": "vite build", "test": "vitest run" },
+"devDependencies": {
+  "@beamable/portal-toolkit": "<the toolkit version of your other extensions>",
+  "@types/react": "^19.0.0",
+  "@types/react-dom": "^19.0.0",
+  "@vitejs/plugin-react": "^4.3.4",
+  "typescript": "^5.6.3",
+  "vite": "^7.2.2",
+  "vitest": "^3.2.4"
+}
+```
+
+React comes from the portal at run time (the build marks it external), so it is a type-only dependency.
+
+`vite.config.ts`:
+
+```ts
+import { definePortalExtensionConfig } from '@beamable/portal-toolkit/vite'
+import { name } from './package.json'
+
+export default definePortalExtensionConfig({ entry: 'src/main.tsx', name })
+```
+
+`tsconfig.json`:
+
+```json
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": ["vite/client"]
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
+}
+```
+
+`resolveJsonModule` lets `main.tsx` and `vite.config.ts` read the extension name from `package.json`.
+
+### Manifest
+
+An override is the built-in type's mount for the same `kind` with a `priority` above 0 (the built-in types declare none):
+
+```json
+"beamable": {
+  "version": "1.0.0",
+  "portalExtension": true,
+  "serviceScope": "zone",
+  "mounts": [
+    {
+      "siteIds": ["campaign-node"],
+      "static": {
+        "kind": "Schedule",
+        "title": "ACME Schedule",
+        "icon": "clock",
+        "category": "Flow",
+        "description": "Waits for a time, waits until a date, or continues now.",
+        "hasInput": true,
+        "priority": 1
+      }
+    }
+  ]
+}
+```
+
+| `static` field | Type | Rule |
+|---|---|---|
+| `kind` | `"Entry"` \| `"Segment"` \| `"Schedule"` \| `"Send"` \| `"AnalyticsGate"` | Required |
+| `title` | string, non-empty | Required. Shown in the Add node menu and on the node |
+| `icon` | string | Required. Icon name, as in `navIcon` |
+| `hasInput` | boolean | Required. `false` only for `Entry` |
+| `category` | string | Optional |
+| `description` | string, ≤ 140 chars | Optional. Shown under the title in the Add node menu |
+| `priority` | integer | Optional; absent = 0. Built-in types declare none |
+
+### Which type is active
+
+| Case | Result |
+|---|---|
+| Several types for one kind | Candidates are ordered by extension name, then mount id (the portal derives one when the mount declares no `id`); the highest `priority` wins |
+| Two or more at the highest priority | The first by extension name wins; the editor logs a warning and shows a toast |
+| The winner is left out at load (`incompatible`) or its `activate()` fails | The next one of the kind is used; the editor logs a warning and shows a toast |
+| No usable type for a kind | Nodes of that kind are read-only and saved unchanged |
+
+### The site contract
+
+| Part | Shape |
+|---|---|
+| Inspector `input` | `{ nodeId: string, config: object, connectedOutputs: string[] }` — `connectedOutputs` are the output keys that have an edge. The `ZoneExtensionContext` the Inspector receives carries `site` and `mount`, which `useSite` / `useNodeConfig` read |
+| `describe` | args `{ config }` → `{ lines: string[] (≤ 3 shown, ≤ 80 chars each), outputs: { key, label, timing }[], errors: string[] }`. The first line is the node's title on the canvas; `errors` block Save |
+| `decode` | args `{ node: GraphNodeDto }` → `{ config }`. Called with `{ node: { id, body: { kind } } }` for a new node |
+| `encode` | args `{ nodeId, campaignId, config, connectedOutputs }` → `{ body: NodeBodyDto, outcomes: { key, timing }[], pids: string[] }` |
+| `configChanged` event | payload `{ nodeId, config }` |
+| `timing` | `"Immediate"` \| `"Delayed"` |
+
+What the editor does with them:
+
+- It draws each node from `describe`: the type's icon and title, the lines, one output port per `outputs` entry. An edge whose output is missing from the latest `describe` is removed.
+- It writes `id`, `lane` and decorators itself. When `encode`'s `body` has `customProperties`, they replace the stored node's whole map; without it, the stored map is kept. The editor then adds `portalPos` (layout) and, on one Entry, `portalDescription`.
+- It writes back a node nobody edited exactly as loaded, without calling `encode`.
+- `acceptedRealms` is the union of every node's `pids` and every `targetPid` / `observePid` in the written bodies.
+
+Rules for every type:
+
+- `decode` reads any stored node of its kind, whatever wrote it, and never throws: an unreadable field becomes a default and `describe` reports it.
+- `decode` followed by `encode`, with no edit in between, returns the same `body` JSON (`customProperties` key order included) and the same `outcomes`, for every node as the built-in type writes it (fields the kind doesn't define are not kept). A difference publishes as a structural change: a new campaign version, and the live one drains.
+- Everything crossing the site is JSON. 64-bit fields (`*Ms`) are strings in a stored node and in `encode`'s output; instants are ISO strings.
+- The three functions are pure and keep no state per node: one activated instance answers for every node of the kind, in parallel.
+- Outcome keys must be ones the runtime produces for the kind (tables below). A declared outcome with no edge drops the player there.
+- Authored event names may not start with `beam_`.
+
+### Contract file
+
+`src/campaignNode.ts`, copied as is:
+
+```ts
+import { useEffect, useRef, useState } from 'react'
+import type { ExtensionMountPoint, ExtensionSite } from '@beamable/portal-toolkit'
+import { useSite } from '@beamable/portal-toolkit/react'
+
+export const CAMPAIGN_NODE_SITE = 'campaign-node'
+
+export type NodeKind = 'Entry' | 'Segment' | 'Schedule' | 'Send' | 'AnalyticsGate'
+export type OutcomeTiming = 'Immediate' | 'Delayed'
+
+export interface NodeOutput { key: string; label: string; timing: OutcomeTiming }
+
+export interface NodeStatic {
+  kind: NodeKind
+  title: string
+  icon: string
+  category?: string
+  description?: string
+  hasInput: boolean
+  priority?: number
+}
+
+export interface NodeInput<C> { nodeId: string; config: C; connectedOutputs: string[] }
+export interface DescribeResult { lines: string[]; outputs: NodeOutput[]; errors: string[] }
+
+/** A stored node body, as JSON: `{ kind, <kind>: { ... }, customProperties }`. */
+export type WireBody = { kind?: string; customProperties?: Record<string, string> | null; [field: string]: unknown }
+export interface WireNode { id?: string; lane?: string | null; body?: WireBody; outcomes?: { key?: string; timing?: string }[] }
+
+export interface EncodeArgs<C> { nodeId: string; campaignId: string; config: C; connectedOutputs: string[] }
+export interface EncodeResult { body: WireBody; outcomes: { key: string; timing: OutcomeTiming }[]; pids: string[] }
+
+export interface NodeDefinition<C> {
+  describe(args: { config: C }): DescribeResult
+  decode(args: { node: WireNode }): { config: C }
+  encode(args: EncodeArgs<C>): EncodeResult
+}
+
+/** The `functions` option of `registerReactZoneExtension`. */
+export function siteFunctions<C>(def: NodeDefinition<C>) {
+  return {
+    [CAMPAIGN_NODE_SITE]: {
+      describe: async (args: { config: C }) => def.describe(args),
+      decode: async (args: { node: WireNode }) => def.decode(args),
+      encode: async (args: EncodeArgs<C>) => def.encode(args),
+    },
+  }
+}
+
+/**
+ * The selected node's config, for its Inspector. Kept locally so typing never waits on the editor; each
+ * change is emitted as `configChanged`, addressed by node id. A value equal to the current one is not
+ * emitted (some inputs re-report the value they were given).
+ */
+export function useNodeConfig<C>(context: { site: ExtensionSite; mount: ExtensionMountPoint }) {
+  const { input, emit } = useSite<unknown, NodeInput<C>>(context, CAMPAIGN_NODE_SITE)
+  const [config, setConfig] = useState<C>(input.config)
+  const nodeRef = useRef(input.nodeId)
+  const configRef = useRef(config)
+  configRef.current = config
+
+  useEffect(() => {
+    if (input.nodeId !== nodeRef.current) {
+      nodeRef.current = input.nodeId
+      setConfig(input.config)
+    }
+  }, [input.nodeId, input.config])
+
+  const update = (next: C | ((current: C) => C)) => {
+    const value = typeof next === 'function' ? (next as (current: C) => C)(configRef.current) : next
+    if (JSON.stringify(value) === JSON.stringify(configRef.current)) return
+    configRef.current = value
+    setConfig(value)
+    emit('configChanged', { nodeId: nodeRef.current, config: value })
+  }
+
+  return { nodeId: input.nodeId, config, update, connectedOutputs: input.connectedOutputs }
+}
+
+/** A stored duration (`string | null`) as milliseconds, or null. */
+export function msFrom(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null
+  const n = Number(value)
+  return Number.isFinite(n) ? n : null
+}
+
+/** Milliseconds as the platform's 64-bit string, or null. */
+export function msTo(value: number | null | undefined): string | null {
+  return value === null || value === undefined ? null : String(Math.round(value))
+}
+```
+
+### Reference: Schedule
+
+`src/scheduleNode.ts`:
+
+```ts
+import { msFrom, msTo, type NodeDefinition } from './campaignNode'
+
+export type ScheduleMode = 'for' | 'until' | 'now'
+export interface ScheduleConfig { mode: ScheduleMode; delayMs: number | null; when: string | null }
+
+const DAY_MS = 86_400_000
+
+function duration(ms: number): string {
+  for (const [unit, size] of [['day', DAY_MS], ['hour', 3_600_000], ['minute', 60_000]] as const) {
+    if (ms >= size && ms % size === 0) return `${ms / size} ${unit}${ms / size === 1 ? '' : 's'}`
+  }
+  return `${Math.round(ms / 60_000)} minutes`
+}
+
+export const scheduleNode: NodeDefinition<ScheduleConfig> = {
+  describe({ config }) {
+    const errors: string[] = []
+    let line: string
+    if (config.mode === 'for') {
+      line = `Wait ${config.delayMs ? duration(config.delayMs) : '—'}`
+      if (!(config.delayMs && config.delayMs > 0)) errors.push('Set how long to wait.')
+    } else if (config.mode === 'until') {
+      const when = config.when ? new Date(config.when) : null
+      const valid = !!when && !Number.isNaN(when.getTime())
+      line = `Wait until ${valid ? when!.toLocaleString() : '—'}`
+      if (!valid) errors.push('Pick the date and time to wait until.')
+    } else {
+      line = 'Continue now'
+    }
+    return {
+      lines: [line],
+      outputs: config.mode === 'now'
+        ? [{ key: 'Done', label: 'Then', timing: 'Immediate' }]
+        : [{ key: 'Elapsed', label: 'Elapsed', timing: 'Delayed' }],
+      errors,
+    }
+  },
+
+  decode({ node }) {
+    const body = (node.body?.schedule ?? {}) as { kind?: string; delayMs?: unknown; when?: string | null }
+    const mode: ScheduleMode = body.kind === 'AtDateTime' ? 'until' : body.kind === 'SendNow' ? 'now' : 'for'
+    // An empty node (a new one) starts as a one-day wait; a stored one is read as it is.
+    const delayMs = body.kind ? msFrom(body.delayMs) : DAY_MS
+    return { config: { mode, delayMs, when: body.when ?? null } }
+  },
+
+  encode({ config }) {
+    const schedule =
+      config.mode === 'for' ? { kind: 'DelayFor', delayMs: msTo(config.delayMs) }
+      : config.mode === 'until' ? { kind: 'AtDateTime', when: config.when }
+      : { kind: 'SendNow' }
+    return {
+      body: { kind: 'Schedule', schedule },
+      outcomes: config.mode === 'now' ? [{ key: 'Done', timing: 'Immediate' }] : [{ key: 'Elapsed', timing: 'Delayed' }],
+      pids: [],
+    }
+  },
+}
+```
+
+`src/main.tsx`:
+
+```tsx
+import { registerReactZoneExtension } from '@beamable/portal-toolkit/react'
+import { name as beamId } from '../package.json'
+import App from './App'
+import { siteFunctions } from './campaignNode'
+import { scheduleNode } from './scheduleNode'
+
+registerReactZoneExtension({ beamId, App, functions: siteFunctions(scheduleNode) })
+```
+
+`src/App.tsx` (the Inspector):
+
+```tsx
+import type { ZoneExtensionContext } from '@beamable/portal-toolkit'
+import { BeamInput, BeamOption, BeamSelect } from '@beamable/portal-toolkit/react'
+import { useNodeConfig } from './campaignNode'
+import { scheduleNode, type ScheduleConfig, type ScheduleMode } from './scheduleNode'
+
+const UNITS = [['minutes', 60_000], ['hours', 3_600_000], ['days', 86_400_000]] as const
+const column = { display: 'flex', flexDirection: 'column', gap: 8 } as const
+const inline = { display: 'flex', gap: 8 } as const
+
+/** The largest unit that divides a duration exactly, so any stored value shows (and edits) without rounding. */
+function unitOf(ms: number): number {
+  return [...UNITS].reverse().find(([, size]) => ms % size === 0)?.[1] ?? 60_000
+}
+
+/** `datetime-local` wants local "YYYY-MM-DDTHH:mm"; the config keeps an ISO instant. */
+function toLocalInput(iso: string | null): string {
+  const d = iso ? new Date(iso) : null
+  if (!d || Number.isNaN(d.getTime())) return ''
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+export default function App({ context }: { context: ZoneExtensionContext }) {
+  const { config, update } = useNodeConfig<ScheduleConfig>(context)
+  const set = (patch: Partial<ScheduleConfig>) => update((c) => ({ ...c, ...patch }))
+  const errors = scheduleNode.describe({ config }).errors
+  const delayMs = config.delayMs && config.delayMs > 0 ? config.delayMs : 86_400_000
+  const unit = unitOf(delayMs)
+
+  return (
+    <div style={column}>
+      <label style={column}>
+        This step
+        <BeamSelect size="small" value={config.mode} onValueChange={(v: string) => set({ mode: v as ScheduleMode })}>
+          <BeamOption value="for">Wait for a duration</BeamOption>
+          <BeamOption value="until">Wait until a date and time</BeamOption>
+          <BeamOption value="now">Continue now</BeamOption>
+        </BeamSelect>
+      </label>
+      {config.mode === 'for' && (
+        <div style={inline}>
+          <BeamInput
+            size="small"
+            type="number"
+            value={String(delayMs / unit)}
+            onValueInput={(v: string) => set({ delayMs: Math.max(1, Math.round(Number(v) || 1)) * unit })}
+          />
+          <BeamSelect size="small" value={String(unit)} onValueChange={(v: string) => set({ delayMs: (delayMs / unit) * Number(v) })}>
+            {UNITS.map(([label, size]) => (
+              <BeamOption key={label} value={String(size)}>
+                {label}
+              </BeamOption>
+            ))}
+          </BeamSelect>
+        </div>
+      )}
+      {config.mode === 'until' && (
+        <label style={column}>
+          Until (local time)
+          <BeamInput
+            size="small"
+            type="datetime-local"
+            value={toLocalInput(config.when)}
+            onValueInput={(v: string) => set({ when: v ? new Date(v).toISOString() : null })}
+          />
+        </label>
+      )}
+      {errors.map((e) => (
+        <span key={e}>{e}</span>
+      ))}
+    </div>
+  )
+}
+```
+
+`src/__tests__/scheduleNode.test.ts` — the three nodes below are exactly what the built-in Schedule writes, one per mode:
+
+```ts
+import { describe, expect, it } from 'vitest'
+import type { WireNode } from '../campaignNode'
+import { scheduleNode } from '../scheduleNode'
+
+const stored: WireNode[] = [
+  { id: 'wait', body: { kind: 'Schedule', schedule: { kind: 'DelayFor', delayMs: '86400000' } }, outcomes: [{ key: 'Elapsed', timing: 'Delayed' }] },
+  { id: 'until', body: { kind: 'Schedule', schedule: { kind: 'AtDateTime', when: '2026-12-01T13:00:00.000Z' } }, outcomes: [{ key: 'Elapsed', timing: 'Delayed' }] },
+  { id: 'done', body: { kind: 'Schedule', schedule: { kind: 'SendNow' } }, outcomes: [{ key: 'Done', timing: 'Immediate' }] },
+]
+
+describe('Schedule', () => {
+  it.each(stored.map((n) => [n.id!, n] as const))('decode then encode gives back %s', (_id, node) => {
+    const { config } = scheduleNode.decode({ node })
+    const out = scheduleNode.encode({ nodeId: node.id!, campaignId: 'cmp', config: JSON.parse(JSON.stringify(config)), connectedOutputs: [] })
+    expect(out.body).toEqual(node.body)
+    expect(out.outcomes).toEqual(node.outcomes)
+  })
+
+  it('outputs follow the mode', () => {
+    const outputs = (mode: 'for' | 'until' | 'now') => scheduleNode.describe({ config: { mode, delayMs: 60_000, when: null } }).outputs.map((o) => o.key)
+    expect(outputs('now')).toEqual(['Done'])
+    expect(outputs('for')).toEqual(['Elapsed'])
+  })
+})
+```
+
+### Wire reference: Entry
+
+| | |
+|---|---|
+| `body` | `{ kind: "Entry", entry: { trigger, requalify } }` |
+| `trigger` | `{ kind: "AutoSegment", segment }` \| `{ kind: "Event", event }` \| `{ kind: "Inaction", event, windowMs }` — only the fields of its kind |
+| `requalify` | `{ kind: "Never" }` \| `{ kind: "Immediately" }` \| `{ kind: "After", cooldownMs }` |
+| `outcomes` | `[{ key: "Enrolled", timing: "Immediate" }]` |
+| `static.hasInput` | `false` |
+| `customProperties` | Don't return any: the editor keeps the stored ones (one Entry carries `portalDescription`) |
+| Validation | `segment` is a zone segment id; `windowMs` and `cooldownMs` > 0; `event` not `beam_*`; one `AutoSegment` entry per lane (the editor gives each Entry its own lane) |
+| `pids` | `[]` |
+
+### Wire reference: Segment
+
+| | |
+|---|---|
+| `body` | `{ kind: "Segment", segment: { segment, evaluationWindowMs } }` — `evaluationWindowMs` is a string or `null` |
+| `outcomes` | `[{ key: "Yes", timing: "Immediate" }, { key: "No", timing: "Immediate" }]` — fixed keys |
+| `pids` | `[]` |
+
+### Wire reference: AnalyticsGate
+
+| | |
+|---|---|
+| `body` | `{ kind: "AnalyticsGate", analyticsGate: { filter, observePid, maxWaitMs } }` — `maxWaitMs` string or `null` (wait indefinitely) |
+| `filter` | One leaf `{ kind: "EventOccurred", event, properties?, propertiesMode?, observePid? }`, or `{ kind: "AllOf" \| "AnyOf", predicates: [≥ 2 leaves] }`. No `EventAbsent`, no `withinMs` in a gate. `propertiesMode` only when `"Any"`; `properties` only when non-empty |
+| `observePid` | The realm the filter watches; a leaf's own `observePid` overrides it |
+| `outcomes` | `[{ key: "Met", timing: "Delayed" }]`, plus `{ key: "NotMet", timing: "Delayed" }` only when `maxWaitMs` is set |
+| `pids` | `observePid` and every leaf `observePid` |
+
+### Wire reference: Send
+
+| | |
+|---|---|
+| `body` | `{ kind: "Send", send: { railFederationId, targetPid, message, campaignOffers, campaignOfferGroups, goals, maxWaitMs, offerDelivery?, offerMaxGrantWaitMs?, deliveryMaxWaitMs? }, customProperties }` |
+| `message` | `` `${campaignId}:${railFederationId}` `` |
+| `targetPid` | Required: the realm the message goes to and offers are granted in |
+| `goals` | `[{ label, predicate, observePid, timerMs: null }]` — labels unique per node, no `.`, no leading `$`; events not `beam_*` |
+| `maxWaitMs` | The conversion window, > 0 and ≥ every leaf `withinMs`. The built-in Send writes the larger of 604 800 000 and the longest leaf window |
+| `campaignOffers` | `[{ entryId, offerId, federationId, label, invalidatesEntryIds \| null, condition?, extraData \| null, durationMs \| null, required }]`; `[]` with none |
+| `campaignOfferGroups` | `[{ id, label \| null, memberEntryIds, mode: "All" \| "Exclusive" }]` or `null` |
+| `offerDelivery`, `offerMaxGrantWaitMs` | Only when the node has offers. `"AllOrNothing"` \| `"AtLeastOne"` \| `"BestEffort"` |
+| `customProperties` | The rail's `extraData` keys (none starting with `portal`), then `portalRailBeamId`, `portalLane`, `portalLaneName`, `portalGoalNames` (JSON goal id → name, only when a goal is renamed), then any other stored `portal*` key — in this order. The rail reads the whole map |
+| `pids` | `targetPid` and every goal `observePid` |
+
+| Outcome | Timing | Declared |
+|---|---|---|
+| `NoGoal` — no goal met when the window closes | `Delayed` | Always |
+| `beam_met_{goal label}` — a goal met; the player moves at once | `Immediate` | Only when connected |
+| `Sent`, `Delivered`, `Opened`, `Clicked` — the deepest stage reached when the window closes | `Delayed` | Only when connected |
+| `NotSent` — the rail never acknowledged the send | `Delayed` | Only when connected |
+| `Skipped` — no player in `targetPid` | `Immediate` | Only when connected |
+| `OffersNotGranted` — offers failed under `offerDelivery` | `Immediate` | Only when connected |
+
+A Send Inspector that keeps the message and offer pickers renders the `message-rail` and `campaign-offer` sites, so the extension declares them in `beamable.sites` with the Campaigns extension's declarations, passes `{ laneId: nodeId, laneName, realmPid: targetPid, draft }` as their input, and applies their `draftChanged` events to the node's config.

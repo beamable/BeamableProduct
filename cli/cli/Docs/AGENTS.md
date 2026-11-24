@@ -65,6 +65,7 @@ Load a skill before attempting complex tasks:
 - `beam-diagnose-project` — troubleshoot common local dev issues
 - `beam-build-and-deploy` — Docker build and cloud deployment
 - `beam-create-portal-extension` — portal UI extensions
+- `beam-campaign-node` — write a campaign node type for the Campaign Node Editor: describe/decode/encode and the Inspector for one node kind, replacing the built-in one by priority
 - `beam-login-auth` — authentication flows
 - `beam-content-types` — create and manage content types
 - `beam-content-workflow` — content sync and publish workflows
