@@ -1,4 +1,5 @@
 using System.CommandLine;
+using Beamable.Server;
 using cli.Portal;
 using cli.Services;
 using cli.Services.PortalExtension;
@@ -11,7 +12,7 @@ namespace cli.Commands.Project;
 public class NewPortalExtensionCommandArgs : SolutionCommandArgs
 {
 	public string mountPage;
-	public string mountSelector;
+	public string[] sites;
 	public string mountIcon;
 	public string mountLabel;
 	public string mountGroup;
@@ -48,7 +49,7 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 	private readonly InitCommand _initCommand;
 
 	public NewPortalExtensionCommand(InitCommand initCommand) : base("portal-extension",
-			"Creates a new Portal Extension App. Before calling this, run 'portal extension list-extension-options' to discover valid --mount-page and --mount-selector values")
+			"Creates a new Portal Extension App. Before calling this, run 'portal extension list-extension-options' to discover valid --mount-page and --site values")
 	{
 		_initCommand = initCommand;
 	}
@@ -60,13 +61,14 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 
 		AddOption(new Option<string>(
 				aliases: new string[] { "--mount-page" },
-				description: "The portal page to mount on. For page extensions use routePrefix + your custom route; for component extensions use the page path. A --zone extension is declared with a zone-relative page path and renders inside the portal's zone view (/zones/:zid/) — the portal owns the prefix. Run 'portal extension list-extension-options' to see all valid values"),
+				description: "The portal page to mount on. Required for page extensions: routePrefix + your custom route. Optional with --site: for a route-tabs site, the tab's page relative to the route the site renders at; usually omitted for stack and tabs sites. A --zone extension is declared with a zone-relative page path and renders inside the portal's zone view (/zones/:zid/) — the portal owns the prefix. Run 'portal extension list-extension-options' to see all valid values"),
 				binder: (args, i) => args.mountPage = i);
 
-		AddOption(new Option<string>(
-				aliases: new string[] { "--mount-selector" },
-				description: "The mount slot on the page. Required for component extensions; omit for page extensions (auto-assigned). Run 'portal extension list-extension-options' to see valid selectors per page"),
-			binder: (args, i) => args.mountSelector = i);
+		AddOption(new Option<string[]>(
+				aliases: new string[] { "--site" },
+				getDefaultValue: Array.Empty<string>,
+				description: "The id of a site to mount into (repeat for several), e.g. --site campaign-offer. The mount shows in every instance of the site. Omit for page extensions (they mount into extension-page). Run 'portal extension list-extension-options' to see the sites"),
+			binder: (args, i) => args.sites = i);
 
 		AddOption(new Option<string>(
 				aliases: new string[] { "--mount-group" },
@@ -150,14 +152,7 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 	{
 		// Validate required arg pairs before any expensive I/O so errors surface immediately
 		// (dependency checks and the remote portal config fetch can take many seconds).
-		var hasExplicitPage = !string.IsNullOrEmpty(args.mountPage);
-		var hasExplicitSelector = !string.IsNullOrEmpty(args.mountSelector);
-
-		if (!hasExplicitPage && hasExplicitSelector)
-			throw new CliException("--mount-selector requires --mount-page to also be specified.");
-
-		if (!hasExplicitPage && args.Quiet)
-			throw new CliException("Must provide --mount-page when running with -q / --quiet. Run 'portal extension list-extension-options' to discover valid pages and selectors.");
+		var siteIds = ValidateMountArgs(args.sites, args.mountPage, args.Quiet);
 
 		// Validate --filters formatting up front so a typo fails before scaffolding.
 		var filterOverrides = ParseFilterOverrides(args.filters);
@@ -178,22 +173,15 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 
 		var configService = args.DependencyProvider.GetService<IRemotePortalConfigService>();
 		var config = await configService.GetRemotePortalConfig(args);
-		BuildMountSiteIndex(config,
-			out var pageSelector,
-			out var componentPages);
 
-		RemotePortalConfiguration.MountSiteSelector resolvedSelector;
+		if (siteIds.Count == 0)
+			siteIds = RunMountWizard(args, config);
+		else if (siteIds.Contains(PortalExtensionSiteDeclaration.ExtensionPageSiteId) && string.IsNullOrEmpty(args.mountPage))
+			args.mountPage = AskPagePath();
 
-		if (hasExplicitPage)
-		{
-			resolvedSelector = ValidateMountArgs(args, pageSelector, componentPages);
-		}
-		else
-		{
-			resolvedSelector = RunMountWizard(args, pageSelector, componentPages);
-		}
+		WarnUnknownSites(siteIds, config);
 
-		if (resolvedSelector.type == "page")
+		if (siteIds.Contains(PortalExtensionSiteDeclaration.ExtensionPageSiteId))
 		{
 			// A zone extension's mount page is stored zone-relative and verbatim — the portal
 			// auto-assumes the full `:cid/zones/:zid/` prefix when rendering it in the zone view,
@@ -234,8 +222,13 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 		// is ever needed, add an explicit --mount-index flag or accept JSON.
 		foreach (var mount in jObj.SelectTokens("$..beamable.mounts[0]").OfType<JObject>().ToList())
 		{
-			mount[PortalExtensionMountProperties.KEY_PAGE] = args.mountPage;
-			mount[PortalExtensionMountProperties.KEY_SELECTOR] = args.mountSelector;
+			mount[PortalExtensionMountProperties.KEY_SITE_IDS] = new JArray(siteIds);
+			if (string.IsNullOrEmpty(args.mountPage))
+				mount.Remove(PortalExtensionMountProperties.KEY_PAGE);
+			else
+				mount[PortalExtensionMountProperties.KEY_PAGE] = args.mountPage;
+			// The selector model is gone; never leave one behind.
+			mount.Remove("selector");
 
 			if (!string.IsNullOrEmpty(args.mountLabel))
 				mount[PortalExtensionMountProperties.KEY_NAV_LABEL] = args.mountLabel;
@@ -264,79 +257,80 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 		File.WriteAllText(def.AbsolutePackageJsonPath, jObj.ToString(Newtonsoft.Json.Formatting.Indented));
 	}
 
-	private static void BuildMountSiteIndex(
-		RemotePortalConfiguration config,
-		out RemotePortalConfiguration.MountSiteSelector pageSelector,
-		out Dictionary<string, RemotePortalConfiguration.MountSiteConfig> componentPages)
+	/// <summary>
+	/// Checks the mount flags before any I/O and returns the site ids to write, once each. A site id is
+	/// bare (no <c>#</c>, no <c>@</c>). A page is required only for <c>extension-page</c>; with no
+	/// <c>--site</c>, a <c>--mount-page</c> makes a page extension. Quiet mode needs one or the other.
+	/// An empty result means the wizard picks the mount.
+	/// </summary>
+	public static List<string> ValidateMountArgs(string[] sites, string mountPage, bool quiet)
 	{
-		const string pathMatchSuffix = "!pathMatch";
-		pageSelector = null;
-		componentPages = new Dictionary<string, RemotePortalConfiguration.MountSiteConfig>();
+		var siteIds = (sites ?? Array.Empty<string>())
+			.Select(id => id?.Trim())
+			.Where(id => !string.IsNullOrEmpty(id))
+			.Distinct()
+			.ToList();
 
-		foreach (var site in config.mountSites)
+		foreach (var id in siteIds)
 		{
-			if (site.path.EndsWith(pathMatchSuffix))
-			{
-				// The full-page slot (e.g. "!hub/!pathMatch" -> "#extension-page"). The page path a
-				// user supplies is passed through verbatim — the Portal parses the hub hierarchy from
-				// it (e.g. "cars" is a hub, "cars/ferrari" nests under it) — so we only need this entry
-				// to source the page selector to auto-assign. Every such slot uses the same selector.
-				if (pageSelector == null && site.selectors.Count > 0)
-					pageSelector = site.selectors[0];
-			}
-			else
-			{
-				// Includes slots contributed by other running extensions' BeamExtensionSite
-				// declarations — they are ordinary, uniquely-named component selectors at a URL.
-				componentPages[site.path] = site;
-			}
+			if (id.IndexOfAny(new[] { '#', '@' }) >= 0)
+				throw new CliException(
+					$"Invalid --site '{id}': a site id is a bare name, with no '#' and no '@' (e.g. --site {id.TrimStart('#').Split('@')[0]}).");
+		}
+
+		var hasPage = !string.IsNullOrEmpty(mountPage);
+		if (siteIds.Count == 0 && hasPage)
+			return new List<string> { PortalExtensionSiteDeclaration.ExtensionPageSiteId };
+
+		if (quiet)
+		{
+			if (siteIds.Count == 0)
+				throw new CliException("Must provide --mount-page (a page) or --site (a site) when running with -q / --quiet. Run 'portal extension list-extension-options' to discover valid pages and sites.");
+			if (!hasPage && siteIds.Contains(PortalExtensionSiteDeclaration.ExtensionPageSiteId))
+				throw new CliException($"--site {PortalExtensionSiteDeclaration.ExtensionPageSiteId} requires --mount-page.");
+		}
+
+		return siteIds;
+	}
+
+	private static string AskPagePath()
+	{
+		while (true)
+		{
+			// The page path is passed through verbatim — the Portal parses the hub hierarchy from it.
+			var pagePath = AnsiConsole.Ask<string>("What is the [green]page path[/]?");
+			if (!string.IsNullOrWhiteSpace(pagePath))
+				return pagePath.Trim().TrimStart('/');
+			AnsiConsole.MarkupLine("[red]Page path cannot be empty.[/]");
 		}
 	}
 
-	private static RemotePortalConfiguration.MountSiteSelector ValidateMountArgs(
-		NewPortalExtensionCommandArgs args,
-		RemotePortalConfiguration.MountSiteSelector pageSelector,
-		Dictionary<string, RemotePortalConfiguration.MountSiteConfig> componentPages)
+	// A site nobody in the Host declares is dropped by the portal at load; say so, but let the author
+	// scaffold against an extension that isn't running here.
+	private static void WarnUnknownSites(List<string> siteIds, RemotePortalConfiguration config)
 	{
-		// A known component page → mount as a component into one of its slots (selector required).
-		if (componentPages.TryGetValue(args.mountPage, out var componentConfig))
+		var known = new HashSet<string>(config.sites.Select(s => s.id)) { PortalExtensionSiteDeclaration.ExtensionPageSiteId };
+		foreach (var id in siteIds.Where(id => !known.Contains(id)))
 		{
-			if (string.IsNullOrEmpty(args.mountSelector))
-				throw new CliException(
-					$"--mount-selector is required for component pages." +
-					$" Valid selectors for '{args.mountPage}': {string.Join(", ", componentConfig.selectors.Select(s => s.selector))}");
-			var selector = componentConfig.selectors.FirstOrDefault(s => s.selector == args.mountSelector);
-			if (selector == null)
-				throw new CliException(
-					$"Invalid --mount-selector '{args.mountSelector}' for page '{args.mountPage}'." +
-					$" Valid selectors: {string.Join(", ", componentConfig.selectors.Select(s => s.selector))}");
-			return selector;
+			Log.Warning(
+				"Site '{siteId}' isn't declared by the portal or any running extension. The portal ignores it until an extension that declares it is loaded. Run 'portal extension list-extension-options' to see the sites.",
+				id);
 		}
-
-		// Anything else is a full-page extension. The page path is passed through verbatim — the
-		// Portal parses the hub hierarchy from it ("cars" is a hub; "cars/ferrari" nests under the
-		// "cars" hub) — and the page slot selector is auto-assigned.
-		if (pageSelector == null)
-			throw new CliException(
-				"No page mount slot is available from the Portal config, so a full-page extension cannot be created." +
-				" Run 'portal extension list-extension-options' to see valid component pages and selectors.");
-		args.mountSelector = pageSelector.selector;
-		return pageSelector;
 	}
 
-	private static RemotePortalConfiguration.MountSiteSelector RunMountWizard(
-		NewPortalExtensionCommandArgs args,
-		RemotePortalConfiguration.MountSiteSelector pageSelector,
-		Dictionary<string, RemotePortalConfiguration.MountSiteConfig> componentPages)
+	private static List<string> RunMountWizard(NewPortalExtensionCommandArgs args, RemotePortalConfiguration config)
 	{
 		const string back = "<-- (back)";
 
+		var sites = config.sites
+			.Where(s => s.id != PortalExtensionSiteDeclaration.ExtensionPageSiteId)
+			.ToList();
+
 		while (true)
 		{
-			var typeChoices = new List<string>();
-			// Only offer a full page when the Portal actually exposes a page slot.
-			if (pageSelector != null) typeChoices.Add("Page");
-			typeChoices.Add("Component");
+			var typeChoices = new List<string> { "Page" };
+			// Only offer a site when the Host has one besides the page site.
+			if (sites.Count > 0) typeChoices.Add("Site");
 
 			var extensionType = AnsiConsole.Prompt(
 				new SelectionPrompt<string>()
@@ -346,61 +340,38 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 
 			if (extensionType == "Page")
 			{
-				// The page path is passed through verbatim — the Portal parses the hub hierarchy
-				var pagePath = AnsiConsole.Ask<string>(
-					"What is the [green]page path[/]?");
-
-				if (string.IsNullOrWhiteSpace(pagePath))
-				{
-					AnsiConsole.MarkupLine("[red]Page path cannot be empty.[/]");
-					continue;
-				}
-
-				args.mountPage = pagePath.Trim().TrimStart('/');
-				args.mountSelector = pageSelector.selector;
-				return pageSelector;
+				args.mountPage = AskPagePath();
+				return new List<string> { PortalExtensionSiteDeclaration.ExtensionPageSiteId };
 			}
-			else // Component
+
+			var displays = sites
+				.Select(s => Markup.Escape(
+					$"{s.id} ({s.presentation ?? "?"}) — rendered by {string.Join(", ", s.renderedBy)}" +
+					(string.IsNullOrEmpty(s.description) ? "" : $": {s.description}")))
+				.ToList();
+
+			var choice = AnsiConsole.Prompt(
+				new SelectionPrompt<string>()
+					.Title("Which [green]site[/] does it mount into?")
+					.AddChoices(displays.Prepend(back))
+					.AddBeamHightlight());
+
+			if (choice == back) continue; // back to type selection
+
+			var site = sites[displays.IndexOf(choice)];
+			if (site.presentation == PortalExtensionSiteDeclaration.PRESENTATION_ROUTE_TABS)
 			{
-				while (true)
-				{
-					var pageChoice = AnsiConsole.Prompt(
-						new SelectionPrompt<string>()
-							.Title("Which [green]page[/] on the Portal are you extending?")
-							.AddChoices(componentPages.Keys.Prepend(back))
-							.AddBeamHightlight());
-
-					if (pageChoice == back) break; // back to type selection
-
-					var siteConfig = componentPages[pageChoice];
-					args.mountPage = pageChoice;
-
-					// Auto-select if there is only one selector
-					if (siteConfig.selectors.Count == 1)
-					{
-						var onlySelector = siteConfig.selectors[0];
-						args.mountSelector = onlySelector.selector;
-						return onlySelector;
-					}
-
-					// Build display list keyed to original selectors
-					var selectorDisplays = siteConfig.selectors
-						.Select(s => $"({s.type}) {s.selector}")
-						.ToList();
-
-					var selectorChoice = AnsiConsole.Prompt(
-						new SelectionPrompt<string>()
-							.Title("Which [green]selector[/] on the page?")
-							.AddChoices(selectorDisplays.Prepend(back))
-							.AddBeamHightlight());
-
-					if (selectorChoice == back) continue; // back to page selection
-
-					var chosenSelector = siteConfig.selectors[selectorDisplays.IndexOf(selectorChoice)];
-					args.mountSelector = chosenSelector.selector;
-					return chosenSelector;
-				}
+				// A route-tabs mount brings the tab's page, relative to the route the site renders at.
+				var tabPage = AnsiConsole.Ask<string>(
+					"What is the tab's [green]page[/], relative to the route the site renders at (e.g. stats)?");
+				args.mountPage = string.IsNullOrWhiteSpace(tabPage) ? null : tabPage.Trim().Trim('/');
 			}
+			else
+			{
+				args.mountPage = null;
+			}
+
+			return new List<string> { site.id };
 		}
 	}
 }

@@ -56,10 +56,19 @@ public class OpenSolutionCommand : AppCommand<OpenSolutionCommandArgs>, IEmptyRe
 		Log.Debug($"Resolved sln path=[{solutionPath}]");
 		
 		
+		// Only add what is missing: from .NET SDK 11 on, `dotnet sln add` fails for a project the solution already
+		// has (earlier SDKs printed a notice and succeeded).
+		var existingProjects = await projService.GetSolutionProjectPaths(solutionPath);
+
 		foreach (var sd in args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions)
 		{
 			if (!sd.IsLocal || sd.Protocol is BeamoProtocolType.PortalExtension) continue;
 			var proj = Path.GetFullPath(sd.AbsoluteProjectPath);
+			if (existingProjects.Contains(proj))
+			{
+				Log.Debug($"project=[{proj}] is already in the solution");
+				continue;
+			}
 		
 			Log.Debug($"adding project=[{proj}] to solution");
 			var argStr = $"sln {solutionPath.EnquotePath()} add {proj.EnquotePath()}";
@@ -76,7 +85,7 @@ public class OpenSolutionCommand : AppCommand<OpenSolutionCommandArgs>, IEmptyRe
 
 			foreach (var unityDep in http.UnityAssemblyDefinitionProjectReferences)
 			{
-				await AddUnityDepToSolution(args, sd, fullSolutionPath, unityDep.Path);
+				await AddUnityDepToSolution(args, sd, fullSolutionPath, unityDep.Path, existingProjects);
 			}
 		}
 		foreach (var (beamoId, db) in manifest.EmbeddedMongoDbLocalProtocols)
@@ -86,7 +95,7 @@ public class OpenSolutionCommand : AppCommand<OpenSolutionCommandArgs>, IEmptyRe
 
 			foreach (var unityDep in db.UnityAssemblyDefinitionProjectReferences)
 			{
-				await AddUnityDepToSolution(args, sd, fullSolutionPath, unityDep.Path);
+				await AddUnityDepToSolution(args, sd, fullSolutionPath, unityDep.Path, existingProjects);
 			}
 		}
 	}
@@ -155,8 +164,13 @@ public class OpenSolutionCommand : AppCommand<OpenSolutionCommandArgs>, IEmptyRe
 		
 	}
 	
-	static async Task AddUnityDepToSolution(CommandArgs args, BeamoServiceDefinition definition, string fullSlnPath, string projectPath){
+	static async Task AddUnityDepToSolution(CommandArgs args, BeamoServiceDefinition definition, string fullSlnPath, string projectPath, HashSet<string> existingProjects){
 		var slnProjPath = Path.Combine(definition.AbsoluteProjectDirectory, projectPath);
+		if (!existingProjects.Add(Path.GetFullPath(slnProjPath)))
+		{
+			// Already in the solution, or added a moment ago for another service.
+			return;
+		}
 		var slnArgStr = $"sln {fullSlnPath.EnquotePath()} add {slnProjPath.EnquotePath()} -s \"UnityAssemblies (shared)\"";
 		Log.Verbose($"adding assembly to solution, arg=[{slnArgStr}]");
 		var command = CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath,slnArgStr)

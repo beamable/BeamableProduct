@@ -605,6 +605,8 @@ namespace Beamable.Server
 			finally
 			{
 				_ws.Dispose();
+				// its replenishment timer otherwise outlives every connection that was replaced.
+				tokenLimiter.Dispose();
 			}
 		}
 

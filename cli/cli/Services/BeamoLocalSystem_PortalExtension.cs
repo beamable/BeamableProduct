@@ -11,6 +11,7 @@ using cli.Services.PortalExtension;
 using cli.Services.Web;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.CommandLine.Binding;
 using System.Text.RegularExpressions;
 using JsonSerializer = Newtonsoft.Json.JsonSerializer;
@@ -32,6 +33,45 @@ public partial class BeamoLocalSystem
 
 		[JsonProperty("beamable")]
 		public PortalExtensionPackageProperties BeamableProperties { get; set; }
+	}
+
+	/// <summary>
+	/// Reads a package.json as a portal extension or extension library, in two steps. Workspace scans see
+	/// every package.json (the portal root, libraries, tooling), so a file that isn't valid JSON or isn't
+	/// flagged with <c>beamable.portalExtension</c> / <c>beamable.portalExtensionLib</c> returns null quietly.
+	/// A flagged file that fails the typed read is logged with its file, JSON path and message, and also
+	/// returns null, so the caller's scan goes on instead of dropping the extension silently.
+	/// </summary>
+	public static PortalExtensionPackageInfo TryReadPortalExtensionPackage(string packageJsonPath)
+	{
+		JObject root;
+		try
+		{
+			root = JObject.Parse(File.ReadAllText(packageJsonPath));
+		}
+		catch (Exception e)
+		{
+			Log.Verbose($"Skipping [{packageJsonPath}]: not a readable JSON file ({e.Message})");
+			return null;
+		}
+
+		static bool IsTrue(JToken token) => token is JValue { Type: JTokenType.Boolean } value && (bool)value;
+		if (root["beamable"] is not JObject beamable
+		    || (!IsTrue(beamable["portalExtension"]) && !IsTrue(beamable["portalExtensionLib"])))
+		{
+			return null;
+		}
+
+		try
+		{
+			return root.ToObject<PortalExtensionPackageInfo>();
+		}
+		catch (Exception e)
+		{
+			var jsonPath = (e as JsonSerializationException)?.Path ?? (e as JsonReaderException)?.Path ?? "beamable";
+			Log.Warning($"Portal extension package [{packageJsonPath}] was skipped: it could not be read at [{jsonPath}]. {e.Message}");
+			return null;
+		}
 	}
 
 	/// <summary>
@@ -408,8 +448,9 @@ public partial class BeamoLocalSystem
 [Serializable]
 public class PortalExtensionMountProperties
 {
+	public const string KEY_ID = "id";
+	public const string KEY_SITE_IDS = "siteIds";
 	public const string KEY_PAGE = "page";
-	public const string KEY_SELECTOR = "selector";
 	public const string KEY_NAV_GROUP = "navGroup";
 	public const string KEY_NAV_LABEL = "navLabel";
 	public const string KEY_NAV_ICON = "navIcon";
@@ -419,13 +460,22 @@ public class PortalExtensionMountProperties
 	public const string KEY_NAV_LABEL_ORDER = "navLabelOrder";
 	public const string KEY_FILTERS = "filters";
 
-	// For #extension-page mounts the page path defines the hub hierarchy: a single segment
+	// Names the mount within its extension. Optional: the portal derives one when absent
+	// (the first site id, plus ":" and the page when there is one).
+	[JsonProperty(KEY_ID, NullValueHandling = NullValueHandling.Ignore)]
+	[JsonConverter(typeof(OptionalConverter))]
+	public OptionalString Id;
+
+	// The site ids this mount fills, bare (no "#", no "@"); a page mount lists ["extension-page"].
+	[JsonProperty(KEY_SITE_IDS, NullValueHandling = NullValueHandling.Ignore)]
+	public List<string> SiteIds;
+
+	// For extension-page mounts the page path defines the hub hierarchy: a single segment
 	// declares a hub that is a full page of its own, and a nested path
 	// places that extension inside the "cars" hub. The nav group is a separate,
-	// additional way to organize extensions inside a given hub.
-	[JsonProperty(KEY_PAGE)] public string Page;
-
-	[JsonProperty(KEY_SELECTOR)] public string Selector;
+	// additional way to organize extensions inside a given hub. A route-tabs mount's page is
+	// relative to the route its site renders at; stack and tabs mounts have none.
+	[JsonProperty(KEY_PAGE, NullValueHandling = NullValueHandling.Ignore)] public string Page;
 
 	// Optional grouping used to organize extensions within a hub's navigation.
 	[JsonProperty(KEY_NAV_GROUP)]
@@ -460,13 +510,19 @@ public class PortalExtensionMountProperties
 	[JsonConverter(typeof(OptionalConverter))]
 	public OptionalInt NavLabelOrder;
 
-	[JsonProperty("args")] public Dictionary<string, string> Args = new Dictionary<string, string>();
+	// Raw JSON, so a number stays a number in metadata.json. Initialized so an absent "args" is still
+	// written as {} rather than null.
+	[JsonProperty("args")] public JObject Args = new JObject();
 
 	// Conditions the portal evaluates before mounting the extension into the
 	// agentic portal. Keys are dotted paths (e.g. "account.role", "account.tier")
 	// matched against the viewer's context; the CLI scaffolds these with default
 	// values so the extension mounts everywhere until the author narrows them.
 	[JsonProperty(KEY_FILTERS)] public Dictionary<string, string> Filters = new Dictionary<string, string>();
+
+	// Mount fields this model doesn't declare, carried into metadata.json unchanged so new manifest
+	// fields reach the portal without a CLI release.
+	[JsonExtensionData] public IDictionary<string, JToken> Extra;
 }
 
 [Serializable]
@@ -505,6 +561,42 @@ public class PortalExtensionPackageProperties
 	/// or a hub-declaration extension can also seed a default nav item.
 	/// </summary>
 	[JsonProperty("mounts")] public List<PortalExtensionMountProperties> Mounts;
+
+	/// <summary>
+	/// The sites this extension renders (with <c>&lt;BeamExtensionSite site="…"&gt;</c>), declared by id.
+	/// Checked at build by <see cref="cli.Services.PortalExtension.PortalExtensionSiteDeclarationChecks"/>.
+	/// </summary>
+	[JsonProperty("sites", NullValueHandling = NullValueHandling.Ignore)]
+	public List<PortalExtensionSiteDeclaration> Sites;
+
+	// Package fields this model doesn't declare, carried into metadata.json unchanged.
+	[JsonExtensionData] public IDictionary<string, JToken> Extra;
+}
+
+/// <summary>
+/// One entry of <c>beamable.sites</c>: a typed kind of place this extension renders. Fields this model
+/// doesn't declare (the site's schemas, from Step 2) pass through to metadata.json unchanged.
+/// </summary>
+[Serializable]
+public class PortalExtensionSiteDeclaration
+{
+	public const string PRESENTATION_STACK = "stack";
+	public const string PRESENTATION_TABS = "tabs";
+	public const string PRESENTATION_ROUTE_TABS = "route-tabs";
+
+	public static readonly string[] Presentations = { PRESENTATION_STACK, PRESENTATION_TABS, PRESENTATION_ROUTE_TABS };
+
+	// The portal's page site: a full-page mount lists it, with a page.
+	public const string ExtensionPageSiteId = "extension-page";
+
+	[JsonProperty("id")] public string Id;
+
+	[JsonProperty("presentation")] public string Presentation;
+
+	[JsonProperty("description", NullValueHandling = NullValueHandling.Ignore)]
+	public string Description;
+
+	[JsonExtensionData] public IDictionary<string, JToken> Extra;
 }
 
 public class ExtensionAppLogProvider : ILoggerProvider

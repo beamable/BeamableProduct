@@ -20,12 +20,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Websocket health checks: `WS_SEND_TIMEOUT_SECONDS` (default 30) for blocked sends, and `WS_STALL_TIMEOUT_SECONDS` (default 60) for connections that stop answering. `WS_KEEPALIVE_TIMEOUT_SECONDS` enables ping/pong keep-alive on .NET 9+ (off by default).
 - `BEAM_SOCKET_RELIABILITY_ENFORCE=true` makes timeouts fail with `RequestTimeoutException` and replaces broken connections. Off by default: these checks only log a warning and record a metric.
 - `beam.ws.*` metrics for timed-out, pending and connection-lost requests, and for unhealthy connections.
+- `IAuthApi.ConfirmPasswordUpdate(email, code, newPassword)` confirms a password reset with the email address the code was sent to. The overload without `email` is obsolete: the backend will soon require it.
 
 ### Changed
 
 - **Breaking:** `IFederatedPlayerInit.CreatePlayer` takes a `FederatedPlayerAccount` instead of the generated `Account`. The new type holds the fields the platform sends to player init (id, email, gamer tags, third parties, external identities, created and updated times, user name, country, language, role string, device ids, realm), with its own types for gamer tags, third parties and external identities, so the contract no longer changes with the account API's models. Implementations change the parameter type; the field names are the same.
 
 ### Fixed
+- A JSON serializer built from `UnitySerializationSettings` still runs `ISerializationCallbackReceiver.OnBeforeSerialize` after a failed write. The callback converter used to stay removed from a reused serializer when a value's serialization threw.
 - A request whose reply never arrives no longer waits forever, and a dropped connection fails the requests sent on it.
 - Replies and event acknowledgements no longer wait for re-authentication, and are only sent on the connection their request or event came from.
 - The authentication daemon no longer stalls when a `gateway/nonce` or `gateway/auth` reply is lost.
@@ -33,6 +35,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A failed or blocked websocket send now closes the connection and reconnects, instead of silently stalling it. Shutdown no longer hangs on a blocked send.
 - Content, realm config and other realm-wide requests and events keep working when the first instance's connection breaks.
 - Faulted background tasks are logged.
+- A reconnect that fails to authenticate or register no longer ends the whole process with exit code 12, which also stopped the instances that were still serving. The connection is replaced, with backoff, until one works.
+- During startup, an authenticated instance has two minutes of combined platform reply waits. On expiry it retries its connection with backoff while a sibling is serving. With no serving sibling, startup exits 12. User initialization, custom event hooks and eager content loading keep their existing lifetimes.
+- After a startup socket closes, successive reconnect attempts share two minutes for backoff, connection and authentication before exit 12. If a replacement authenticates and a missing platform reply triggers another retry while a sibling serves, that retry starts a fresh two-minute reconnect window.
+- A connection that closes while it is being set up stops that setup, so it can no longer finish later alongside the replacement's.
+- A reconnect whose setup is still waiting for a reply after 3 minutes is dropped and replaced, instead of keeping its instance out of service for as long as the connection stays open.
 - Generate valid OpenAPI component keys and references for tuple callable types, while preserving C# type metadata. Invalid generated schemas now report their validation errors directly.
 - Content downloads no longer fail when `HOST` is more than one label under `beamable.com` (for example `wss://dev.ms-local.beamable.com/socket`) or includes a port. The content host check now parses `HOST` as a URI, and any `HOST` under `beamable.com` accepts content from `*.beamable.com`.
 

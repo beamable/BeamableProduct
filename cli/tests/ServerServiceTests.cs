@@ -636,19 +636,25 @@ public class ServerServiceTests
 	}
 
 	// Keep the real handler, DI registration and ServerReporterService. Only command work is controlled.
-	private sealed class ControlledApp : App, IDisposable
+	internal sealed class ControlledApp : App, IDisposable
 	{
 		private readonly Func<string, IDataReporterService, Task<int>> _execute;
 		private readonly AppLifecycle _lifecycle = new();
 		public Exception? SetupFailure { get; init; }
+		/// <summary>Keep the reporter's connection heartbeat running (it stops once the lifecycle is cancelled).</summary>
+		public bool Heartbeat { get; init; }
+		public AppLifecycle Lifecycle => _lifecycle;
 		public ControlledApp(Func<string, IDataReporterService, Task<int>> execute) => _execute = execute;
 
 		public override void Configure(Action<IDependencyBuilder>? serviceConfigurator = null,
 			Action<IDependencyBuilder>? commandConfigurator = null, Action<ILoggingBuilder>? configureLogger = null,
 			bool overwriteLogger = true)
 		{
-			// These tests exercise result reporting, not the unrelated background heartbeat.
-			_lifecycle.Cancel();
+			// Most tests exercise result reporting, not the unrelated background heartbeat.
+			if (!Heartbeat)
+			{
+				_lifecycle.Cancel();
+			}
 			Commands.AddSingleton(_lifecycle);
 			Commands.AddSingleton<IDataReporterService>(_ =>
 				throw new InvalidOperationException("The handler must replace the default reporter."));
@@ -674,7 +680,7 @@ public class ServerServiceTests
 		}
 	}
 
-	private sealed class TestServer : IAsyncDisposable
+	internal sealed class TestServer : IAsyncDisposable
 	{
 		private readonly HttpListener _listener = new();
 		private readonly Func<ControlledApp>? _createApp;
@@ -705,6 +711,17 @@ public class ServerServiceTests
 				Timeout = Deadline
 			};
 			_accept = Accept();
+		}
+
+		public Task<HttpResponseMessage> Send(HttpMethod method, string route, string? body = null,
+			string mediaType = "application/json")
+		{
+			var request = new HttpRequestMessage(method, route);
+			if (body != null)
+			{
+				request.Content = new StringContent(body, Encoding.UTF8, mediaType);
+			}
+			return Client.SendAsync(request);
 		}
 
 		public Task<string> Execute(string command) => Execute(command, null);

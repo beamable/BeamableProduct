@@ -876,7 +876,9 @@ public partial class ContentService
         if (contentIds.Length != contentProperties.Length ||
             patch && (originalFiles?.Length != contentIds.Length || modelProperties?.Length != contentIds.Length) ||
             reviewed && (expectedFileHashes.Length != contentIds.Length || patch))
+        {
             throw new CliException("Content save requires parallel properties and review/baseline arrays.");
+        }
         await _fileSystemOperationSemaphore.WaitAsync(cancellationToken);
         try
         {
@@ -887,10 +889,15 @@ public partial class ContentService
                 var id = contentIds[i];
                 var path = GetPathForContentId(id, localCache.ManifestId);
                 var text = File.Exists(path) ? await File.ReadAllTextAsync(path, cancellationToken) : null;
-                if ((patch || reviewed) && text == null) throw new CliException("Content was deleted. Reload before saving.");
+                if ((patch || reviewed) && text == null)
+                {
+                    throw new CliException("Content was deleted. Reload before saving.");
+                }
                 if (reviewed && (string.IsNullOrEmpty(expectedFileHashes[i]) ||
                     Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text))).ToLowerInvariant() != expectedFileHashes[i]))
+                {
                     throw new CliException("Content changed after migration preview. Review the item again.");
+                }
                 var file = text == null ? new ContentFile
                 {
                     Tags = JsonSerializer.SerializeToElement(Array.Empty<string>()),
@@ -908,16 +915,33 @@ public partial class ContentService
                         System.Text.Json.Nodes.JsonNode.Parse(file.Properties.GetRawText())).ToJsonString();
                 }
                 var proposed = JsonSerializer.Deserialize<JsonElement>(properties);
-                if (proposed.ValueKind != JsonValueKind.Object) throw new CliException("Content properties must be an object.");
+                if (proposed.ValueKind != JsonValueKind.Object)
+                {
+                    throw new CliException("Content properties must be an object.");
+                }
                 var previousChecksum = text == null ? null : CalculateChecksum(file);
                 file.Properties = proposed;
                 file.PropertiesChecksum = CalculateChecksum(file);
-                if (previousChecksum == file.PropertiesChecksum) continue;
+                if (previousChecksum == file.PropertiesChecksum)
+                {
+                    continue;
+                }
                 updates.Add(file);
             }
             // Validate the complete request before writing any item. This lock coordinates service writers;
             // external processes can still race filesystem writes, as with other content operations.
-            foreach (var file in updates) await SaveContentFile(contentFolder, file, cancellationToken);
+            try
+            {
+                foreach (var file in updates)
+                {
+                    await SaveContentFile(contentFolder, file, cancellationToken);
+                }
+            }
+            catch (Exception e)
+            {
+                // Keep the exit code and message this command has always used for a failed write.
+                throw new CliException($"Failed to save Content. Errors:{e.Message}", 5, true);
+            }
         }
         finally { _fileSystemOperationSemaphore.Release(); }
     }

@@ -75,7 +75,20 @@ namespace Beamable.Editor.ContentService
 			await api.InitializePromise;
 			var contentService = api.ServiceScope.GetService<CliContentService>();
 
-			// 1. Ensure Addressables settings exist (GetSettings(true) creates them if missing).
+			if (!ImportDefaultIcons()) return;
+
+			// Seed the content locally. The default content's serialized icon references already
+			//    point at the pinned GUIDs, so no per-asset remap is needed.
+			SeedDefaultContent(contentService);
+
+			// Refresh the Content Manager view. The seeded content is left local for the user to
+			//    review and publish on their own terms.
+			await contentService.Reload();
+		}
+
+		internal static bool ImportDefaultIcons()
+		{
+			// Ensure Addressables settings exist (GetSettings(true) creates them if missing).
 			var settings = AddressableAssetSettingsDefaultObject.GetSettings(true);
 			if (settings == null)
 			{
@@ -85,22 +98,10 @@ namespace Beamable.Editor.ContentService
 					"Addressables settings could not be created. Please configure the Addressables package " +
 					"and try again.",
 					"OK");
-				return;
+				return false;
 			}
 
-			// 2. Copy seed sprites into the project and register them as addressables (idempotent).
-			if (!EnsureDefaultAssetsImported(settings))
-			{
-				return;
-			}
-
-			// 3. Seed the content locally. The default content's serialized icon references already
-			//    point at the pinned GUIDs, so no per-asset remap is needed.
-			SeedDefaultContent(contentService);
-
-			// 4. Refresh the Content Manager view. The seeded content is left local for the user to
-			//    review and publish on their own terms.
-			await contentService.Reload();
+			return EnsureDefaultAssetsImported(settings);
 		}
 
 		/// <summary>
@@ -231,6 +232,45 @@ namespace Beamable.Editor.ContentService
 
 			var full = Path.GetFullPath(relative);
 			return Directory.Exists(full) ? full : null;
+		}
+
+		private static HashSet<string> _seedSpriteGuids;
+
+		/// <summary>
+		/// True when <paramref name="guid"/> is the pinned GUID of a default content seed sprite, which
+		/// <see cref="ImportDefaultContent"/> copies into the project.
+		/// </summary>
+		internal static bool IsSeedSpriteGuid(string guid)
+		{
+			if (string.IsNullOrEmpty(guid))
+				return false;
+
+			if (_seedSpriteGuids == null)
+			{
+				var guids = new HashSet<string>();
+				var sourceRoot = ResolveSourceRoot();
+				if (!string.IsNullOrEmpty(sourceRoot))
+				{
+					// Same layout as EnsureDefaultAssetsImported: <root>/<type>/<asset> with a pinned-GUID <asset>.meta.
+					foreach (var typeDir in Directory.GetDirectories(sourceRoot))
+					{
+						foreach (var src in Directory.GetFiles(typeDir))
+						{
+							var metaPath = src + ".meta";
+							if (src.EndsWith(".meta") || !File.Exists(metaPath))
+								continue;
+
+							var knownGuid = ReadGuidFromMeta(metaPath);
+							if (!string.IsNullOrEmpty(knownGuid))
+								guids.Add(knownGuid);
+						}
+					}
+				}
+
+				_seedSpriteGuids = guids;
+			}
+
+			return _seedSpriteGuids.Contains(guid);
 		}
 
 		private static string ReadGuidFromMeta(string metaPath)

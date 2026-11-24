@@ -119,8 +119,42 @@ public class ContentSchemaSaveTests
         await Save(Edited, original, Model);
         Assert.That(File.ReadAllText(path), Does.Contain("99"));
         var concurrent = original.Replace(":20", ":30"); await File.WriteAllTextAsync(path, concurrent);
-        Assert.ThrowsAsync<CliException>(() => Save(Edited, original, Model));
+        var stale = Assert.ThrowsAsync<CliException>(() => Save(Edited, original, Model));
+        Assert.That(stale.NonZeroOrOneExitCode, Is.EqualTo(ContentPropertyEdits.StaleEditExitCode), "Engines tell a stale edit apart by exit code.");
         Assert.That(File.ReadAllText(path), Is.EqualTo(concurrent));
+    }
+
+    // A missing member and an explicit null both read as null, so the merge must compare presence.
+    [TestCase("{\"damage\":{\"data\":20}}", "{\"damage\":{\"data\":20},\"x\":null}")]
+    [TestCase("{\"damage\":{\"data\":20},\"x\":null}", "{\"damage\":{\"data\":20}}")]
+    public async Task Concurrent_add_or_remove_of_a_null_member_is_stale(string loaded, string concurrent)
+    {
+        const string model = "{\"damage\":{\"data\":20}}";
+        var original = FileJson(loaded);
+        await File.WriteAllTextAsync(path, FileJson(concurrent));
+        var stale = Assert.ThrowsAsync<CliException>(() => Save("{\"damage\":{\"data\":20},\"x\":{\"data\":5}}", original, model));
+        Assert.That(stale.NonZeroOrOneExitCode, Is.EqualTo(ContentPropertyEdits.StaleEditExitCode));
+        Assert.That(File.ReadAllText(path), Is.EqualTo(FileJson(concurrent)));
+    }
+
+    [Test] public async Task Same_value_added_concurrently_is_not_stale()
+    {
+        const string model = "{\"damage\":{\"data\":20}}";
+        const string edited = "{\"damage\":{\"data\":20},\"x\":{\"data\":5}}";
+        // The other writer also changed an unrelated field, so the merge has to walk the members.
+        var concurrent = FileJson("{\"damage\":{\"data\":20},\"x\":{\"data\":5},\"y\":{\"data\":1}}");
+        await File.WriteAllTextAsync(path, concurrent);
+        await Save(edited, FileJson(model), model);
+        Assert.That(File.ReadAllText(path), Is.EqualTo(concurrent));
+    }
+
+    [Test] public void Failed_write_keeps_exit_code_5()
+    {
+        // A directory where the file belongs makes the write itself fail on every platform.
+        Directory.CreateDirectory(path);
+        var error = Assert.ThrowsAsync<CliException>(() => Save(Model));
+        Assert.That(error.NonZeroOrOneExitCode, Is.EqualTo(5));
+        Assert.That(error.Message, Does.StartWith("Failed to save Content."));
     }
 
     [Test] public async Task Nested_object_edit_preserves_unknown_fields()
@@ -140,7 +174,8 @@ public class ContentSchemaSaveTests
         const string before = "{\"rows\":{\"data\":[{\"damage\":20}]}}";
         var original = FileJson("{\"rows\":{\"data\":[{\"damage\":20,\"future\":37}]}}");
         await File.WriteAllTextAsync(path, original);
-        Assert.ThrowsAsync<CliException>(() => Save(edited, original, before));
+        var unsafeEdit = Assert.ThrowsAsync<CliException>(() => Save(edited, original, before));
+        Assert.That(unsafeEdit.NonZeroOrOneExitCode, Is.EqualTo(ContentPropertyEdits.UnsafeEditExitCode), "Engines offer the schema review for this exit code.");
         Assert.That(File.ReadAllText(path), Is.EqualTo(original));
     }
 
