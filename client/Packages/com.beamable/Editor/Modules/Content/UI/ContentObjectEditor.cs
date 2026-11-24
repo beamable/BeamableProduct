@@ -478,12 +478,12 @@ namespace Beamable.Editor.Content.UI
 			using (new EditorGUI.DisabledScope(service.CurrentProgress.IsActive || EditorApplication.isCompiling))
 			{
 				var id = content.Id;
-				if (GUILayout.Button("Discard edit"))
+				if (service.CanDiscardEdit(id, failure) && GUILayout.Button("Discard edit"))
 				{
 					// Reload outside this GUI pass; it rewrites the object being drawn.
 					EditorApplication.delayCall += () =>
 					{
-						try { service.DiscardRejectedEdit(id); }
+						try { service.DiscardRejectedEdit(id, failure); }
 						catch (Exception error) { EditorUtility.DisplayDialog("Edit was not discarded", error.Message, "Close"); }
 					};
 				}
