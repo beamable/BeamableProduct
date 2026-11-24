@@ -1165,6 +1165,52 @@ namespace Beamable.Editor.Tests
 
         [TestCase(false)]
         [TestCase(true)]
+        public void Delayed_discard_during_a_tag_write_reports_busy_only_for_the_displayed_refusal(bool reloaded)
+        {
+            WithWatcher(() =>
+            {
+                LoadWithAmount(2);
+                var id = _content.Id;
+                _content.amount = 3;
+                LogAssert.Expect(LogType.Error, new Regex("Content edit was not saved"));
+                _service.SaveContent(_content);
+                _commands.Properties.Single().Reject("Cannot safely edit properties.rows", CliContentService.UnsafeEditExitCode);
+                Assert.That(_service.TryGetSaveFailure(id, out var clicked), Is.True);
+                Assert.That(_service.CanDiscardEdit(id, clicked), Is.True);
+
+                // The Inspector already scheduled the click. A reload can retire it before the tag write starts.
+                if (reloaded)
+                {
+                    WriteOutsideAmount(50);
+                    Watch();
+                }
+                var disk = File.ReadAllText(_path);
+                _service.SetContentTags(id, new[] { "changed" });
+                Assert.That(_service.CanDiscardEdit(id, clicked), Is.False);
+                if (reloaded)
+                    Assert.DoesNotThrow(() => _service.DiscardRejectedEdit(id, clicked));
+                else
+                {
+                    var busy = Assert.Throws<InvalidOperationException>(() => _service.DiscardRejectedEdit(id, clicked));
+                    Assert.That(busy.Message, Does.Contain("Wait for them to finish, then discard"));
+                }
+                Assert.That(_content.amount, Is.EqualTo(reloaded ? 50 : 3));
+                Assert.That(File.ReadAllText(_path), Is.EqualTo(disk));
+                Assert.That(_service.TryGetSaveFailure(id, out var retained), Is.True);
+                Assert.That(retained.Edit, Is.EqualTo(clicked.Edit));
+
+                _commands.Tags.Single().Completion.CompleteSuccess();
+                Assert.That(_service.CanDiscardEdit(id, clicked), Is.EqualTo(!reloaded));
+                _service.DiscardRejectedEdit(id, clicked);
+                Assert.That(_content.amount, Is.EqualTo(reloaded ? 50 : 2));
+                Assert.That(_service.TryGetSaveFailure(id, out _), Is.EqualTo(reloaded));
+                Assert.That(File.ReadAllText(_path), Is.EqualTo(disk));
+                Assert.That(_commands.Properties.Count, Is.EqualTo(1));
+            });
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
         public void Reload_replaces_the_refused_value_and_retires_only_its_discard_action(bool fullRefresh)
         {
             WithWatcher(() =>

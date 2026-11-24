@@ -172,11 +172,20 @@ namespace Beamable.Editor.ContentService
             return !string.IsNullOrEmpty(contentId) && _saveFailures.TryGetValue(GetContentWriteKey(contentId), out failure);
         }
 
-        internal bool CanDiscardEdit(string contentId, ContentSaveFailure failure) =>
-            _contentScriptableCache.TryGetValue(contentId, out var content) && content != null &&
+        internal bool CanDiscardEdit(string contentId, ContentSaveFailure failure)
+        {
+            var key = GetContentWriteKey(contentId);
+            return IsDisplayingRefusedEdit(contentId, key, failure, out _) && !HasPendingWrites(key);
+        }
+
+        private bool IsDisplayingRefusedEdit(string contentId, string key, ContentSaveFailure failure, out ContentObject content) =>
+            _contentScriptableCache.TryGetValue(contentId, out content) && content != null &&
+            _saveFailures.TryGetValue(key, out var current) && current.Edit == failure.Edit &&
             _displayedLoads != null && _displayedLoads.TryGetValue(content, out var displayed) &&
-            ReferenceEquals(failure.LoadIdentity, displayed) && displayed.Key == GetContentWriteKey(contentId) &&
-            !content.HasPendingEditorChangeNotification && !_contentWrites.HasWrites(displayed.Key);
+            ReferenceEquals(failure.LoadIdentity, displayed) && displayed.Key == key &&
+            !content.HasPendingEditorChangeNotification;
+
+        private bool HasPendingWrites(string key) => _contentWrites.HasWrites(key) || _queuedPropertyWrites.ContainsKey(key);
 
         private void RecordSaveFailure(string contentId, string writeKey, long edit, object loadIdentity, Exception error)
         {
@@ -206,11 +215,10 @@ namespace Beamable.Editor.ContentService
         internal void DiscardRejectedEdit(string contentId, ContentSaveFailure failure)
         {
             var key = GetContentWriteKey(contentId);
-            if (!CanDiscardEdit(contentId, failure) || !_saveFailures.TryGetValue(key, out var current) || current.Edit != failure.Edit) return;
-            if (_contentWrites.HasWrites(key) || _queuedPropertyWrites.ContainsKey(key))
+            if (!IsDisplayingRefusedEdit(contentId, key, failure, out var content)) return;
+            if (HasPendingWrites(key))
                 throw new InvalidOperationException("Content edits are still being saved. Wait for them to finish, then discard.");
-            if (EntriesCache.TryGetValue(contentId, out var entry) && entry.StatusEnum != ContentStatus.Deleted &&
-                _contentScriptableCache.TryGetValue(contentId, out var content) && content != null)
+            if (EntriesCache.TryGetValue(contentId, out var entry) && entry.StatusEnum != ContentStatus.Deleted)
             {
                 LoadContentObject(entry, content);
                 ClearSaveFailure(key, failure.Edit);
