@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- `content save` leaves the file and its timestamp untouched when the saved properties are equivalent, writes items one at a time, and reports file and JSON errors with exit code 1 instead of 5.
+- `content save` leaves the file and its timestamp untouched when the saved properties are equivalent, validates the request before writing, and writes changed items one at a time. A file write failure retains exit code 5.
 - Publishing blocks incoming content and unverified history until explicitly reconciled with a local/realm choice in `content resolve`. Preserve `referenceManifestId` in content JSON: empty/null requires review; omission fails file loading.
 
 ### Added

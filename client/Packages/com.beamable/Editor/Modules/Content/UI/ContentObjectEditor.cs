@@ -51,7 +51,10 @@ namespace Beamable.Editor.Content.UI
 			var pending = name ? _pendingNameEdit : _pendingTagEdit;
 			if (name) { _pendingNameEdit = null; _updateNameCoroutine = null; }
 			else { _pendingTagEdit = null; _updateTagCoroutine = null; }
-			try { pending?.Invoke(); }
+			try
+			{
+				if (pending != null && !_editingService.TryGetLoadError(_editingContentId, out _)) pending();
+			}
 			finally { ReleasePendingEditsObserver(); }
 		}
 
@@ -75,13 +78,21 @@ namespace Beamable.Editor.Content.UI
 		private int _listDirtyCount;
 		private string _validationStatusDetails;
 
+		private string SelectionLoadError(CliContentService service)
+		{
+			foreach (var selected in targets)
+				if (selected is ContentObject content && !ContentHistoryInspectorPreview.IsReadOnly(content) &&
+				    service.TryGetLoadError(content.Id, out var error)) return error;
+			return null;
+		}
+
 		protected override void OnHeaderGUI()
 		{
 			var contentObject = target as ContentObject;
 			if (contentObject == null) return;
 			var contentService = BeamEditorContext.Default.ServiceScope.GetService<CliContentService>();
 			ObservePendingEdits(contentService);
-			using (new EditorGUI.DisabledScope(ContentHistoryInspectorPreview.IsReadOnly(contentObject) || contentService.CurrentProgress.IsActive))
+			using (new EditorGUI.DisabledScope(ContentHistoryInspectorPreview.IsReadOnly(contentObject) || contentService.CurrentProgress.IsActive || SelectionLoadError(contentService) != null))
 			{
 			var isEditingMultiple = targets.Length > 1;
 
@@ -408,7 +419,10 @@ namespace Beamable.Editor.Content.UI
 		{
 			var contentObject = target as ContentObject;
 			if (contentObject == null) return;
-			var busy = BeamEditorContext.Default.CliContentService.CurrentProgress.IsActive;
+			var service = BeamEditorContext.Default.CliContentService;
+			var loadError = SelectionLoadError(service);
+			if (loadError != null) EditorGUILayout.HelpBox(loadError, MessageType.Error);
+			var busy = service.CurrentProgress.IsActive || loadError != null;
 			using (new EditorGUI.DisabledScope(ContentHistoryInspectorPreview.IsReadOnly(contentObject) || busy))
 			{
 

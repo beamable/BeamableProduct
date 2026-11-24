@@ -145,7 +145,9 @@ namespace Beamable.Editor.ContentService
 
         private static string ModelPropertiesOf(string contentId, Type type, string fileJson)
         {
-            try { return SerializeMigration(contentId, type, fileJson); }
+            // Compare the projection the Inspector actually loaded. A malformed field can coexist
+            // with a valid edit to another field; the CLI still checks edits against the raw file.
+            try { return SerializeModelProperties(contentId, type, fileJson, disableExceptions: true); }
             catch (Exception) { return null; }
         }
 
@@ -257,7 +259,7 @@ namespace Beamable.Editor.ContentService
             var entry = EntriesCache[contentId];
             var original = File.ReadAllText(entry.JsonFilePath);
             return new SchemaMigrationPreview(contentId, GetContentScopeKey(), entry.JsonFilePath, content.GetType(),
-                original, SerializeMigration(contentId, content.GetType(), original));
+                original, SerializeModelProperties(contentId, content.GetType(), original, disableExceptions: false));
         }
 
         internal async Promise ApplySchemaMigration(SchemaMigrationPreview preview)
@@ -269,7 +271,7 @@ namespace Beamable.Editor.ContentService
             if (entry.JsonFilePath != preview.Path || HashFileText(File.ReadAllText(preview.Path)) != preview.FileHash ||
                 !_contentScriptableCache.TryGetValue(preview.ContentId, out var content) || content == null ||
                 content.GetType() != preview.ModelType ||
-                SerializeMigration(preview.ContentId, preview.ModelType, preview.OriginalJson) != preview.ProposedProperties)
+                SerializeModelProperties(preview.ContentId, preview.ModelType, preview.OriginalJson, disableExceptions: false) != preview.ProposedProperties)
                 throw new InvalidOperationException("Content or model changed after the JSON preview. Review this item again.");
             // The reload below replaces the Inspector values, so keep edits disabled until it finishes. This skips
             // FinishActionProgress on purpose: its full content reload is far heavier than this one-item write.
@@ -314,13 +316,12 @@ namespace Beamable.Editor.ContentService
                 throw new InvalidOperationException("Content edits are still being saved. Wait before reviewing.");
         }
 
-        private static string SerializeMigration(string contentId, Type type, string json)
+        private static string SerializeModelProperties(string contentId, Type type, string json, bool disableExceptions)
         {
             var instance = (ContentObject)ScriptableObject.CreateInstance(type);
             try
             {
-                // A failed conversion must never become a migration to default values.
-                ClientContentSerializer.DeserializeContentFromCli(json, instance, contentId, out _, disableExceptions: false);
+                ClientContentSerializer.DeserializeContentFromCli(json, instance, contentId, out _, disableExceptions);
                 return ClientContentSerializer.SerializeProperties(instance);
             }
             finally { instance.CancelPendingEditorChangeNotification(); UnityEngine.Object.DestroyImmediate(instance); }
