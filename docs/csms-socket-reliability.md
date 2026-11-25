@@ -153,7 +153,11 @@ the timeout is disabled. The daemon's retry loop exists for failed attempts, and
 | Service keep-alive | `KeepAliveInterval` fixed 20 s; `WS_KEEPALIVE_TIMEOUT_SECONDS` | 0 = unsolicited pong only | net9+ only |
 | Service reconnect backoff | `_retryIntervalsInSeconds` | 5, 5, 10, 10, 15, 45, 60 s | between failed connects, and between failed setups of a replacement |
 
-The startup reply clock runs while startup waits for a platform response. Overlapping registration waits count once. For eager content, the manifest wait includes backoff between transient failures. Item downloads, user initialization, service setup callbacks and custom event-hook work have no deadline of their own. If the socket closes before eager preload completes, the replacement finishes preload before running initialization hooks and registering for traffic.
+The startup reply clock runs while startup waits for a platform response. Overlapping registration waits count once. For eager content, the manifest wait includes backoff between transient failures. Item downloads, user initialization, service setup callbacks and custom event hooks run outside the platform reply budget.
+
+If the socket closes during item downloads, startup waits for the downloads to return. The two-minute reconnect window starts at the first socket close. If that window has expired by the time the downloads return, the process exits with code 12. Otherwise the replacement uses the remaining time for backoff, connection and authentication.
+
+On the replacement, the first instance refreshes previously loaded manifests. If eager preload still needs the manifest, it waits for that refresh under the replacement's startup reply budget before running initialization hooks. Expiry ends the startup wait. A refresh already in flight can still receive its reply until the connection is cleaned up. If preload already succeeded, the instance can finish initialization and serve while the refresh is still pending.
 
 If a replacement authenticates and then times out waiting for a platform reply while a sibling serves, the next replacement gets a fresh two-minute window for backoff, connection and authentication, even if the original socket-loss window has elapsed. Each authenticated attempt gets its own platform reply budget. With socket enforcement enabled, an individual request can still fail earlier under its configured outbound deadline. A missing startup reply at that deadline follows the same sibling rule. Explicit platform error responses keep their existing handling.
 

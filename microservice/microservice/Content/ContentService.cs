@@ -320,6 +320,10 @@ namespace Beamable.Server.Content
       private ConcurrentDictionary<string, CachedContentManifest> _nameToManifest =
 	      new ConcurrentDictionary<string, CachedContentManifest>();
 
+      /// <summary>
+      /// Completes on the first successful initialization. A failed attempt leaves this signal pending
+      /// so a later retry can complete it. Await <see cref="Init(bool)"/> to observe an attempt's failure.
+      /// </summary>
       public Promise initializedPromise;
 
       public ContentService(MicroserviceRequester requester, SocketRequesterContext socket, IContentResolver contentResolver, ReflectionCache reflectionCache)
@@ -376,6 +380,9 @@ namespace Beamable.Server.Content
 	      return manifest;
       }
       
+      /// <summary>Initializes content, or joins the current initialization attempt. A call after failure starts a new attempt.</summary>
+      /// <param name="preload">Download content if this call starts an initialization attempt.</param>
+      /// <returns>The current attempt's result, including any initialization error.</returns>
       public Promise Init(bool preload = false) => Init(preload, null);
 
       internal Promise Init(bool preload, PlatformReplyWait replies)
