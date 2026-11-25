@@ -544,6 +544,10 @@ namespace Beamable
 		public bool HasToken => Requester.Token != null;
 
 #pragma warning disable CS0067
+		/// <summary>
+		/// Raised after the editor applies the realm and its content reload finishes, including when the reload fails.
+		/// Use this event to update realm-scoped services. Await <see cref="SwitchRealm(string)"/> for the reload outcome.
+		/// </summary>
 		public event Action<RealmView> OnRealmChange;
 		public event Action<CustomerView> OnCustomerChange;
 		public event Action<EditorUser> OnUserChange;
@@ -761,20 +765,27 @@ namespace Beamable
 			{
 				changeRealmPromise.CompleteSuccess();
 			}
-			changeRealmPromise = new Promise();
+			var switching = changeRealmPromise = new Promise();
 			try
 			{
 				await BeamCli.SwitchRealms(pid);
-
 				ApplyRequesterToken();
 
-				await CliContentService.Reload();
-
-				OnRealmChange?.Invoke(BeamCli.CurrentRealm);
+				var appliedRealm = BeamCli.CurrentRealm;
+				try { await CliContentService.Reload(); }
+				catch
+				{
+					// Preserve the reload failure if a realm-change listener also throws during recovery.
+					try { OnRealmChange?.Invoke(appliedRealm); }
+					catch (Exception listenerError) { Debug.LogException(listenerError); }
+					throw;
+				}
+				OnRealmChange?.Invoke(appliedRealm);
 			}
 			finally
 			{
-				changeRealmPromise.CompleteSuccess();
+				// A listener can start another switch while this one is finishing.
+				switching.CompleteSuccess();
 			}
 		}
 

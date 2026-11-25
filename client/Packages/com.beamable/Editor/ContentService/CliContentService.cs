@@ -1101,7 +1101,7 @@ namespace Beamable.Editor.ContentService
 				}
 
 				var initialContent = new TaskCompletionSource<bool>();
-				_ordinaryContentReady = guarded ? null : initialContent.Task;
+				_ordinaryContentReady = guarded ? null : initialContent;
 				var startupDeadline = WatcherTime + ContentStartupIdleSeconds;
 				var completedItems = 0;
 
@@ -1274,7 +1274,7 @@ namespace Beamable.Editor.ContentService
 				{
 					void CheckStartupDeadline()
 					{
-						if (!_watchersDisposed && WatcherTime >= startupDeadline)
+						if (!_watchersDisposed && ReferenceEquals(_contentWatcher, watcher) && WatcherTime >= startupDeadline)
 							initialContent.TrySetException(new TimeoutException(ContentStartupTimeoutMessage));
 					}
 
@@ -1283,15 +1283,26 @@ namespace Beamable.Editor.ContentService
 					{
 						if (await Task.WhenAny(initialContent.Task, completion) == completion)
 						{
+							if (!guarded && !_preparedForAssemblyReload && !ReferenceEquals(_contentWatcher, watcher))
+							{
+								// EOF can precede the stop acknowledgement. Normal retirement settles this caller after shutdown.
+								await initialContent.Task;
+							}
 							await completion;
 							if (!guarded && !ReferenceEquals(_contentWatcher, watcher)) return;
 							throw new InvalidOperationException("Content watcher ended before its initial content response.");
 						}
-						await initialContent.Task;
+						if (!await initialContent.Task)
+						{
+							// Shutdown finished before a snapshot. Preserve any terminal command error for this reload.
+							await completion;
+							return;
+						}
 						if (ReferenceEquals(_contentWatcher, watcher)) ManifestChangedCount++;
 					}
-					catch (TimeoutException) when (!guarded && initialContent.Task.IsFaulted && ReferenceEquals(_contentWatcher, watcher))
+					catch (TimeoutException error) when (!guarded && initialContent.Task.IsFaulted && ReferenceEquals(_contentWatcher, watcher))
 					{
+						ContentWatcherError = error.Message;
 						isReloading = false;
 						// Detach before returning the failure. Retry will await the same shutdown before starting a watcher.
 						var stop = BeginContentWatcherStop(preserveRequest: true);
@@ -1300,7 +1311,12 @@ namespace Beamable.Editor.ContentService
 					}
 					finally
 					{
-						if (!guarded) EditorApplication.update -= CheckStartupDeadline;
+						if (!guarded)
+						{
+							EditorApplication.update -= CheckStartupDeadline;
+							// A command can exit before a snapshot. A later stop cannot fault an abandoned readiness task.
+							initialContent.TrySetCanceled();
+						}
 						if (ReferenceEquals(_contentWatcher, watcher)) isReloading = false;
 					}
 				}

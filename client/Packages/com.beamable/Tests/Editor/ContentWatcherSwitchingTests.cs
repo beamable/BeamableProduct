@@ -23,7 +23,7 @@ using UnityEngine.TestTools;
 
 namespace Beamable.Editor.Tests
 {
-    public class ContentWatcherSwitchingTests
+    public partial class ContentWatcherSwitchingTests
     {
         const BindingFlags Fields = BindingFlags.Instance | BindingFlags.NonPublic;
         CliContentService service;
@@ -594,8 +594,20 @@ namespace Beamable.Editor.Tests
             first.Error(_ => { });
             if (switching) commands.History[0].Completion.CompleteSuccess();
             transport.ReleaseWorker.TrySetResult(true);
+            if (!history)
+            {
+                var stream = (Promise)transport.Command.GetType().GetField("_runPromise", Fields).GetValue(transport.Command);
+                yield return Wait(stream);
+                yield return null;
+                Assert.That(initial.IsCompleted, Is.False, "Stream EOF alone cannot confirm the retired watcher's shutdown.");
+            }
             transport.AllowAcknowledgement.TrySetResult(true);
             yield return Wait(first);
+            if (!history)
+            {
+                yield return Wait(initial);
+                Assert.That(initial.IsFailed, Is.True, "The old reload also receives the shutdown rejection.");
+            }
             Assert.That(first.IsFailed, Is.True);
             AssertMode("Failed");
             Assert.That(commands.Content.Count + commands.History.Count, Is.EqualTo(switching ? 1 : 0));
@@ -827,6 +839,78 @@ namespace Beamable.Editor.Tests
         }
 
         [UnityTest]
+        public IEnumerator ReplacingAWatcherNearItsDeadlineWaitsForShutdown()
+        {
+            double now = 0;
+            service.ContentWatcherClock = () => now;
+            commands.DelayInitialContent = true;
+            var firstLoad = service.Reload();
+            var first = commands.Content.Single();
+            now = 29;
+            commands.DelayInitialContent = false;
+            var replacement = service.Reload();
+            Assert.That(first.Cancelled, Is.True);
+
+            now = 31;
+            yield return null;
+            yield return null;
+            AssertMode("Switching");
+            Assert.That(firstLoad.IsCompleted, Is.False);
+            Assert.That(replacement.IsCompleted, Is.False);
+            Assert.That(commands.Content.Count, Is.EqualTo(1));
+
+            first.Completion.CompleteSuccess();
+            yield return Wait(firstLoad);
+            yield return Wait(replacement);
+            firstLoad.GetResult();
+            replacement.GetResult();
+            Assert.That(service.ContentWatcherError, Is.Null);
+            Assert.That(commands.Content.Count, Is.EqualTo(2));
+            AssertMode("Enabled");
+        }
+
+        [UnityTest]
+        public IEnumerator ShutdownTimeoutExposesRetryAndReleasesTheRetiredReload()
+        {
+            double now = 0;
+            service.ContentWatcherClock = () => now;
+            Set(service, "_watcherStopTimeoutMs", 25);
+            commands.DelayInitialContent = true;
+            Exception firstError = null;
+            var firstLoad = service.Reload().Error(error => firstError = error);
+            var first = commands.Content.Single();
+
+            config.EnableLocalContentInEditor = true;
+            Exception stopError = null;
+            var toggle = ApplyMode().Error(error => stopError = error);
+            yield return Wait(toggle);
+            yield return Wait(firstLoad);
+            Assert.That(stopError, Is.TypeOf<TimeoutException>());
+            Assert.That(stopError.Message, Does.Contain("shutdown"));
+            Assert.That(firstError, Is.SameAs(stopError));
+            Assert.That(service.ContentWatcherError, Is.EqualTo(stopError.Message));
+            Assert.That(service.isReloading, Is.False);
+            AssertMode("Failed");
+
+            // A late acknowledgement permits a retry. It cannot complete the failed mode transition by itself.
+            first.Completion.CompleteSuccess();
+            now = 90;
+            yield return null;
+            Assert.That(commands.Content.Count, Is.EqualTo(1));
+            Assert.That(service.ContentWatcherError, Is.EqualTo(stopError.Message));
+            AssertMode("Failed");
+
+            commands.DelayInitialContent = false;
+            var retry = ApplyMode();
+            yield return Wait(retry);
+            retry.GetResult();
+            Assert.That(commands.Content.Count, Is.EqualTo(2));
+            Assert.That(commands.Content[1].Local, Is.True);
+            Assert.That(service.ContentWatcherError, Is.Null);
+            AssertMode("Paused");
+        }
+
+        [UnityTest]
         public IEnumerator SwitchingCanStopAWatcherStillWaitingForInitialContent()
         {
             commands.DelayInitialContent = true;
@@ -922,6 +1006,20 @@ namespace Beamable.Editor.Tests
                 Assert.That(dispatcher.IsForceStopped, Is.True);
             }
             finally { dispatcher.OnDispose(); command.Completion.CompleteSuccess(); }
+        }
+
+        [UnityTest]
+        public IEnumerator AssemblyReloadDoesNotReportAContentSnapshotBeforeTheCommandStops()
+        {
+            commands.DelayInitialContent = true;
+            var reload = service.Reload();
+            var watcher = commands.Content.Single();
+            service.PrepareForAssemblyReload();
+            Assert.That(watcher.Cancelled, Is.True);
+            Assert.That(reload.IsCompleted, Is.False);
+            watcher.Completion.CompleteSuccess();
+            yield return Wait(reload);
+            reload.GetResult();
         }
 
         [UnityTest]

@@ -19,10 +19,11 @@ namespace Beamable.Editor.ContentService
         // Ordinary content ps can sync files before its first snapshot. Only advancing sync work renews this budget.
         private const double ContentStartupIdleSeconds = 30;
         internal const string ContentStartupTimeoutMessage = "Content watcher timed out waiting for its first snapshot. Refresh Content to retry.";
-        internal bool ContentStartupTimedOut => _contentWatchRequested && _ordinaryContentReady?.IsFaulted == true;
+        // Keep a failed shutdown visible for Retry even if the command acknowledges it after our wait expired.
+        internal string ContentWatcherError { get; private set; }
         internal Func<double> ContentWatcherClock;
         private double WatcherTime => ContentWatcherClock?.Invoke() ?? EditorApplication.timeSinceStartup;
-        private Task _ordinaryContentReady;
+        private TaskCompletionSource<bool> _ordinaryContentReady;
         private int _watcherStopTimeoutMs = 10000;
         private Task _contentWatcherCompletion;
         private Task _historyWatcherCompletion;
@@ -46,7 +47,7 @@ namespace Beamable.Editor.ContentService
             {
                 if (_localModeExitCheck != null)
                     return _localModeExitStopFailed ? ContentAutoSyncState.Failed : ContentAutoSyncState.Switching;
-                if (ContentStartupTimedOut)
+                if (ContentWatcherError != null)
                     return ContentAutoSyncState.Failed;
                 // A saved preference is not proof that the previous commands have stopped.
                 if ((_retiringContentCommand != null && (_contentStop?.IsFaulted == true || _contentStop?.IsCanceled == true)) ||
@@ -126,14 +127,30 @@ namespace Beamable.Editor.ContentService
 
         private async Task StopContentWatcher(bool preserveRequest = false)
         {
+            ContentWatcherError = null;
             var stop = BeginContentWatcherStop(preserveRequest);
             var command = _retiringContentCommand;
-            if (!_watchersDisposed && !stop.IsCompleted && _ordinaryContentReady != null &&
-                _ordinaryContentReady.Status != TaskStatus.RanToCompletion)
-                await WaitForWatcherStop(stop, "Could not confirm content watcher shutdown. Refresh Content to retry.");
-            else
-                await stop;
+            var startup = _ordinaryContentReady;
+            try
+            {
+                if (!_watchersDisposed && !stop.IsCompleted && startup != null && startup.Task.Status != TaskStatus.RanToCompletion)
+                    await WaitForWatcherStop(stop, "Could not confirm content watcher shutdown. Refresh Content to retry.");
+                else
+                    await stop;
+            }
+            catch (Exception error)
+            {
+                if (ReferenceEquals(_retiringContentCommand, command) && ReferenceEquals(_contentStop, stop))
+                {
+                    ContentWatcherError = error.Message;
+                    isReloading = false;
+                }
+                // Retirement disarms the first-snapshot timer. Release its caller even if the command never exits.
+                startup?.TrySetException(error);
+                throw;
+            }
             if (ReferenceEquals(_retiringContentCommand, command)) _retiringContentCommand = null;
+            if (command != null) startup?.TrySetResult(false);
         }
 
         // A timeout releases this caller. The owner keeps the original stop task until shutdown is acknowledged.

@@ -260,9 +260,9 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private void DrawContentData()
 		{
-			if (_contentService.ContentStartupTimedOut)
+			if (_contentService.ContentWatcherError != null)
 			{
-				EditorGUILayout.HelpBox(CliContentService.ContentStartupTimeoutMessage, MessageType.Error);
+				EditorGUILayout.HelpBox(_contentService.ContentWatcherError, MessageType.Error);
 				return;
 			}
 
