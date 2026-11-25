@@ -76,9 +76,7 @@ namespace Beamable.Editor.ContentService
         }
 
         /// <summary>Stops both old commands before restarting active watchers with the current policy.</summary>
-        public Promise ApplyLocalContentMode() => ApplyLocalContentMode(null);
-
-        private async Promise ApplyLocalContentMode(Func<Promise> beforeRestart)
+        public async Promise ApplyLocalContentMode()
         {
             Task ready = Task.CompletedTask;
             await WatcherGate.WaitAsync();
@@ -88,13 +86,9 @@ namespace Beamable.Editor.ContentService
                 _localContentModeError = null;
                 await StopLocalModeExitCheck();
                 var local = _contentConfiguration.EnableLocalContentInEditor;
-                if (beforeRestart == null && WatchersMatchMode(local) &&
-                    _retiringContentCommand == null && _retiringHistoryCommand == null) return;
+                if (WatchersMatchMode(local) && _retiringContentCommand == null && _retiringHistoryCommand == null) return;
                 await Task.WhenAll(StopContentWatcher(preserveRequest: true), StopHistoryWatcher());
                 if (_watchersDisposed) return;
-                if (beforeRestart != null) await beforeRestart();
-                if (_watchersDisposed) return;
-                // Read intent and mode after shutdown: closes and rapid toggles may arrive while waiting.
                 if (_historyWatchRequested) StartContentHistoryCore();
                 if (_contentWatchRequested) ready = await StartContentWatcher();
             }

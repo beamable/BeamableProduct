@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Beamable.Common.BeamCli.Contracts;
 using Beamable.Content;
 using Beamable.Editor.ContentService;
 using UnityEditor;
@@ -17,6 +18,9 @@ namespace Beamable.Editor.UI.ContentWindow
 		private bool _busy;
 		private bool _closed;
 		private Vector2 _scroll;
+		private LocalContentManifestEntry[] _pending;
+		private int _manifestVersion;
+		private int _entryCount;
 
 		internal static void Open(CliContentService service, ContentConfiguration configuration)
 		{
@@ -26,6 +30,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			window._service = service;
 			window._configuration = configuration;
 			window._scope = service.GetContentScopeKey();
+			window._pending = null;
 			window._closed = false;
 			window.minSize = new Vector2(560, 340);
 			_ = window.Refresh();
@@ -72,17 +77,22 @@ namespace Beamable.Editor.UI.ContentWindow
 			var scopeChanged = _scope != _service.GetContentScopeKey() || !_configuration.EnableLocalContentInEditor;
 			if (scopeChanged) EditorGUILayout.HelpBox("The realm, namespace, or mode changed. Close this review and start again.", MessageType.Warning);
 			if (!string.IsNullOrEmpty(_error)) EditorGUILayout.HelpBox(_error, MessageType.Error);
-			var pending = _service.EntriesCache.Values.Where(CliContentService.RequiresLocalModeReview).OrderBy(entry => entry.FullId).ToArray();
+			if (_pending == null || _manifestVersion != _service.ManifestChangedCount || _entryCount != _service.EntriesCache.Count)
+			{
+				_pending = _service.EntriesCache.Values.Where(CliContentService.RequiresLocalModeReview).OrderBy(entry => entry.FullId).ToArray();
+				_manifestVersion = _service.ManifestChangedCount;
+				_entryCount = _service.EntriesCache.Count;
+			}
 			using (new EditorGUI.DisabledScope(_busy || scopeChanged || _service.CurrentProgress.IsActive))
 			{
-				foreach (var entry in pending)
+				foreach (var entry in _pending)
 				{
 					EditorGUILayout.BeginHorizontal();
 					EditorGUILayout.LabelField(new GUIContent(entry.FullId, entry.FullId));
 					if (GUILayout.Button("Review…", GUILayout.Width(90))) ContentReconciliationWindow.Open(_service, entry);
 					EditorGUILayout.EndHorizontal();
 				}
-				if (pending.Length == 0) GUILayout.Label("No incoming changes or conflicts in the current view.", EditorStyles.wordWrappedLabel);
+				if (_pending.Length == 0) GUILayout.Label("No incoming changes or conflicts in the current view.", EditorStyles.wordWrappedLabel);
 				EditorGUILayout.EndScrollView();
 				GUILayout.Label("Leaving resumes automatic updates from the realm. Restart Play Mode to use published content.", EditorStyles.wordWrappedLabel);
 			}
@@ -91,7 +101,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				if (GUILayout.Button("Refresh")) _ = Refresh();
 			GUILayout.FlexibleSpace();
 			if (GUILayout.Button(_configuration.EnableLocalContentInEditor ? "Stay in Local Mode" : "Close")) Close();
-			using (new EditorGUI.DisabledScope(_busy || scopeChanged || _service.CurrentProgress.IsActive || pending.Length != 0))
+			using (new EditorGUI.DisabledScope(_busy || scopeChanged || _service.CurrentProgress.IsActive || _pending.Length != 0))
 				if (GUILayout.Button("Leave Local Mode")) _ = Leave();
 			EditorGUILayout.EndHorizontal();
 			if (_busy) GUILayout.Label("Checking content… Local Mode stays on until the check succeeds.");

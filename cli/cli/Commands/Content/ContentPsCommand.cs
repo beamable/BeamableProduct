@@ -6,6 +6,7 @@ using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content;
 using Beamable.Server;
 using cli.Dotnet;
+using cli.Services;
 using Spectre.Console;
 using Spectre.Console.Json;
 using System.CommandLine;
@@ -37,6 +38,8 @@ public class ContentPsCommand
 		ProjectCommand.AddWatchOption(this, (args, i) => args.Watch = i);
 		AddOption(new Option<bool>("--no-auto-sync", "Observe content changes without automatically updating local content files"),
 			(args, value) => args.NoAutoSync = value);
+		AddOption(new Option<bool>("--guard-local-mode-exit", "Enable auto-sync after a subscribed, read-only Local Mode exit check"),
+			(args, value) => args.GuardLocalModeExit = value);
 		AddOption(ContentCommand.MANIFESTS_FILTER_OPTION, (args, s) => args.ManifestId = s[0]);
 		AddOption(new RequireProcessIdOption(), (args, i) => args.RequireProcessId = i);
 	}
@@ -50,11 +53,22 @@ public class ContentPsCommand
 		var manifestId = args.ManifestId ?? "global";
 
 		var contentService = args.DependencyProvider.GetService<ContentService>();
+		if (args.GuardLocalModeExit && (!args.Watch || !args.NoAutoSync))
+			throw new CliException("The Local Mode exit check requires --watch and --no-auto-sync.");
 
-		// Declarations of the manifest variables we care about during this command's lifecycle.
-		// Each invocation is a new observation of the realm, including one-shot exit checks.
+		using var watchSemaphore = args.Watch ? new SemaphoreSlim(1, 1) : null;
+		await using var watch = args.Watch ? new ContentWatchScope(args.Lifecycle.CancellationToken) : null;
+		var exitActivation = args.GuardLocalModeExit ? new LocalModeExitActivation() : null;
+		var autoSync = !args.NoAutoSync || exitActivation != null;
+		Promise<ClientManifestJsonResponse> latestManifest = null;
+		Task<LocalContentFiles> localContentAgainstLatest = null;
+		var remoteManifestPublishTask = exitActivation == null ? null : watch.Run(WatchRemotePublications);
+		if (exitActivation != null)
+			await exitActivation.Subscribed.Task.WaitAsync(watch.Token);
+
+		// Each invocation starts with a new observation of the realm.
 		// A long-lived CLI server may have missed a publication while its watchers were stopped.
-		Promise<ClientManifestJsonResponse> latestManifest = contentService.GetManifest(manifestId, replaceLatest: true).ToPromise();
+		latestManifest = contentService.GetManifest(manifestId, replaceLatest: true).ToPromise();
 		await latestManifest;
 
 		void OnMessage(ContentProgressUpdateData data)
@@ -88,20 +102,38 @@ public class ContentPsCommand
 
 		// Refresh the local ContentFile objects based on the latest reference manifest and emit a "full-rebuild" event.
 		// Full rebuild events expect the engine to discard their in-memory state for this realm+manifest id handle and rebuild the entire list of content entries.
-		var localContentAgainstLatest = contentService.GetAllContentFiles(latestManifest.GetResult(), manifestId);
+		localContentAgainstLatest = contentService.GetAllContentFiles(latestManifest.GetResult(), manifestId);
 		await Task.WhenAll(localContentAgainstLatest);
 
 		var eventToEmit = CreateFullRebuildEvent(localContentAgainstLatest.Result.ContentFiles, cid, pid, manifestId);
-		this.SendResults<DefaultStreamResultChannel, ContentPsCommandEvent>(eventToEmit);
+		if (exitActivation != null)
+		{
+			var entries = eventToEmit.RelevantManifestsAgainstLatest[0].Entries;
+			if (entries.Any(entry => entry.IsInConflict ||
+			    (ContentChangeKind)entry.ChangeKind is not (ContentChangeKind.UpToDate or ContentChangeKind.LocalEdit)))
+				throw new CliException("Incoming changes or conflicts still need review. Refresh and resolve them before leaving Local Mode.");
+
+			var checkedUid = latestManifest.GetResult().uid.GetOrElse("");
+			// There may be a new revision whose notification has not reached this subscription yet.
+			// Check the latest UID again after the scan so a slow scan cannot extend the cutoff.
+			var currentManifest = await contentService.GetManifest(manifestId, replaceLatest: true);
+			if (checkedUid != currentManifest.uid.GetOrElse(""))
+				throw LocalModeExitActivation.RealmChanged();
+			exitActivation.Activate(checkedUid, watch.Token, () =>
+			{
+				eventToEmit.LocalModeExitActivated = true;
+				this.SendResults<DefaultStreamResultChannel, ContentPsCommandEvent>(eventToEmit);
+			});
+		}
+		else
+		{
+			this.SendResults<DefaultStreamResultChannel, ContentPsCommandEvent>(eventToEmit);
+		}
 		this.LogResult(eventToEmit);
 
 		// If we are meant to watch the content folder, let's set up jobs to do that.
 		if (args.Watch)
 		{
-			// This ensure that only one of the two event streams will resolve at a time.
-			using var watchSemaphore = new SemaphoreSlim(1, 1);
-			await using var watch = new cli.Services.ContentWatchScope(args.Lifecycle.Source.Token);
-
 			// Set up a task that will emit a ChangedContent event every time local files for this realm+manifestid handle are changed.
 			// The events will only contain the entries for the modified content objects and expects the engine integration to only rebuild their in-memory representation of the modified object.
 			var localFileChangesTask = watch.Run(async () =>
@@ -174,7 +206,7 @@ public class ContentPsCommand
 
 						
 						// If a content referenceId was changed and can be updated we don't need to wait for a content ps to be called again to reset it
-						if (!args.NoAutoSync)
+						if (autoSync)
 						{
 							await contentService.AdvanceManifestReferences(contentFolder, localContentAgainstLatest.Result.ContentFiles, latestManifestId, manifestId: manifestId);
 						}
@@ -236,58 +268,58 @@ public class ContentPsCommand
 			});
 
 
-			// Set up a task that will emit a RemotePublished event every time someone THAT IS NOT YOU publish a manifest to this realm+manifestid handle.
-			var remoteManifestPublishTask = watch.Run(async () =>
-			{
-				await foreach (var remoteContentPublished in contentService.ListenToRemoteContentPublishes(args, manifestId, watch.Token, autoSync: !args.NoAutoSync))
-				{
-					await watchSemaphore.WaitAsync();
-					try
-					{
-						// Fetch the newest manifest
-						var latestManifestId = remoteContentPublished.ReferenceUid;
-
-						// Refresh both the reference manifest and the latest manifests.
-						latestManifest = contentService.GetManifest(manifestId, latestManifestId).ToPromise();
-						await latestManifest;
-
-						// Rebuild the content against the new manifests.
-						localContentAgainstLatest = contentService.GetAllContentFiles(latestManifest.GetResult(), manifestId);
-						await localContentAgainstLatest;
-
-						// Prepare a new Manifest to push out with only the changed entries.
-						var remotePublishManifestToEmit = new ContentPsCommandEvent()
-						{
-							EventType = ContentPsCommandEvent.EVT_TYPE_RemotePublished,
-							RelevantManifestsAgainstLatest = new()
-							{
-								new LocalContentManifest()
-								{
-									OwnerCid = cid,
-									OwnerPid = pid,
-									ManifestId = manifestId,
-									Entries = ContentService.ContentFileToLocalContentManifestEntries(localContentAgainstLatest.Result.ContentFiles
-									).ToArray(),
-								}
-							},
-							ToRemoveLocalEntries = new(),
-							PublisherEmail = remoteContentPublished.PublisherEmail,
-							PublisherAccountId = remoteContentPublished.PublisherAccountId,
-							SyncReports = remoteContentPublished.AutoSyncReport == null ? new() : new() { remoteContentPublished.AutoSyncReport, },
-						};
-
-						// Send it out.
-						this.SendResults<DefaultStreamResultChannel, ContentPsCommandEvent>(remotePublishManifestToEmit);
-						this.LogResult(remotePublishManifestToEmit);
-					}
-					finally
-					{
-						watchSemaphore.Release();
-					}
-				}
-			});
-
+			remoteManifestPublishTask ??= watch.Run(WatchRemotePublications);
 			await Task.WhenAll(localFileChangesTask, remoteManifestPublishTask);
+		}
+
+		async Task WatchRemotePublications()
+		{
+			await foreach (var remoteContentPublished in contentService.ListenToRemoteContentPublishes(args, manifestId, watch.Token, autoSync, exitActivation))
+			{
+				await watchSemaphore.WaitAsync();
+				try
+				{
+					// Fetch the newest manifest
+					var latestManifestId = remoteContentPublished.ReferenceUid;
+
+					// Refresh both the reference manifest and the latest manifests.
+					latestManifest = contentService.GetManifest(manifestId, latestManifestId).ToPromise();
+					await latestManifest;
+
+					// Rebuild the content against the new manifests.
+					localContentAgainstLatest = contentService.GetAllContentFiles(latestManifest.GetResult(), manifestId);
+					await localContentAgainstLatest;
+
+					// Prepare a new Manifest to push out with only the changed entries.
+					var remotePublishManifestToEmit = new ContentPsCommandEvent()
+					{
+						EventType = ContentPsCommandEvent.EVT_TYPE_RemotePublished,
+						RelevantManifestsAgainstLatest = new()
+						{
+							new LocalContentManifest()
+							{
+								OwnerCid = cid,
+								OwnerPid = pid,
+								ManifestId = manifestId,
+								Entries = ContentService.ContentFileToLocalContentManifestEntries(localContentAgainstLatest.Result.ContentFiles
+								).ToArray(),
+							}
+						},
+						ToRemoveLocalEntries = new(),
+						PublisherEmail = remoteContentPublished.PublisherEmail,
+						PublisherAccountId = remoteContentPublished.PublisherAccountId,
+						SyncReports = remoteContentPublished.AutoSyncReport == null ? new() : new() { remoteContentPublished.AutoSyncReport, },
+					};
+
+					// Send it out.
+					this.SendResults<DefaultStreamResultChannel, ContentPsCommandEvent>(remotePublishManifestToEmit);
+					this.LogResult(remotePublishManifestToEmit);
+				}
+				finally
+				{
+					watchSemaphore.Release();
+				}
+			}
 		}
 	}
 
@@ -348,6 +380,7 @@ public class ContentPsCommandArgs : CommandArgs
 {
 	public bool Watch;
 	public bool NoAutoSync;
+	public bool GuardLocalModeExit;
 	public int RequireProcessId;
 	public string ManifestId;
 }
@@ -378,6 +411,9 @@ public class ContentPsCommandEvent
 	/// The semantics of each field are defined based on the event and documented on these comments.
 	/// </summary>
 	public int EventType;
+
+	/// <summary>The initial snapshot passed the subscribed, read-only Local Mode exit check and auto-sync is active.</summary>
+	public bool LocalModeExitActivated;
 
 	/// <summary>
 	/// List of manifests and entry data relevant to <see cref="EVT_TYPE_FullRebuild"/> and <see cref="EVT_TYPE_RemotePublished"/>.

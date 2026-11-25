@@ -133,6 +133,18 @@ namespace Beamable.Editor.Tests
             Assert.That(config.EnableLocalContentInEditor, Is.True);
         }
 
+        [Test]
+        public void Exit_requires_an_explicit_guarded_activation_acknowledgement()
+        {
+            config.EnableLocalContentInEditor = true;
+            commands.AcknowledgeActivation = false;
+            Exception error = null;
+            Exit().Error(e => error = e);
+            Assert.That(error?.Message, Does.Contain("confirm guarded"));
+            Assert.That(config.EnableLocalContentInEditor, Is.True);
+            Assert.That(commands.Checks.Single().Cancelled, Is.True);
+        }
+
         [UnityTest]
         public IEnumerator Exit_waits_for_both_paused_watchers_before_resuming()
         {
@@ -151,7 +163,8 @@ namespace Beamable.Editor.Tests
             commands.History[0].Completion.CompleteSuccess();
             yield return Wait(exit);
             exit.GetResult();
-            Assert.That(commands.Content[1].Local, Is.False);
+            Assert.That(commands.Content.Count, Is.EqualTo(1));
+            Assert.That(commands.Checks.Single().Cancelled, Is.False, "The guarded command remains the active watcher.");
             Assert.That(commands.History[1].Local, Is.False);
             Assert.That(config.EnableLocalContentInEditor, Is.False);
         }
@@ -871,6 +884,7 @@ namespace Beamable.Editor.Tests
             public LocalContentManifestEntry[] ExitEntries = Array.Empty<LocalContentManifestEntry>();
             public string ExitManifestId = "global";
             public bool DelayExitCheck;
+            public bool AcknowledgeActivation = true;
             public bool CompleteExitCheckOnCancel = true;
             public BeamCli.BeamWebCommand ExitCheckWebCommand;
             public bool DelayInitialContent;
@@ -880,8 +894,14 @@ namespace Beamable.Editor.Tests
             public Commands() : base(null, null) { }
             public override ContentPsWrapper ContentPs(ContentPsArgs args)
             {
-                if (!args.watch)
+                if (FailNextContentStart)
                 {
+                    FailNextContentStart = false;
+                    throw new IOException("Controlled watcher startup failure");
+                }
+                if (args.guardLocalModeExit)
+                {
+                    Assert.That(args.watch && args.noAutoSync, Is.True);
                     if (ExitCheckWebCommand != null)
                     {
                         var web = ExitCheckWebCommand;
@@ -892,20 +912,16 @@ namespace Beamable.Editor.Tests
                     var check = new HeldCommand(args.noAutoSync, new BeamContentPsCommandEvent
                     {
                         EventType = 0,
-                        RelevantManifestsAgainstLatest = new List<LocalContentManifest>
+                        LocalModeExitActivated = AcknowledgeActivation,
+                        RelevantManifestsAgainstLatest = WatchedManifests.Count > 0 ? WatchedManifests : new List<LocalContentManifest>
                         {
                             new LocalContentManifest { OwnerCid = "test", OwnerPid = "realm", ManifestId = ExitManifestId, Entries = ExitEntries }
                         },
                         ToRemoveLocalEntries = new List<LocalContentManifest>()
-                    }, true) { DelayInitial = DelayExitCheck };
+                    }) { DelayInitial = DelayExitCheck || DelayInitialContent };
                     if (CompleteExitCheckOnCancel) check.OnCancel = () => check.Completion.CompleteSuccess();
                     Checks.Add(check);
                     return new ContentPsWrapper { Command = check };
-                }
-                if (FailNextContentStart)
-                {
-                    FailNextContentStart = false;
-                    throw new IOException("Controlled watcher startup failure");
                 }
                 if (FirstWebCommand != null)
                 {

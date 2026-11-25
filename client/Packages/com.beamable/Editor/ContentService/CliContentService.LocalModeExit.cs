@@ -26,19 +26,37 @@ namespace Beamable.Editor.ContentService
 			entry.IsInConflict || (ContentChangeKind)entry.ChangeKind is not
 				(ContentChangeKind.UpToDate or ContentChangeKind.LocalEdit);
 
-		private Dictionary<string, LoadedContent> GetExitReviewEdits(LocalContentManifest manifest)
+		private struct ExitReviewEdit
 		{
-			var edits = new Dictionary<string, LoadedContent>();
+			public LoadedContent Baseline;
+			public string LoadError;
+		}
+
+		private Dictionary<string, ExitReviewEdit> GetExitReviewEdits(LocalContentManifest manifest)
+		{
+			if (_displayedLoads == null || (_loadedContent.Count == 0 && _loadErrors.Count == 0)) return null;
+			Dictionary<string, ExitReviewEdit> edits = null;
+			var prefix = $"{manifest.OwnerCid}/{manifest.OwnerPid}/{manifest.ManifestId}/";
 			foreach (var entry in manifest.Entries)
 			{
-				var key = GetContentWriteKey(entry.FullId);
-				if (entry.StatusEnum == ContentStatus.Deleted || _contentWrites.IsDeleting(key) ||
-				    !_loadedContent.TryGetValue(key, out var loaded) || loaded.Path != entry.JsonFilePath ||
-				    !_contentScriptableCache.TryGetValue(entry.FullId, out var content) || content == null || loaded.Content != content)
+				if (!_contentScriptableCache.TryGetValue(entry.FullId, out var content) || content == null ||
+				    !_displayedLoads.TryGetValue(content, out var displayed)) continue;
+				var key = displayed.Key;
+				if (!content.HasPendingEditorChangeNotification && !HasPendingWrites(key) &&
+				    !(_saveFailures.TryGetValue(key, out var failure) && IsDisplayingRefusedEdit(entry.FullId, key, failure, out _)))
 					continue;
-				if (content.HasPendingEditorChangeNotification || HasPendingWrites(key) ||
-				    (TryGetSaveFailure(entry.FullId, out var failure) && CanDiscardEdit(entry.FullId, failure)))
-					edits.Add(entry.FullId, loaded);
+				if (entry.StatusEnum == ContentStatus.Deleted || _contentWrites.IsDeleting(key) ||
+				    !key.StartsWith(prefix, StringComparison.Ordinal)) continue;
+
+				var edit = new ExitReviewEdit();
+				if (_loadedContent.TryGetValue(key, out edit.Baseline))
+				{
+					if (edit.Baseline.Path != entry.JsonFilePath || edit.Baseline.Content != content) continue;
+				}
+				else if (!_loadErrors.TryGetValue(key, out edit.LoadError) ||
+				         !EntriesCache.TryGetValue(entry.FullId, out var previous) || previous.JsonFilePath != entry.JsonFilePath)
+					continue;
+				(edits ??= new Dictionary<string, ExitReviewEdit>()).Add(entry.FullId, edit);
 			}
 			return edits;
 		}
@@ -50,22 +68,32 @@ namespace Beamable.Editor.ContentService
 				throw new InvalidOperationException("The exit review was cancelled or its realm, namespace, or mode changed. Local Mode has not been turned off.");
 			if (CurrentProgress.IsActive || isReloading)
 				throw new InvalidOperationException("Wait for the current content operation to finish, then review again.");
+			var inspectors = HasPendingInspectorEdits?.GetInvocationList();
+			var hasTrackedEdits = _contentWrites.HasActivity || _queuedPropertyWrites.Count > 0 ||
+			                      _pendingTagSaves.Count > 0 || _saveFailures.Count > 0;
+			if (inspectors == null && !hasTrackedEdits)
+			{
+				foreach (var pair in _contentScriptableCache)
+					if (pair.Value != null && pair.Value.HasPendingEditorChangeNotification && EntriesCache.ContainsKey(pair.Key))
+						throw new InvalidOperationException("Content edits are still being saved. Wait for them to finish, then review again.");
+				return;
+			}
+
 			foreach (var id in EntriesCache.Keys)
 			{
-				RequireSavedInspectorEdits(id);
-				var key = GetContentWriteKey(id);
-				if (HasPendingWrites(key) || _contentWrites.IsDeleting(key))
+				RequireInspectorNotificationsSettled(id, inspectors);
+				if (!hasTrackedEdits) continue;
+				var key = GetContentWriteKey(scope, id);
+				if (_pendingTagSaves.ContainsKey(key) || HasPendingWrites(key) || _contentWrites.IsDeleting(key))
 					throw new InvalidOperationException("Content edits are still being saved. Wait for them to finish, then review again.");
-				if (TryGetSaveFailure(id, out var failure) && CanDiscardEdit(id, failure))
-					throw new InvalidOperationException($"The Inspector edit for {id} was not saved. Save or discard it in the Inspector before leaving Local Mode.");
+				RequireNoRefusedInspectorEdit(id, key);
 			}
 		}
 
 		internal async Promise RefreshLocalModeExit(string reviewedScope, Func<bool> cancelled)
 		{
 			RequireLocalModeExitScope(reviewedScope, cancelled);
-			_exitReviewReloadScope = reviewedScope;
-			await Reload();
+			await ReloadAfterReconciliation(reviewedScope);
 			RequireLocalModeExitScope(reviewedScope, cancelled);
 		}
 
@@ -76,19 +104,37 @@ namespace Beamable.Editor.ContentService
 				throw new InvalidOperationException("Wait for Local Mode watchers to be ready, or refresh them after a failure.");
 			try
 			{
-				// Keep the preference on while both watchers stop. Recheck only after shutdown,
-				// under the transition gate, so pending startup/reload work cannot bypass review.
-				await ApplyLocalContentMode(async () =>
+				await WatcherGate.WaitAsync();
+				try
 				{
 					RequireLocalModeExitScope(reviewedScope, cancelled);
-					await CheckLocalModeExitSnapshot(reviewedScope, cancelled);
+					_localContentModeError = null;
+					await StopLocalModeExitCheck();
+					await Task.WhenAll(StopContentWatcher(preserveRequest: true), StopHistoryWatcher());
 					RequireLocalModeExitScope(reviewedScope, cancelled);
-					_contentConfiguration.EnableLocalContentInEditor = false;
-				});
+					_exitReviewReloadScope = reviewedScope;
+					var ready = await StartContentWatcher(reviewedScope, cancelled);
+					await WaitForLocalModeActivation(ready, reviewedScope, cancelled);
+					if (!_contentWatchRequested)
+					{
+						// Validate through the same guarded subscription, then retire it if no window owns it.
+						DetachLocalModeExitWatcher();
+						await StopLocalModeExitCheck();
+					}
+					else ClearLocalModeExitCheck(); // The active content watcher now owns this command.
+					_contentConfiguration.EnableLocalContentInEditor = _observedLocalContentMode = false;
+					if (_historyWatchRequested) StartContentHistoryCore();
+				}
+				catch
+				{
+					DetachLocalModeExitWatcher();
+					await StopLocalModeExitCheck();
+					throw;
+				}
+				finally { WatcherGate.Release(); }
 			}
 			catch
 			{
-				// Persist the safe intent even if a failed command cannot be stopped yet.
 				_contentConfiguration.EnableLocalContentInEditor = true;
 				_exitReviewReloadScope = reviewedScope;
 				try { await ApplyLocalContentMode(); } catch { /* The watcher state exposes the failure for retry. */ }
@@ -96,62 +142,53 @@ namespace Beamable.Editor.ContentService
 			}
 		}
 
-		private async Promise CheckLocalModeExitSnapshot(string reviewedScope, Func<bool> cancelled)
+		private void DetachLocalModeExitWatcher()
 		{
-			var command = _cli.ContentPs(new ContentPsArgs
-			{
-				manifestIds = GetSelectedManifestIdsCliOption(), noAutoSync = true, watch = false
-			});
-			BeamContentPsCommandEvent snapshot = null;
-			Exception reportedError = null;
-			command.OnStreamContentPsCommandEvent(report => snapshot = report.data);
-			command.OnError(report => reportedError = new InvalidOperationException(report.data.message));
-			var abort = new TaskCompletionSource<Exception>();
+			if (_localModeExitCheck == null || !ReferenceEquals(_contentWatcher?.Command, _localModeExitCheck)) return;
+			_contentWatcher = null;
+			isReloading = false;
+		}
+
+		private async Task WaitForLocalModeActivation(Task ready, string scope, Func<bool> cancelled)
+		{
+			var abort = new TaskCompletionSource<bool>();
 			var deadline = EditorApplication.timeSinceStartup + (_localModeExitTimeoutMs > 0 ? _localModeExitTimeoutMs : 30000) / 1000d;
 			void CheckAbort()
 			{
 				try
 				{
-					if (_watchersDisposed || (cancelled?.Invoke() ?? false) || reviewedScope != GetContentScopeKey() ||
+					if (_watchersDisposed || (cancelled?.Invoke() ?? false) || scope != GetContentScopeKey() ||
 					    !_contentConfiguration.EnableLocalContentInEditor)
-						abort.TrySetResult(new OperationCanceledException("The Local Mode exit check was cancelled. Local Mode stays on."));
+						abort.TrySetException(new OperationCanceledException("The Local Mode exit check was cancelled. Local Mode stays on."));
 					else if (EditorApplication.timeSinceStartup >= deadline)
-						abort.TrySetResult(new TimeoutException("The Local Mode exit check timed out. Local Mode stays on; refresh to retry."));
+						abort.TrySetException(new TimeoutException("The Local Mode exit check timed out. Local Mode stays on; refresh to retry."));
 				}
-				catch (Exception error) { abort.TrySetResult(error); }
+				catch (Exception error) { abort.TrySetException(error); }
 			}
-			_localModeExitCheck = command.Command;
-			_localModeExitCheckStop = null;
-			_localModeExitStopFailed = false;
 			EditorApplication.update += CheckAbort;
 			try
 			{
-				var completion = _localModeExitCheckCompletion = AwaitCommand(command.Run());
-				// Observe the original run even if cancellation wins the race below.
-				_ = completion.ContinueWith(task => { _ = task.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
-				if (await Task.WhenAny(completion, abort.Task) == abort.Task)
-				{
-					var reason = await abort.Task;
-					await StopLocalModeExitCheck();
-					throw reason;
-				}
-				await completion;
+				CheckAbort();
+				if (abort.Task.IsCompleted) await abort.Task;
+				// A later acknowledged stop may finish this task after cancellation has already won.
+				_ = ready.ContinueWith(task => { _ = task.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
+				await (await Task.WhenAny(ready, abort.Task));
 			}
-			finally
-			{
-				EditorApplication.update -= CheckAbort;
-				// A failed stop retains ownership so a later refresh/dispose can retry cleanup.
-				if (!_localModeExitStopFailed && _localModeExitCheckCompletion?.IsCompleted == true)
-					ClearLocalModeExitCheck();
-			}
-			if (reportedError != null) throw reportedError;
-			var manifests = snapshot?.RelevantManifestsAgainstLatest;
-			var manifest = manifests?.SingleOrDefault(item =>
-				$"{item.OwnerCid}/{item.OwnerPid}/{item.ManifestId}" == reviewedScope);
+			finally { EditorApplication.update -= CheckAbort; }
+		}
+
+		private void ValidateLocalModeActivation(BeamContentPsCommandEvent snapshot, string scope, Func<bool> cancelled)
+		{
+			if (_watchersDisposed || (cancelled?.Invoke() ?? false) || scope != GetContentScopeKey())
+				throw new OperationCanceledException("The Local Mode exit check was cancelled.");
+			var manifest = snapshot?.RelevantManifestsAgainstLatest?.SingleOrDefault(item =>
+				$"{item.OwnerCid}/{item.OwnerPid}/{item.ManifestId}" == scope);
 			if (snapshot?.EventType != CONTENT_PS_EVENT_TYPE_FULL_REBUILD || manifest?.Entries == null)
-				throw new InvalidOperationException("The CLI did not return a complete snapshot for this realm and namespace. Refresh and try again.");
+				throw new InvalidOperationException("The CLI did not return a complete snapshot for this realm and namespace.");
 			if (manifest.Entries.Any(RequiresLocalModeReview))
-				throw new InvalidOperationException("Incoming changes or conflicts still need review. Refresh, then choose Keep Local or Use Realm for each item before leaving Local Mode.");
+				throw new InvalidOperationException("Incoming changes or conflicts still need review before leaving Local Mode.");
+			if (!snapshot.LocalModeExitActivated)
+				throw new InvalidOperationException("The CLI did not confirm guarded auto-sync activation. Update the CLI and review again.");
 		}
 
 		private void ClearLocalModeExitCheck()

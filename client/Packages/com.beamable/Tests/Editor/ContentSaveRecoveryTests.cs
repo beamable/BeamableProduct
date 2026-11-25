@@ -1780,6 +1780,169 @@ namespace Beamable.Editor.Tests
             finally { UnityEngine.Object.DestroyImmediate(config); }
         }
 
+        [TestCase(true, false)]
+        [TestCase(false, false)]
+        [TestCase(false, true)]
+        public void Reconciling_one_item_during_exit_preserves_another_items_refused_edit(bool refusedBeforeOpening, bool repairedAfterLoadError)
+        {
+            var config = SetUpWatcher();
+            var otherPath = Path.GetTempFileName();
+            const string otherId = "saveRecovery.other";
+            try
+            {
+                StartLocalModeWatcher(config);
+                var disk = File.ReadAllBytes(_path);
+                var manifest = _commands.WatchedManifests.Single();
+                var other = manifest.Entries.Single();
+                other.FullId = otherId;
+                other.JsonFilePath = otherPath;
+                other.ChangeKind = (int)ContentChangeKind.IncomingChange;
+                other.TargetManifestUid = "reviewed";
+                File.Copy(_path, otherPath, true);
+                manifest.Entries = new[] { manifest.Entries.Single(), other };
+                _commands.Content.Single().Emit();
+
+                var refusal = refusedBeforeOpening ? RefuseAmountEdit() : default;
+                var scope = _service.GetContentScopeKey();
+                Exception error = null;
+                var refresh = _service.RefreshLocalModeExit(scope, null);
+                refresh.Error(e => error = e);
+                Assert.That(refresh.IsCompleted, Is.True);
+                if (refusedBeforeOpening) Assert.That(error?.Message, Does.Contain("Save or discard"));
+                else
+                {
+                    Assert.That(error, Is.Null);
+                    refusal = RefuseAmountEdit();
+                }
+
+                if (repairedAfterLoadError)
+                {
+                    // A failed watcher load leaves the refused value displayed but removes its writable baseline.
+                    File.WriteAllText(_path, "[]");
+                    LogAssert.Expect(LogType.Error, new Regex("Could not load content from json file"));
+                    Assert.Catch(() => Watch());
+                    Assert.That(_service.TryGetLoadError(_content.Id, out _), Is.True);
+                    Assert.That(_content.amount, Is.EqualTo(3));
+                    Assert.That(_service.CanDiscardEdit(_content.Id, refusal), Is.True);
+                    File.WriteAllBytes(_path, disk);
+                }
+
+                // The exit review can still resolve another item. Its command changes only that item's state.
+                var activeWatcher = _commands.Content.Last();
+                activeWatcher.OnCancel = () => activeWatcher.Completion.CompleteSuccess();
+                var resolved = false;
+                _commands.Resolve = args =>
+                {
+                    Assert.That(args.filter, Is.EqualTo(otherId));
+                    Assert.That(args.use, Is.EqualTo("realm"));
+                    Assert.That(args.expectedManifestUid, Is.EqualTo("reviewed"));
+                    Assert.That(args.expectedLocalRevision, Is.EqualTo("reviewed-file"));
+                    other.ChangeKind = (int)ContentChangeKind.UpToDate;
+                    manifest.Entries[1] = other;
+                    resolved = true;
+                    return new ContentResolveWrapper { Command = new ContentWatcherSwitchingTests.HeldCommand(
+                        true, new BeamContentResolveConflictResult { ResolvedContentIds = new[] { otherId } }, true) };
+                };
+                _service.ReconcileContentWithProgress(otherId, false, scope, "reviewed", "reviewed-file").GetResult();
+                Assert.That(resolved, Is.True);
+                Assert.That(_service.EntriesCache[otherId].ChangeKind, Is.EqualTo((int)ContentChangeKind.UpToDate));
+                Assert.That(config.EnableLocalContentInEditor, Is.True);
+                Assert.That(_service.TryGetLoadError(_content.Id, out _), Is.EqualTo(repairedAfterLoadError));
+                AssertCanDiscardToDisk(refusal, disk);
+                Assert.That(_service.TryGetLoadError(_content.Id, out _), Is.False);
+            }
+            finally
+            {
+                File.Delete(otherPath);
+                UnityEngine.Object.DestroyImmediate(config);
+                if (_service.TryGetContentObject(otherId, out var otherObject)) UnityEngine.Object.DestroyImmediate(otherObject);
+            }
+        }
+
+        [Test]
+        public void Reconciliation_requires_saving_or_discarding_the_selected_items_refused_edit()
+        {
+            var config = SetUpWatcher();
+            try
+            {
+                StartLocalModeWatcher(config);
+                var disk = File.ReadAllBytes(_path);
+                var refusal = RefuseAmountEdit();
+                var entry = _service.EntriesCache[_content.Id];
+                entry.TargetManifestUid = "reviewed";
+                _service.EntriesCache[_content.Id] = entry;
+                var scope = _service.GetContentScopeKey();
+                var previewError = Assert.Throws<InvalidOperationException>(() =>
+                    _service.CreateReconciliationPreview(_content.Id, scope, "reviewed"));
+                Assert.That(previewError.Message, Does.Contain("Save or discard"));
+                Exception applyError = null;
+                _service.ReconcileContentWithProgress(_content.Id, false, scope, "reviewed", "reviewed-file").Error(e => applyError = e);
+                Assert.That(applyError?.Message, Does.Contain("Save or discard"));
+                Assert.That(_commands.Content.Single().Cancelled, Is.False);
+                AssertCanDiscardToDisk(refusal, disk);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(config); }
+        }
+
+        [Test]
+        public void First_auto_sync_snapshot_preserves_a_save_refused_during_startup()
+        {
+            var config = SetUpWatcher();
+            try
+            {
+                StartLocalModeWatcher(config);
+                var disk = File.ReadAllBytes(_path);
+                _commands.DelayExitCheck = true;
+                var exit = _service.ExitLocalMode(_service.GetContentScopeKey());
+                Assert.That(exit.IsCompleted, Is.False);
+                Assert.That(config.EnableLocalContentInEditor, Is.True);
+                var refusal = RefuseAmountEdit();
+                _commands.Checks.Single().Emit();
+                exit.GetResult();
+                Assert.That(config.EnableLocalContentInEditor, Is.False);
+                AssertCanDiscardToDisk(refusal, disk);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(config); }
+        }
+
+        [UnityTest]
+        public System.Collections.IEnumerator First_auto_sync_snapshot_preserves_and_saves_a_debounced_Inspector_edit()
+        {
+            var config = SetUpWatcher();
+            try
+            {
+                StartLocalModeWatcher(config);
+                var original = File.ReadAllText(_path);
+                _commands.DelayExitCheck = true;
+                var exit = _service.ExitLocalMode(_service.GetContentScopeKey());
+                Assert.That(exit.IsCompleted, Is.False);
+                Assert.That(config.EnableLocalContentInEditor, Is.True);
+                _content.amount = 3;
+                _content.CheckForNonDetectedChanges();
+                Assert.That(_content.HasPendingEditorChangeNotification, Is.True);
+                _commands.Checks.Single().Emit();
+                exit.GetResult();
+                Assert.That(_content.amount, Is.EqualTo(3));
+                Assert.That(config.EnableLocalContentInEditor, Is.False);
+
+                var deadline = EditorApplication.timeSinceStartup + 10;
+                while (_commands.Properties.Count == 0 && EditorApplication.timeSinceStartup < deadline)
+                {
+                    EditorApplication.QueuePlayerLoopUpdate();
+                    yield return null;
+                }
+                var args = _commands.PropertyArgs.Single();
+                Assert.That(System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(args.originalFiles.Single())), Is.EqualTo(original));
+                Assert.That(args.contentProperties.Single(), Is.EqualTo(ClientContentSerializer.SerializeProperties(_content)));
+                WriteAsCli(0);
+                _commands.Properties.Single().Completion.CompleteSuccess();
+                Assert.That(_service.TryGetSaveFailure(_content.Id, out _), Is.False);
+                Watch();
+                Assert.That(_content.amount, Is.EqualTo(3));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(config); }
+        }
+
         private void StartLocalModeWatcher(global::Beamable.Content.ContentConfiguration config)
         {
             config.EnableLocalContentInEditor = true;
@@ -1908,7 +2071,11 @@ namespace Beamable.Editor.Tests
 			public readonly List<HeldCommand> Tags = new();
 			public readonly List<string> TagValues = new();
 
-			public override ContentSaveWrapper ContentSave(ContentSaveArgs args)
+			public Func<ContentResolveArgs, ContentResolveWrapper> Resolve;
+            public override ContentResolveWrapper ContentResolve(ContentResolveArgs args) =>
+                Resolve == null ? base.ContentResolve(args) : Resolve(args);
+
+            public override ContentSaveWrapper ContentSave(ContentSaveArgs args)
 			{
 				var command = new HeldCommand(); Properties.Add(command); PropertyArgs.Add(args);
 				return new ContentSaveWrapper { Command = command };

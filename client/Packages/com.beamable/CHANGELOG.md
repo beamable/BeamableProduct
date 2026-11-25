@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Cancelling or timing out a Local Mode exit check keeps Local Mode enabled and allows cleanup to be retried without leaving the watcher transition locked. Opening the exit review or cancelling the final check preserves a refused Inspector edit so you can correct or discard it.
+- Cancelling or timing out a Local Mode exit check keeps Local Mode enabled and allows cleanup to be retried without leaving the watcher transition locked. Opening the exit review, resolving another item, or starting or cancelling the final check preserves pending and refused Inspector edits.
 - Fixed development/pinned CLI version matching and repeated server launches. Discovery reports incompatible or unavailable servers and allows recovery after configuration changes.
 - Play Mode resolves the selected namespace, including unpublished content, from a read-only local snapshot loaded in the background. Restart Play Mode to reload edits. Content stays on the context's realm; shutdown cancels loads and stops manifest refreshes.
 - Fixed content watcher recovery across mode changes, script reloads, and failures, and prevented telemetry discovery from stopping active CLI servers.
@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Local Mode is saved per developer and project instead of in the shared configuration asset. It is off until you turn it on; a value in the shared configuration asset is ignored.
-- Leaving Local Mode requires reviewing incoming changes and conflicts before auto-sync resumes. A final check uses the latest realm publication; unrelated local edits are preserved and nothing is published by exiting.
+- Leaving Local Mode requires reviewing incoming changes and conflicts before auto-sync resumes. The watcher subscribes before the final check and keeps Local Mode on if a new realm revision needs review. After activation, later publications sync normally. Unrelated local edits stay local.
 - Local Mode pauses auto-sync while History tracks realm publications. Publishing requires resolving validation errors, conflicts, and incoming changes.
 - Unverified content requires an explicit local/realm choice in Issues. Preserve `referenceManifestId` in external JSON: empty/null requires review; omission fails loading.
 - Beam Account login window pre-fills the environment and organization from the project's existing configuration, such as `config-defaults.txt`, and restores the previously selected realm after login.

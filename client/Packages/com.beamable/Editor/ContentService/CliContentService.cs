@@ -284,7 +284,8 @@ namespace Beamable.Editor.ContentService
 			return $"{realm.Cid}/{realm.Pid}/{manifestId}";
 		}
 
-		private string GetContentWriteKey(string contentId) => $"{GetContentScopeKey()}/{contentId}";
+		private string GetContentWriteKey(string contentId) => GetContentWriteKey(GetContentScopeKey(), contentId);
+		private static string GetContentWriteKey(string scope, string contentId) => $"{scope}/{contentId}";
 
 		private bool CanWriteContent(string contentId)
 		{
@@ -864,10 +865,25 @@ namespace Beamable.Editor.ContentService
 
 		private void RequireSavedInspectorEdits(string contentId)
 		{
-			if ((_contentScriptableCache.TryGetValue(contentId, out var content) && content != null && content.HasPendingEditorChangeNotification) ||
-			    _pendingTagSaves.ContainsKey(GetContentWriteKey(contentId)) ||
-			    (HasPendingInspectorEdits?.GetInvocationList().Any(callback => ((Func<string, bool>)callback)(contentId)) ?? false))
+			RequireInspectorNotificationsSettled(contentId, HasPendingInspectorEdits?.GetInvocationList());
+			if (_pendingTagSaves.Count > 0 && _pendingTagSaves.ContainsKey(GetContentWriteKey(contentId)))
 				throw new InvalidOperationException("Content edits are still being saved. Wait for them to finish, then reconcile again.");
+		}
+
+		private void RequireInspectorNotificationsSettled(string contentId, Delegate[] inspectors)
+		{
+			if (_contentScriptableCache.TryGetValue(contentId, out var content) && content != null && content.HasPendingEditorChangeNotification)
+				throw new InvalidOperationException("Content edits are still being saved. Wait for them to finish, then reconcile again.");
+			if (inspectors == null) return;
+			foreach (Func<string, bool> pending in inspectors)
+				if (pending(contentId))
+					throw new InvalidOperationException("Content edits are still being saved. Wait for them to finish, then reconcile again.");
+		}
+
+		private void RequireNoRefusedInspectorEdit(string contentId, string key)
+		{
+			if (_saveFailures.TryGetValue(key, out var failure) && IsDisplayingRefusedEdit(contentId, key, failure, out _) && !HasPendingWrites(key))
+				throw new InvalidOperationException($"The Inspector edit for {contentId} was not saved. Save or discard it in the Inspector before continuing.");
 		}
 
 		public void ResolveConflict(string contentId, bool useLocal, string reviewedScope = null, string reviewedManifestUid = null)
@@ -881,7 +897,6 @@ namespace Beamable.Editor.ContentService
 			if (CurrentProgress.IsActive)
 				throw new InvalidOperationException("A content operation is already running. Wait for it to finish before reviewing.");
 			RequireReviewedContent(contentId, reviewedScope, reviewedManifestUid);
-			RequireSavedInspectorEdits(contentId);
 			var key = GetContentWriteKey(contentId);
 			if (_contentWrites.HasWrites(key) || _contentWrites.IsDeleting(key))
 				throw new InvalidOperationException("Content edits are still being saved. Wait for them to finish, then refresh the review.");
@@ -899,6 +914,8 @@ namespace Beamable.Editor.ContentService
 			if (string.IsNullOrEmpty(reviewedManifestUid) || reviewedScope != GetContentScopeKey() ||
 			    !EntriesCache.TryGetValue(contentId, out var current) || current.TargetManifestUid != reviewedManifestUid)
 				throw new InvalidOperationException("This item changed after it was reviewed.");
+			RequireSavedInspectorEdits(contentId);
+			RequireNoRefusedInspectorEdit(contentId, GetContentWriteKey(contentId));
 		}
 
 		public async Promise ReconcileContentWithProgress(string contentId, bool useLocal, string reviewedScope = null, string reviewedManifestUid = null,
@@ -913,7 +930,6 @@ namespace Beamable.Editor.ContentService
 			RequireReviewedContent(contentId, reviewedScope, reviewedManifestUid);
 			if (useLocal && entry.IsInConflict && IsContentInvalid(contentId))
 				throw new InvalidOperationException("Fix validation errors before keeping the local version of this conflict.");
-			RequireSavedInspectorEdits(contentId);
 			var writeKey = GetContentWriteKey(contentId);
 			var args = new ContentResolveArgs
 			{
@@ -930,7 +946,6 @@ namespace Beamable.Editor.ContentService
 				await StopContentWatcher();
 				await pendingWrites;
 				RequireReviewedContent(contentId, reviewedScope, reviewedManifestUid);
-				RequireSavedInspectorEdits(contentId);
 				var command = _cli.ContentResolve(args);
 				Exception reportedError = null;
 				command.OnError(report => reportedError ??= new InvalidOperationException(report.data.message));
@@ -938,7 +953,7 @@ namespace Beamable.Editor.ContentService
 				// Successful transport completion can still carry a rejected CLI operation.
 				if (reportedError != null) throw reportedError;
 			}
-			finally { FinishActionProgress(); }
+			finally { FinishActionProgress(reviewedScope); }
 		}
 
 		public async Promise PublishContentsWithProgress(bool showUnityModalProgress = true)
@@ -977,7 +992,7 @@ namespace Beamable.Editor.ContentService
 		/// <summary>
 		/// Finishes the active content operation, clears any modal progress UI, and reloads local content state.
 		/// </summary>
-		private void FinishActionProgress()
+		private void FinishActionProgress(string reviewedScope = null)
 		{
 			if (_showUnityModalProgress)
 			{
@@ -986,7 +1001,7 @@ namespace Beamable.Editor.ContentService
 
 			CurrentProgress.IsActive = false;
 			ProgressUpdateVersion++;
-			_ = Reload();
+			_ = reviewedScope == null ? Reload() : ReloadAfterReconciliation(reviewedScope);
 		}
 
 		/// <summary>
@@ -1043,6 +1058,14 @@ namespace Beamable.Editor.ContentService
 			await publishCommand.Run();
 		}
 
+		internal Promise ReloadAfterReconciliation(string reviewedScope)
+		{
+			// Resolving one item can restart the watcher for every item in the namespace.
+			if (_contentConfiguration != null && _contentConfiguration.EnableLocalContentInEditor && reviewedScope == GetContentScopeKey())
+				_exitReviewReloadScope = reviewedScope;
+			return Reload();
+		}
+
 		public async Promise Reload()
 		{
 			if (_watchersDisposed) return;
@@ -1055,9 +1078,10 @@ namespace Beamable.Editor.ContentService
 		}
 
 		// Release the transition gate after startup; a slow first response must remain cancellable.
-		private async Task<Task> StartContentWatcher()
+		private async Task<Task> StartContentWatcher(string activationScope = null, Func<bool> cancelled = null)
 		{
-			if (!_contentWatchRequested || _watchersDisposed) return Task.CompletedTask;
+			var guarded = activationScope != null;
+			if ((!_contentWatchRequested && !guarded) || _watchersDisposed) return Task.CompletedTask;
 			await StopLocalModeExitCheck();
 			isReloading = true;
 			try
@@ -1070,7 +1094,7 @@ namespace Beamable.Editor.ContentService
 					ClearCaches();
 				}
 				await StopContentWatcher(preserveRequest: true);
-				if (!_contentWatchRequested || _watchersDisposed)
+				if ((!_contentWatchRequested && !guarded) || _watchersDisposed)
 				{
 					isReloading = false;
 					return Task.CompletedTask;
@@ -1082,15 +1106,27 @@ namespace Beamable.Editor.ContentService
 				_contentWatcher = _cli.ContentPs(new ContentPsArgs()
 				{
 					manifestIds = GetSelectedManifestIdsCliOption(),
-					noAutoSync = _contentConfiguration.EnableLocalContentInEditor,
+					noAutoSync = guarded || _contentConfiguration.EnableLocalContentInEditor,
+					guardLocalModeExit = guarded,
 					watch = true
 				});
 
-				_contentWatcherLocalMode = _contentConfiguration.EnableLocalContentInEditor;
+				_contentWatcherLocalMode = !guarded && _contentConfiguration.EnableLocalContentInEditor;
 				var watcher = _contentWatcher;
 				void OnDataReceived(ReportDataPoint<BeamContentPsCommandEvent> report)
 				{
 					if (!ReferenceEquals(_contentWatcher, watcher)) return;
+					if (guarded && !manifestIsFetchedTaskCompletion.Task.IsCompleted)
+					{
+						try { ValidateLocalModeActivation(report.data, activationScope, cancelled); }
+						catch (Exception error) { manifestIsFetchedTaskCompletion.TrySetException(error); return; }
+						if (!_contentWatchRequested)
+						{
+							manifestIsFetchedTaskCompletion.TrySetResult(true);
+							return;
+						}
+					}
+					if (manifestIsFetchedTaskCompletion.Task.IsFaulted) return;
 					string currentCid = _beamContext.BeamCli.CurrentRealm.Cid;
 					string currentPid = _beamContext.BeamCli.CurrentRealm.Pid;
 
@@ -1100,7 +1136,7 @@ namespace Beamable.Editor.ContentService
 					var reportData = report.data;
 					var isFullRebuild = reportData.EventType == CONTENT_PS_EVENT_TYPE_FULL_REBUILD;
 					var changesManifest = reportData.RelevantManifestsAgainstLatest.FirstOrDefault(ValidateManifest);
-					Dictionary<string, LoadedContent> reviewEdits = null;
+					Dictionary<string, ExitReviewEdit> reviewEdits = null;
 					if (isFullRebuild)
 					{
 						if (exitReviewScope != null && exitReviewScope == GetContentScopeKey() && changesManifest != null &&
@@ -1123,7 +1159,7 @@ namespace Beamable.Editor.ContentService
 								RemoveContentFromCache(oldEntry);
 							}
 
-							LoadedContent edit = null;
+							ExitReviewEdit edit = default;
 							reviewEdits?.TryGetValue(entry.FullId, out edit);
 							AddContentToCache(entry, edit);
 						}
@@ -1171,7 +1207,17 @@ namespace Beamable.Editor.ContentService
 
 				_contentWatcher.OnStreamContentPsCommandEvent(OnDataReceived);
 				_contentWatcher.OnProgressStreamContentPsProgressMessage(dp => { if (ReferenceEquals(_contentWatcher, watcher)) LatestProgressUpdate = dp.data; });
-				var completion = _contentWatcherCompletion = AwaitCommand(_contentWatcher.Command.Run());
+				if (guarded)
+				{
+					_localModeExitCheck = watcher.Command;
+					watcher.OnError(report => manifestIsFetchedTaskCompletion.TrySetException(new InvalidOperationException(report.data.message)));
+				}
+				var completion = _contentWatcherCompletion = AwaitCommand(watcher.Command.Run());
+				if (guarded)
+				{
+					_localModeExitCheckCompletion = completion;
+					if (!_contentWatchRequested) return FinishReload();
+				}
 
 				RemoteManifestsLoaded = false;
 				RemoteManifestsErrored = false;
@@ -1223,7 +1269,7 @@ namespace Beamable.Editor.ContentService
 						if (await Task.WhenAny(manifestIsFetchedTaskCompletion.Task, completion) == completion)
 						{
 							await completion;
-							if (!ReferenceEquals(_contentWatcher, watcher)) return;
+							if (!guarded && !ReferenceEquals(_contentWatcher, watcher)) return;
 							throw new InvalidOperationException("Content watcher ended before its initial content response.");
 						}
 						await manifestIsFetchedTaskCompletion.Task;
@@ -1482,7 +1528,7 @@ namespace Beamable.Editor.ContentService
 			return string.IsNullOrEmpty(manifestIdOverride) ? null : manifestIdOverride;
 		}
 
-		private void AddContentToCache(LocalContentManifestEntry entry, LoadedContent reviewEdit = null)
+		private void AddContentToCache(LocalContentManifestEntry entry, ExitReviewEdit reviewEdit = default)
 		{
 			if (entry.StatusEnum is not ContentStatus.Deleted &&
 			    (string.IsNullOrEmpty(entry.JsonFilePath) || !File.Exists(entry.JsonFilePath)))
@@ -1525,17 +1571,22 @@ namespace Beamable.Editor.ContentService
 			
 			EntriesCache[entry.FullId] = entry;
 
-			if (reviewEdit == null)
+			if (reviewEdit.Baseline == null && reviewEdit.LoadError == null)
 				CacheScriptableContent(entry);
 			else
 			{
-				// The Inspector still owns this edit. Keep its original writable baseline so
-				// a retry is checked against the file the developer actually edited.
-				_loadedContent[reviewEdit.LoadIdentity.Key] = reviewEdit;
-				ApplyEntryState(entry, reviewEdit.Content);
-				if (HasPendingWrites(reviewEdit.LoadIdentity.Key))
-					_deferredReloads[reviewEdit.LoadIdentity.Key] = entry;
-				ValidateForInvalidFields(reviewEdit.Content);
+				var key = GetContentWriteKey(entry.FullId);
+				var content = _contentScriptableCache[entry.FullId];
+				if (reviewEdit.Baseline != null)
+				{
+					_loadedContent[key] = reviewEdit.Baseline;
+					if (HasPendingWrites(key)) _deferredReloads[key] = entry;
+				}
+				else
+					// A failed load left this Inspector read-only. Discard can retry the repaired file.
+					_loadErrors[key] = reviewEdit.LoadError;
+				ApplyEntryState(entry, content);
+				ValidateForInvalidFields(content);
 			}
 
 			if (entry.StatusEnum is not ContentStatus.Deleted)
