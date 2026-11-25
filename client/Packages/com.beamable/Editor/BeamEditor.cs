@@ -546,6 +546,7 @@ namespace Beamable
 #pragma warning disable CS0067
 		/// <summary>
 		/// Raised after the editor applies the realm and its content reload finishes, including when the reload fails.
+		/// The next queued switch starts after this notification returns.
 		/// Use this event to update realm-scoped services. Await <see cref="SwitchRealm(string)"/> for the reload outcome.
 		/// </summary>
 		public event Action<RealmView> OnRealmChange;
@@ -620,7 +621,8 @@ namespace Beamable
 		/// </param>
 		public void Logout(bool clearRealmPid)
 		{
-			changeRealmPromise?.CompleteSuccess();
+			// Discard queued requests from this login and release the selector immediately.
+			_realmSwitchSession = null;
 			BeamCli.Logout().Then(_ =>
 			{
 				OnUserChange?.Invoke(null);
@@ -743,31 +745,24 @@ namespace Beamable
 
 		
 		
-		private Promise changeRealmPromise;
+		private Promise _lastRealmSwitch;
+		private object _realmSwitchSession;
 
-		public bool IsSwitchingRealms
-		{
-			get
-			{
-				if (changeRealmPromise == null) return false;
-				if (changeRealmPromise.IsCompleted) return false;
-				if (changeRealmPromise.IsFailed) return false;
-				return true;
-			}
-		} 
+		public bool IsSwitchingRealms => _realmSwitchSession != null && !_lastRealmSwitch.IsCompleted;
 		public async Promise SwitchRealm(RealmView realm)
 		{
 			await SwitchRealm(realm.Pid);
 		}
 		public async Promise SwitchRealm(string pid)
 		{
-			if (changeRealmPromise != null)
-			{
-				changeRealmPromise.CompleteSuccess();
-			}
-			var switching = changeRealmPromise = new Promise();
+			var session = _realmSwitchSession ??= new object();
+			var previous = _lastRealmSwitch;
+			var switching = _lastRealmSwitch = new Promise();
 			try
 			{
+				if (previous != null) await previous;
+				if (session != _realmSwitchSession)
+					throw new OperationCanceledException("Logged out before the queued realm switch started.");
 				await BeamCli.SwitchRealms(pid);
 				ApplyRequesterToken();
 
@@ -784,7 +779,7 @@ namespace Beamable
 			}
 			finally
 			{
-				// A listener can start another switch while this one is finishing.
+				// Release the next switch even when this caller receives a CLI, content, or listener error.
 				switching.CompleteSuccess();
 			}
 		}

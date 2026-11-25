@@ -1101,6 +1101,7 @@ namespace Beamable.Editor.ContentService
 				}
 
 				var initialContent = new TaskCompletionSource<bool>();
+				string startupCommandError = null;
 				_ordinaryContentReady = guarded ? null : initialContent;
 				var startupDeadline = WatcherTime + ContentStartupIdleSeconds;
 				var completedItems = 0;
@@ -1129,11 +1130,11 @@ namespace Beamable.Editor.ContentService
 						}
 					}
 					if (initialContent.Task.IsFaulted) return;
-					string currentCid = _beamContext.BeamCli.CurrentRealm.Cid;
-					string currentPid = _beamContext.BeamCli.CurrentRealm.Pid;
+					var currentRealm = _beamContext.BeamCli.CurrentRealm
+						?? throw new InvalidOperationException("Content could not load because the editor has no active realm. Select a realm and retry.");
 
 					bool ValidateManifest(LocalContentManifest item) =>
-						item.OwnerCid == currentCid && item.OwnerPid == currentPid;
+						item.OwnerCid == currentRealm.Cid && item.OwnerPid == currentRealm.Pid;
 
 					var reportData = report.data;
 					var isFullRebuild = reportData.EventType == CONTENT_PS_EVENT_TYPE_FULL_REBUILD;
@@ -1204,7 +1205,15 @@ namespace Beamable.Editor.ContentService
 					ValidateAllContents();
 				}
 
-				_contentWatcher.OnStreamContentPsCommandEvent(OnDataReceived);
+				_contentWatcher.OnStreamContentPsCommandEvent(report =>
+				{
+					try { OnDataReceived(report); }
+					catch (Exception error) when (!guarded && !initialContent.Task.IsCompleted)
+					{
+						// The dispatcher logs callback exceptions. Give the waiting reload the startup failure too.
+						initialContent.TrySetException(error);
+					}
+				});
 				_contentWatcher.OnProgressStreamContentPsProgressMessage(dp =>
 				{
 					if (!ReferenceEquals(_contentWatcher, watcher)) return;
@@ -1219,6 +1228,14 @@ namespace Beamable.Editor.ContentService
 				{
 					_localModeExitCheck = watcher.Command;
 					watcher.OnError(report => initialContent.TrySetException(new InvalidOperationException(report.data.message)));
+				}
+				else
+				{
+					// A CLI error can precede a clean EOF. A later snapshot still counts as a successful start.
+					watcher.OnError(report =>
+					{
+						if (!initialContent.Task.IsCompleted) startupCommandError = report.data.message;
+					});
 				}
 				var completion = _contentWatcherCompletion = AwaitCommand(watcher.Command.Run());
 				if (guarded)
@@ -1290,7 +1307,9 @@ namespace Beamable.Editor.ContentService
 							}
 							await completion;
 							if (!guarded && !ReferenceEquals(_contentWatcher, watcher)) return;
-							throw new InvalidOperationException("Content watcher ended before its initial content response.");
+							throw new InvalidOperationException(string.IsNullOrWhiteSpace(startupCommandError)
+								? "Content watcher ended before its initial content response."
+								: startupCommandError);
 						}
 						if (!await initialContent.Task)
 						{
@@ -1300,13 +1319,16 @@ namespace Beamable.Editor.ContentService
 						}
 						if (ReferenceEquals(_contentWatcher, watcher)) ManifestChangedCount++;
 					}
-					catch (TimeoutException error) when (!guarded && initialContent.Task.IsFaulted && ReferenceEquals(_contentWatcher, watcher))
+					catch (Exception error) when (!guarded && !_watchersDisposed && ReferenceEquals(_contentWatcher, watcher))
 					{
 						ContentWatcherError = error.Message;
-						isReloading = false;
-						// Detach before returning the failure. Retry will await the same shutdown before starting a watcher.
-						var stop = BeginContentWatcherStop(preserveRequest: true);
-						_ = stop.ContinueWith(task => { _ = task.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
+						if (initialContent.Task.IsFaulted)
+						{
+							// A timeout or unreadable first snapshot can leave the command running.
+							isReloading = false;
+							var stop = BeginContentWatcherStop(preserveRequest: true);
+							_ = stop.ContinueWith(task => { _ = task.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
+						}
 						throw;
 					}
 					finally
@@ -1321,8 +1343,10 @@ namespace Beamable.Editor.ContentService
 					}
 				}
 			}
-			catch
+			catch (Exception error)
 			{
+				// Setup can fail before FinishReload owns the first-snapshot wait.
+				if (!guarded && !_watchersDisposed) ContentWatcherError = error.Message;
 				isReloading = false;
 				throw;
 			}

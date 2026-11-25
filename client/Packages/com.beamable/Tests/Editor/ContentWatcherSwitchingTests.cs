@@ -765,7 +765,12 @@ namespace Beamable.Editor.Tests
         }
 
         [UnityTest]
-        public IEnumerator FirstContentWindowLoadExposesRetryAfterTimeout()
+        public IEnumerator FirstContentWindowLoadExposesRetryAfterTimeout() => CheckFirstWindowFailure(true);
+
+        [UnityTest]
+        public IEnumerator FirstContentWindowLoadShowsEarlyWatcherExitAndAllowsRetry() => CheckFirstWindowFailure(false);
+
+        IEnumerator CheckFirstWindowFailure(bool timeout)
         {
             double now = 0;
             service.ContentWatcherClock = () => now;
@@ -779,20 +784,80 @@ namespace Beamable.Editor.Tests
                 window.BuildContent();
                 var status = typeof(ContentWindow).GetField("_windowStatus", Fields);
                 Assert.That(status.GetValue(window).ToString(), Is.EqualTo("Building"));
-                LogAssert.Expect(LogType.Exception, new Regex("Content watcher timed out waiting for its first snapshot"));
-                now = 31;
+                var expected = timeout ? CliContentService.ContentStartupTimeoutMessage : "Content watcher ended before its initial content response.";
+                LogAssert.Expect(LogType.Exception, new Regex(Regex.Escape(expected)));
+                if (timeout) now = 31;
+                else commands.Content.Single().Completion.CompleteSuccess();
                 yield return null;
                 yield return null;
                 Assert.That(status.GetValue(window).ToString(), Is.EqualTo("Normal"), "The header contains Refresh and Retry.");
                 AssertMode("Failed");
-                commands.Content.Single().Completion.CompleteSuccess();
+                Assert.That(service.ContentWatcherError, Is.EqualTo(expected));
+                if (timeout) commands.Content.Single().Completion.CompleteSuccess();
                 commands.DelayInitialContent = false;
                 var retry = service.ApplyLocalContentMode();
                 yield return Wait(retry);
                 retry.GetResult();
                 AssertMode("Enabled");
+                Assert.That(service.ContentWatcherError, Is.Null);
             }
             finally { UnityEngine.Object.DestroyImmediate(window); }
+        }
+
+        [UnityTest]
+        public IEnumerator WatcherSetupFailureShowsReasonAndAllowsRetry()
+        {
+            commands.FailNextContentStart = true;
+            Exception observed = null;
+            yield return Wait(service.Reload().Error(error => observed = error));
+            Assert.That(observed, Is.TypeOf<IOException>());
+            Assert.That(service.ContentWatcherError, Is.EqualTo(observed.Message));
+            AssertMode("Failed");
+            var retry = service.ApplyLocalContentMode();
+            yield return Wait(retry);
+            retry.GetResult();
+            AssertMode("Enabled");
+            Assert.That(service.ContentWatcherError, Is.Null);
+        }
+
+        [UnityTest]
+        public IEnumerator MissingRealmDuringFirstSnapshotShowsReasonAndAllowsRetry()
+        {
+            commands.DelayInitialContent = true;
+            var context = (BeamEditorContext)typeof(CliContentService).GetField("_beamContext", Fields).GetValue(service);
+            var loading = service.Reload();
+            Exception observed = null;
+            loading.Error(error => observed = error);
+            var watcher = commands.Content.Single();
+            context.BeamCli.latestConfig.pid = "missing";
+            watcher.Emit();
+            yield return Wait(loading);
+            Assert.That(observed?.Message, Does.Contain("no active realm"));
+            Assert.That(service.ContentWatcherError, Is.EqualTo(observed.Message));
+            Assert.That(watcher.Cancelled, Is.True);
+            watcher.Completion.CompleteSuccess();
+            context.BeamCli.latestConfig.pid = "realm";
+            commands.DelayInitialContent = false;
+            var retry = service.ApplyLocalContentMode();
+            yield return Wait(retry);
+            retry.GetResult();
+            Assert.That(service.ContentWatcherError, Is.Null);
+            AssertMode("Enabled");
+        }
+
+        [UnityTest]
+        public IEnumerator EarlyExitUsesTheCliErrorReceivedBeforeEof()
+        {
+            commands.DelayInitialContent = true;
+            Exception observed = null;
+            var loading = service.Reload().Error(error => observed = error);
+            var watcher = commands.Content.Single();
+            watcher.ReportError("Manifest download failed");
+            Assert.That(service.ContentWatcherError, Is.Null);
+            watcher.Completion.CompleteSuccess();
+            yield return Wait(loading);
+            Assert.That(observed?.Message, Is.EqualTo("Manifest download failed"));
+            Assert.That(service.ContentWatcherError, Is.EqualTo(observed.Message));
         }
 
         [UnityTest]
@@ -1231,7 +1296,7 @@ namespace Beamable.Editor.Tests
             public void Emit() => emit();
             Action<BeamContentPsProgressMessage> progress;
             public void ReportProgress(int completed) => progress?.Invoke(new BeamContentPsProgressMessage { completed = completed, total = 10 });
-            public void ReportError() => error?.Invoke(new ReportDataPoint<ErrorOutput> { data = new ErrorOutput { message = "namespace request failed" } });
+            public void ReportError(string message = "namespace request failed") => error?.Invoke(new ReportDataPoint<ErrorOutput> { data = new ErrorOutput { message = message } });
             public void Cancel() { Cancelled = true; OnCancel?.Invoke(); }
             public IBeamCommand On<T>(string type, Action<ReportDataPoint<T>> callback)
             {

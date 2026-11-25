@@ -19,7 +19,7 @@ namespace Beamable.Editor.ContentService
         // Ordinary content ps can sync files before its first snapshot. Only advancing sync work renews this budget.
         private const double ContentStartupIdleSeconds = 30;
         internal const string ContentStartupTimeoutMessage = "Content watcher timed out waiting for its first snapshot. Refresh Content to retry.";
-        // Keep a failed shutdown visible for Retry even if the command acknowledges it after our wait expired.
+        // Keep the startup or shutdown error visible until the next attempt.
         internal string ContentWatcherError { get; private set; }
         internal Func<double> ContentWatcherClock;
         private double WatcherTime => ContentWatcherClock?.Invoke() ?? EditorApplication.timeSinceStartup;
@@ -97,7 +97,7 @@ namespace Beamable.Editor.ContentService
                 _localContentModeError = null;
                 await StopLocalModeExitCheck();
                 var local = _contentConfiguration.EnableLocalContentInEditor;
-                if (WatchersMatchMode(local) && _retiringContentCommand == null && _retiringHistoryCommand == null) return;
+                if (ContentWatcherError == null && WatchersMatchMode(local) && _retiringContentCommand == null && _retiringHistoryCommand == null) return;
                 await Task.WhenAll(StopContentWatcher(preserveRequest: true), StopHistoryWatcher());
                 if (_watchersDisposed) return;
                 if (_historyWatchRequested) StartContentHistoryCore();

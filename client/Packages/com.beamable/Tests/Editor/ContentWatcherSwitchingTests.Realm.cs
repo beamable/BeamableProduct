@@ -21,11 +21,12 @@ namespace Beamable.Editor.Tests
         private sealed class RealmConfigCommands : IBeamCommandFactory
         {
             public HeldCommand FirstCommand;
+            public string Pid = "target";
 
             public IBeamCommand Create()
             {
                 if (FirstCommand == null)
-                    return new HeldCommand(false, new BeamConfigCommandResult { cid = "1", pid = "target" }, true);
+                    return new HeldCommand(false, new BeamConfigCommandResult { cid = "1", pid = Pid }, true);
                 var first = FirstCommand;
                 FirstCommand = null;
                 return first;
@@ -34,9 +35,9 @@ namespace Beamable.Editor.Tests
             public void ClearAll() { }
         }
 
-        private BeamEditorContext CreateRealmSwitchContext(HeldCommand firstCommand = null)
+        private BeamEditorContext CreateRealmSwitchContext(RealmConfigCommands factory = null)
         {
-            var factory = new RealmConfigCommands { FirstCommand = firstCommand };
+            factory ??= new RealmConfigCommands();
             var requester = (PlatformRequester)FormatterServices.GetUninitializedObject(typeof(PlatformRequester));
             requester.Pid = "previous";
             var scope = new DependencyBuilder().AddSingleton<IBeamCommandFactory>(factory)
@@ -46,7 +47,11 @@ namespace Beamable.Editor.Tests
             cli.latestConfig = new BeamConfigCommandResult { cid = "1", pid = "previous" };
             cli.latestRealmInfo = new BeamRealmsListCommandOutput
             {
-                VisibleRealms = new[] { new BeamOrgRealmData { Cid = "1", Pid = "target", RealmName = "Target" } }
+                VisibleRealms = new[]
+                {
+                    new BeamOrgRealmData { Cid = "1", Pid = "target", RealmName = "Target" },
+                    new BeamOrgRealmData { Cid = "1", Pid = "next", RealmName = "Next" }
+                }
             };
             var context = new BeamEditorContext();
             Set(context, "<ServiceScope>k__BackingField", scope);
@@ -97,10 +102,37 @@ namespace Beamable.Editor.Tests
         }
 
         [UnityTest]
+        public IEnumerator OverlappingRealmSwitchesNotifyInOrderWhileEachRealmIsCurrent()
+        {
+            var factory = new RealmConfigCommands();
+            var context = CreateRealmSwitchContext(factory);
+            var notifications = new List<(string payload, string cli, string requester)>();
+            context.OnRealmChange += realm => notifications.Add((realm.Pid, context.BeamCli.CurrentRealm.Pid, context.Requester.Pid));
+            commands.DelayInitialContent = true;
+            var first = context.SwitchRealm("target");
+            var watcher = commands.Content.Single();
+            factory.Pid = "next";
+            var second = context.SwitchRealm("next");
+            Assert.That(context.Requester.Pid, Is.EqualTo("target"));
+            Assert.That(watcher.Cancelled, Is.False);
+            watcher.OnCancel = () => watcher.Completion.CompleteSuccess();
+            watcher.Emit();
+            yield return Wait(first);
+            first.GetResult();
+            Assert.That(notifications, Is.EqualTo(new[] { ("target", "target", "target") }));
+            Assert.That(context.IsSwitchingRealms, Is.True);
+            commands.Content.Last().Emit();
+            yield return Wait(second);
+            second.GetResult();
+            Assert.That(notifications, Is.EqualTo(new[] { ("target", "target", "target"), ("next", "next", "next") }));
+            Assert.That(context.IsSwitchingRealms, Is.False);
+        }
+
+        [UnityTest]
         public IEnumerator FailedCliRealmSwitchLeavesRequesterAndSubscribersOnPreviousRealm()
         {
             var configCommand = new HeldCommand(false, null) { DelayInitial = true };
-            var context = CreateRealmSwitchContext(configCommand);
+            var context = CreateRealmSwitchContext(new RealmConfigCommands { FirstCommand = configCommand });
             int notifications = 0;
             context.OnRealmChange += _ => notifications++;
             Exception error = null;
@@ -113,6 +145,47 @@ namespace Beamable.Editor.Tests
             Assert.That(commands.Content, Is.Empty);
             Assert.That(notifications, Is.Zero);
             Assert.That(context.IsSwitchingRealms, Is.False);
+        }
+
+        [UnityTest]
+        public IEnumerator QueuedRealmSwitchRunsAfterPreviousCliFailure()
+        {
+            var configCommand = new HeldCommand(false, null) { DelayInitial = true };
+            var context = CreateRealmSwitchContext(new RealmConfigCommands { FirstCommand = configCommand, Pid = "next" });
+            var notified = new List<string>();
+            context.OnRealmChange += realm => notified.Add(realm.Pid);
+            var first = context.SwitchRealm("target");
+            Exception firstError = null;
+            first.Error(error => firstError = error);
+            var second = context.SwitchRealm("next");
+            Assert.That(context.Requester.Pid, Is.EqualTo("previous"));
+            var failure = new IOException("Controlled config failure");
+            configCommand.Completion.CompleteError(failure);
+            yield return Wait(second);
+            second.GetResult();
+            Assert.That(firstError, Is.SameAs(failure));
+            Assert.That(notified, Is.EqualTo(new[] { "next" }));
+            Assert.That(context.IsSwitchingRealms, Is.False);
+        }
+
+        [UnityTest]
+        public IEnumerator LogoutCancelsQueuedRealmSwitchBeforeItApplies()
+        {
+            var factory = new RealmConfigCommands();
+            var context = CreateRealmSwitchContext(factory);
+            commands.DelayInitialContent = true;
+            var first = context.SwitchRealm("target");
+            Exception queuedError = null;
+            var second = context.SwitchRealm("next").Error(error => queuedError = error);
+            // Hold the logout command so the fixture never reloads the editor's global environment.
+            factory.FirstCommand = new HeldCommand(false, null) { DelayInitial = true };
+            context.Logout(true);
+            Assert.That(context.IsSwitchingRealms, Is.False);
+            commands.Content.Single().Emit();
+            yield return Wait(first);
+            yield return Wait(second);
+            Assert.That(queuedError, Is.TypeOf<OperationCanceledException>());
+            Assert.That(commands.Content.Count, Is.EqualTo(1));
         }
     }
 }

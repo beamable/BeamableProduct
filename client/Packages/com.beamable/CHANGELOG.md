@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- If the content watcher stalls before its first snapshot during a realm switch, the realm selector unlocks after 30 seconds without sync progress. The editor notifies realm-change subscribers once the switch has applied, including when content fails to load. The Content window offers Retry if watcher startup or shutdown times out. A replacement watcher starts after the previous watcher confirms shutdown.
+- Realm switches run in request order. The editor notifies subscribers for each applied realm before starting the next switch, including when content fails to load. A watcher that stalls before its first snapshot releases the switch after 30 seconds without sync progress. The Content window shows the reason for a watcher startup failure or shutdown timeout and offers Retry. A replacement watcher waits for the previous watcher to confirm shutdown.
 - Cancelling or timing out a Local Mode exit check keeps Local Mode enabled and allows cleanup to be retried without leaving the watcher transition locked. Opening the exit review, resolving another item, or starting or cancelling the final check preserves pending and refused Inspector edits.
 - Fixed development/pinned CLI version matching and repeated server launches. Discovery reports incompatible or unavailable servers and allows recovery after configuration changes.
 - Play Mode resolves the selected namespace, including unpublished content, from a read-only local snapshot loaded in the background. Restart Play Mode to reload edits. Content stays on the context's realm; shutdown cancels loads and stops manifest refreshes.
