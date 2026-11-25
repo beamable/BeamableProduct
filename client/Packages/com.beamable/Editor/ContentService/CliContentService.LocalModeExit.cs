@@ -20,7 +20,6 @@ namespace Beamable.Editor.ContentService
 		private Task _localModeExitCheckStop;
 		private bool _localModeExitStopFailed;
 		private int _localModeExitTimeoutMs = 30000;
-		private int _localModeExitStopTimeoutMs = 10000;
 
 		internal static bool RequiresLocalModeReview(LocalContentManifestEntry entry) =>
 			entry.IsInConflict || (ContentChangeKind)entry.ChangeKind is not
@@ -205,11 +204,7 @@ namespace Beamable.Editor.ContentService
 			{
 				if (_localModeExitCheckStop == null || _localModeExitCheckStop.IsFaulted || _localModeExitCheckStop.IsCanceled)
 					_localModeExitCheckStop = StopWatcher(_localModeExitCheck, _localModeExitCheckCompletion);
-				var stop = _localModeExitCheckStop;
-				_ = stop.ContinueWith(task => { _ = task.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
-				if (await Task.WhenAny(stop, Task.Delay(_localModeExitStopTimeoutMs > 0 ? _localModeExitStopTimeoutMs : 10000)) != stop)
-					throw new TimeoutException("Could not confirm exit-check cleanup. Local Mode stays on. Refresh to retry before restarting watchers.");
-				await stop;
+				await WaitForWatcherStop(_localModeExitCheckStop, "Could not confirm exit-check cleanup. Local Mode stays on. Refresh to retry before restarting watchers.");
 				ClearLocalModeExitCheck();
 			}
 			catch { _localModeExitStopFailed = true; throw; }
