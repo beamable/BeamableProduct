@@ -1100,8 +1100,10 @@ namespace Beamable.Editor.ContentService
 					return Task.CompletedTask;
 				}
 
-				TaskCompletionSource<bool> manifestIsFetchedTaskCompletion = new TaskCompletionSource<bool>();
-
+				var initialContent = new TaskCompletionSource<bool>();
+				_ordinaryContentReady = guarded ? null : initialContent.Task;
+				var startupDeadline = WatcherTime + ContentStartupIdleSeconds;
+				var completedItems = 0;
 
 				_contentWatcher = _cli.ContentPs(new ContentPsArgs()
 				{
@@ -1116,17 +1118,17 @@ namespace Beamable.Editor.ContentService
 				void OnDataReceived(ReportDataPoint<BeamContentPsCommandEvent> report)
 				{
 					if (!ReferenceEquals(_contentWatcher, watcher)) return;
-					if (guarded && !manifestIsFetchedTaskCompletion.Task.IsCompleted)
+					if (guarded && !initialContent.Task.IsCompleted)
 					{
 						try { ValidateLocalModeActivation(report.data, activationScope, cancelled); }
-						catch (Exception error) { manifestIsFetchedTaskCompletion.TrySetException(error); return; }
+						catch (Exception error) { initialContent.TrySetException(error); return; }
 						if (!_contentWatchRequested)
 						{
-							manifestIsFetchedTaskCompletion.TrySetResult(true);
+							initialContent.TrySetResult(true);
 							return;
 						}
 					}
-					if (manifestIsFetchedTaskCompletion.Task.IsFaulted) return;
+					if (initialContent.Task.IsFaulted) return;
 					string currentCid = _beamContext.BeamCli.CurrentRealm.Cid;
 					string currentPid = _beamContext.BeamCli.CurrentRealm.Pid;
 
@@ -1195,10 +1197,7 @@ namespace Beamable.Editor.ContentService
 						ManifestChangedCount++;
 					}
 
-					if (!manifestIsFetchedTaskCompletion.Task.IsCompleted)
-					{
-						manifestIsFetchedTaskCompletion.SetResult(true);
-					}
+					initialContent.TrySetResult(true);
 
 					ValidationContext.Initialized = true;
 					ComputeTags();
@@ -1206,11 +1205,20 @@ namespace Beamable.Editor.ContentService
 				}
 
 				_contentWatcher.OnStreamContentPsCommandEvent(OnDataReceived);
-				_contentWatcher.OnProgressStreamContentPsProgressMessage(dp => { if (ReferenceEquals(_contentWatcher, watcher)) LatestProgressUpdate = dp.data; });
+				_contentWatcher.OnProgressStreamContentPsProgressMessage(dp =>
+				{
+					if (!ReferenceEquals(_contentWatcher, watcher)) return;
+					LatestProgressUpdate = dp.data;
+					if (!guarded && !initialContent.Task.IsCompleted && dp.data.completed > completedItems)
+					{
+						completedItems = dp.data.completed;
+						startupDeadline = WatcherTime + ContentStartupIdleSeconds;
+					}
+				});
 				if (guarded)
 				{
 					_localModeExitCheck = watcher.Command;
-					watcher.OnError(report => manifestIsFetchedTaskCompletion.TrySetException(new InvalidOperationException(report.data.message)));
+					watcher.OnError(report => initialContent.TrySetException(new InvalidOperationException(report.data.message)));
 				}
 				var completion = _contentWatcherCompletion = AwaitCommand(watcher.Command.Run());
 				if (guarded)
@@ -1264,18 +1272,37 @@ namespace Beamable.Editor.ContentService
 
 				async Task FinishReload()
 				{
+					void CheckStartupDeadline()
+					{
+						if (!_watchersDisposed && WatcherTime >= startupDeadline)
+							initialContent.TrySetException(new TimeoutException(ContentStartupTimeoutMessage));
+					}
+
+					if (!guarded && !initialContent.Task.IsCompleted) EditorApplication.update += CheckStartupDeadline;
 					try
 					{
-						if (await Task.WhenAny(manifestIsFetchedTaskCompletion.Task, completion) == completion)
+						if (await Task.WhenAny(initialContent.Task, completion) == completion)
 						{
 							await completion;
 							if (!guarded && !ReferenceEquals(_contentWatcher, watcher)) return;
 							throw new InvalidOperationException("Content watcher ended before its initial content response.");
 						}
-						await manifestIsFetchedTaskCompletion.Task;
+						await initialContent.Task;
 						if (ReferenceEquals(_contentWatcher, watcher)) ManifestChangedCount++;
 					}
-					finally { if (ReferenceEquals(_contentWatcher, watcher)) isReloading = false; }
+					catch (TimeoutException) when (!guarded && initialContent.Task.IsFaulted && ReferenceEquals(_contentWatcher, watcher))
+					{
+						isReloading = false;
+						// Detach before returning the failure. Retry will await the same shutdown before starting a watcher.
+						var stop = BeginContentWatcherStop(preserveRequest: true);
+						_ = stop.ContinueWith(task => { _ = task.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
+						throw;
+					}
+					finally
+					{
+						if (!guarded) EditorApplication.update -= CheckStartupDeadline;
+						if (ReferenceEquals(_contentWatcher, watcher)) isReloading = false;
+					}
 				}
 			}
 			catch

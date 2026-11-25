@@ -1741,7 +1741,7 @@ namespace Beamable.Editor.Tests
                 if (retryCleanup)
                 {
                     _commands.CompleteExitCheckOnCancel = false;
-                    Set(_service, "_localModeExitStopTimeoutMs", 25);
+                    Set(_service, "_watcherStopTimeoutMs", 25);
                 }
                 bool cancelled = false;
                 Exception error = null;

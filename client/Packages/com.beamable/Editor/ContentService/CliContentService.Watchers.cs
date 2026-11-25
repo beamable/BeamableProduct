@@ -16,6 +16,14 @@ namespace Beamable.Editor.ContentService
     {
         private SemaphoreSlim _watcherGate;
         private SemaphoreSlim WatcherGate => _watcherGate ??= new SemaphoreSlim(1, 1);
+        // Ordinary content ps can sync files before its first snapshot. Only advancing sync work renews this budget.
+        private const double ContentStartupIdleSeconds = 30;
+        internal const string ContentStartupTimeoutMessage = "Content watcher timed out waiting for its first snapshot. Refresh Content to retry.";
+        internal bool ContentStartupTimedOut => _contentWatchRequested && _ordinaryContentReady?.IsFaulted == true;
+        internal Func<double> ContentWatcherClock;
+        private double WatcherTime => ContentWatcherClock?.Invoke() ?? EditorApplication.timeSinceStartup;
+        private Task _ordinaryContentReady;
+        private int _watcherStopTimeoutMs = 10000;
         private Task _contentWatcherCompletion;
         private Task _historyWatcherCompletion;
         private Task _contentStop = Task.CompletedTask;
@@ -38,6 +46,8 @@ namespace Beamable.Editor.ContentService
             {
                 if (_localModeExitCheck != null)
                     return _localModeExitStopFailed ? ContentAutoSyncState.Failed : ContentAutoSyncState.Switching;
+                if (ContentStartupTimedOut)
+                    return ContentAutoSyncState.Failed;
                 // A saved preference is not proof that the previous commands have stopped.
                 if ((_retiringContentCommand != null && (_contentStop?.IsFaulted == true || _contentStop?.IsCanceled == true)) ||
                     (_retiringHistoryCommand != null && (_historyStop?.IsFaulted == true || _historyStop?.IsCanceled == true)))
@@ -97,7 +107,7 @@ namespace Beamable.Editor.ContentService
             await ready;
         }
 
-        private async Task StopContentWatcher(bool preserveRequest = false)
+        private Task BeginContentWatcherStop(bool preserveRequest)
         {
             if (!preserveRequest) _contentWatchRequested = false;
             var watcher = _contentWatcher;
@@ -108,11 +118,36 @@ namespace Beamable.Editor.ContentService
                 _contentStop = null;
             }
             var command = _retiringContentCommand;
-            if (command == null) return;
+            if (command == null) return Task.CompletedTask;
             if (_contentStop == null || _contentStop.IsFaulted || _contentStop.IsCanceled)
                 _contentStop = StopWatcher(command, _contentWatcherCompletion);
-            await _contentStop;
+            return _contentStop;
+        }
+
+        private async Task StopContentWatcher(bool preserveRequest = false)
+        {
+            var stop = BeginContentWatcherStop(preserveRequest);
+            var command = _retiringContentCommand;
+            if (!_watchersDisposed && !stop.IsCompleted && _ordinaryContentReady != null &&
+                _ordinaryContentReady.Status != TaskStatus.RanToCompletion)
+                await WaitForWatcherStop(stop, "Could not confirm content watcher shutdown. Refresh Content to retry.");
+            else
+                await stop;
             if (ReferenceEquals(_retiringContentCommand, command)) _retiringContentCommand = null;
+        }
+
+        // A timeout releases this caller. The owner keeps the original stop task until shutdown is acknowledged.
+        private async Task WaitForWatcherStop(Task stop, string timeoutMessage)
+        {
+            _ = stop.ContinueWith(task => { _ = task.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
+            using var timer = new CancellationTokenSource();
+            try
+            {
+                var deadline = Task.Delay(_watcherStopTimeoutMs > 0 ? _watcherStopTimeoutMs : 10000, timer.Token);
+                if (await Task.WhenAny(stop, deadline) != stop) throw new TimeoutException(timeoutMessage);
+                await stop;
+            }
+            finally { timer.Cancel(); }
         }
 
         private async Task StopHistoryWatcher()

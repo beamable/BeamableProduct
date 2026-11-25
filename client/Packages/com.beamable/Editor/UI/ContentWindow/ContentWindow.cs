@@ -67,15 +67,23 @@ namespace Beamable.Editor.UI.ContentWindow
 			{
 				ChangeWindowStatus(ContentWindowStatus.Building, false);
 				_contentService = Scope.GetService<CliContentService>();
-				_ = _contentService.Reload().Then(_ =>
+				_ = _contentService.Reload().Then(_ => FinishInitialBuild()).Error(error =>
 				{
+					Debug.LogException(error);
+					FinishInitialBuild();
+				});
+
+				// Build the header on failure too, so the developer can refresh content from this window.
+				void FinishInitialBuild()
+				{
+					if (this == null) return;
 					if (_windowStatus == ContentWindowStatus.Building)
 					{
 						ChangeWindowStatus(ContentWindowStatus.Normal, false);
 					}
 
 					Build();
-				});
+				}
 				return;
 			}
 			
@@ -252,6 +260,12 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private void DrawContentData()
 		{
+			if (_contentService.ContentStartupTimedOut)
+			{
+				EditorGUILayout.HelpBox(CliContentService.ContentStartupTimeoutMessage, MessageType.Error);
+				return;
+			}
+
 			if (NeedsMigration)
 			{
 				DrawNestedContent(DrawMigration);
