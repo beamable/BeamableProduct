@@ -186,6 +186,7 @@ namespace Beamable.Server
       /// We need to guarantee <see cref="ResolveCustomInitializationHook"/> only gets run once when we <see cref="SetupWebsocket"/>.
       /// </summary>
       private bool _ranCustomUserInitializationHooks = false;
+      private bool _hasConfiguredRealmContent;
 
 
       public IDependencyProvider Provider => InstanceArgs.ServiceScope;
@@ -610,36 +611,38 @@ namespace Beamable.Server
             bool BakingDisabled(RealmConfig settings) =>
                bool.TryParse(settings.GetSetting(ContentService.BakeConfigNamespace, ContentService.BakeDisableKey), out var disabled) && disabled;
             contentService.ConfigureBakedContent(InstanceArgs.CustomerID, InstanceArgs.ProjectName, !BakingDisabled(config));
-            if (_ranCustomUserInitializationHooks && _startupContext?.services?.Count > 0 &&
+            if (_hasConfiguredRealmContent && _startupContext?.services?.Count > 0 &&
                 ReferenceEquals(_startupContext.services[0].SocketContext, _socketRequesterContext))
             {
                // A content publish while this connection was down was not seen here; refresh what's loaded.
                contentService.RefreshLoadedManifests();
             }
-            if (!_ranCustomUserInitializationHooks && realmService is RealmConfigService concrete)
+            if (!_hasConfiguredRealmContent && realmService is RealmConfigService concrete)
             {
                concrete.ConfigChanged += updated => contentService.ConfigureBakedContent(
                   InstanceArgs.CustomerID, InstanceArgs.ProjectName, !BakingDisabled(updated));
             }
+            _hasConfiguredRealmContent = true;
          }
          // We can disable custom initialization hooks from running. This is so we can verify the image works (outside of the custom hooks) before a publish.
          // TODO This is not ideal. There's an open ticket with some ideas on how we can improve the publish process to guarantee it's impossible to publish an image
          // TODO that will not boot correctly.
          if (!_ranCustomUserInitializationHooks)
          {
-	         _ranCustomUserInitializationHooks = true;
-	         if (!InstanceArgs.DisableCustomInitializationHooks)
-	         {
-		         // Custom Initialization hook for C#MS --- will terminate MS user-code throws.
-		         // Only gets run once --- if we need to setup the websocket again, we don't run this a second time.
-		         if (initContent && IsRealmScoped)
-		         {
-			         await Provider.GetService<ContentService>().Init(preload: true);
-		         }
+            if (!InstanceArgs.DisableCustomInitializationHooks && initContent && IsRealmScoped)
+            {
+               await Provider.GetService<ContentService>().Init(preload: true, replies: replies);
+               connectionLost.ThrowIfCancellationRequested();
+            }
 
-		         await ResolveCustomInitializationHook();
-	         }
-				await RunServiceSetupCallbacks();
+            // Preload can retry on a replacement socket. Once we enter user code,
+            // its side effects belong to this instance across reconnects.
+            _ranCustomUserInitializationHooks = true;
+            if (!InstanceArgs.DisableCustomInitializationHooks)
+            {
+               await ResolveCustomInitializationHook();
+            }
+            await RunServiceSetupCallbacks();
          }
 
          connectionLost.ThrowIfCancellationRequested();

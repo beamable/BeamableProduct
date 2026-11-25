@@ -267,7 +267,10 @@ namespace Beamable.Server.Content
 			   }
 			   catch (RequesterException ex) when (IsTransientManifestFailure(ex.Status))
 			   {
-				   await Task.Delay(GetManifestRetryDelay(attempt));
+				   var delay = GetManifestRetryDelay(attempt);
+				   Log.Warning("Content manifest {manifestId} request failed with status {status}. Scheduling attempt {nextAttempt} of {maxAttempts} in {delayMs} ms.",
+				      _name, ex.Status, attempt + 1, MaxManifestAttempts, (int)delay.TotalMilliseconds);
+				   await Task.Delay(delay);
 			   }
 		   }
 
@@ -310,11 +313,17 @@ namespace Beamable.Server.Content
       private readonly MicroserviceContentSerializer _serializer = new MicroserviceContentSerializer();
       private readonly ContentTypeReflectionCache _contentTypeReflectionCache;
 
-      private bool _hasStartedInit;
+      private bool _subscribed;
+      private readonly object _initGate = new object();
+      private Promise _initializationAttempt;
 
       private ConcurrentDictionary<string, CachedContentManifest> _nameToManifest =
 	      new ConcurrentDictionary<string, CachedContentManifest>();
 
+      /// <summary>
+      /// Completes on the first successful initialization. A failed attempt leaves this signal pending
+      /// so a later retry can complete it. Await <see cref="Init(bool)"/> to observe an attempt's failure.
+      /// </summary>
       public Promise initializedPromise;
 
       public ContentService(MicroserviceRequester requester, SocketRequesterContext socket, IContentResolver contentResolver, ReflectionCache reflectionCache)
@@ -371,31 +380,45 @@ namespace Beamable.Server.Content
 	      return manifest;
       }
       
-      public async Promise Init(bool preload = false)
-      {
-		  if (_hasStartedInit) return;
-	      _hasStartedInit = true;
-	      try
-	      {
-		      _socket.Subscribe<ContentManifestEvent>(Constants.Features.Services.CONTENT_UPDATE_EVENT,
-			      HandleContentPublish);
+      /// <summary>Initializes content, or joins the current initialization attempt. A call after failure starts a new attempt.</summary>
+      /// <param name="preload">Download content if this call starts an initialization attempt.</param>
+      /// <returns>The current attempt's result, including any initialization error.</returns>
+      public Promise Init(bool preload = false) => Init(preload, null);
 
-		      if (!preload) return;
-		      await DownloadAllContent();
-	      }
-	      finally
-	      {
-		      initializedPromise.CompleteSuccess();
-	      }
+      internal Promise Init(bool preload, PlatformReplyWait replies)
+      {
+         lock (_initGate)
+         {
+            if (_initializationAttempt == null || _initializationAttempt.IsFailed)
+               _initializationAttempt = Initialize(preload, replies);
+            return _initializationAttempt;
+         }
       }
 
-      private async Promise DownloadAllContent()
+      private async Promise Initialize(bool preload, PlatformReplyWait replies)
+      {
+         if (!_subscribed)
+         {
+            _socket.Subscribe<ContentManifestEvent>(Constants.Features.Services.CONTENT_UPDATE_EVENT,
+               HandleContentPublish);
+            _subscribed = true;
+         }
+
+         // A failed preload can be retried on the replacement socket. Keep the startup
+         // signal pending until an attempt succeeds.
+         if (preload) await DownloadAllContent(replies);
+         initializedPromise.CompleteSuccess();
+      }
+
+      private async Promise DownloadAllContent(PlatformReplyWait replies)
       {
 	      // cache entire content
 	      Log.Verbose($"LOADING MANIFEST");
 	      var sw = new Stopwatch();
 	      sw.Start();
-	      var manifest = await GetManifest();
+	      var manifest = replies == null
+		      ? await GetManifest()
+		      : await replies.Wait("eager content manifest", () => GetManifest());
 	      if ((manifest?.entries?.Count ?? 0) == 0)
 	      {
 		      sw.Stop();

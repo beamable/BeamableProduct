@@ -15,6 +15,7 @@ using System.Threading;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Leaderboards;
 using microserviceTests.microservice.Util;
+using Microsoft.Extensions.Logging;
 
 namespace microserviceTests.microservice.Content
 {
@@ -353,6 +354,19 @@ namespace microserviceTests.microservice.Content
          Assert.IsTrue(nextPromise.IsFailed, "second request should use a new manifest attempt group and then fail because content is absent");
          Assert.AreEqual(4, manifestAttempts);
          Assert.AreEqual(4, manifestFrequency.CallCount);
+
+         string[] retryWarnings;
+         lock (LoggingUtil.testLogs.allLogs)
+         {
+            retryWarnings = LoggingUtil.testLogs.allLogs
+               .Where(entry => entry.LogInfo.LogLevel == LogLevel.Warning)
+               .Select(entry => entry.ToString())
+               .Where(message => message.Contains("Content manifest global request failed with status 503"))
+               .ToArray();
+         }
+         Assert.That(retryWarnings, Has.Length.EqualTo(2));
+         Assert.That(retryWarnings[0], Does.Match(@"Scheduling attempt 2 of 3 in \d+ ms"));
+         Assert.That(retryWarnings[1], Does.Match(@"Scheduling attempt 3 of 3 in \d+ ms"));
 
          socketCtx.Daemon.KillAuthThread();
          Assert.IsTrue(testSocket.AllMocksCalled());

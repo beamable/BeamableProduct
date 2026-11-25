@@ -19,6 +19,7 @@ namespace microserviceTests.microservice
 	{
 		private readonly IConnectionProvider _provider;
 		public IBeamableService Service { get; set; }
+		internal LoggingUtil.TestLogs StartupLogs { get; } = new();
 		private IContentResolver _resolver;
 		private MicroserviceResult _instances;
 
@@ -29,7 +30,8 @@ namespace microserviceTests.microservice
 			_provider = provider;
 		}
 
-		public async Task Start<T>(TestArgs dudArgs=null, Action<IDependencyBuilder> configurator=null) where T : Microservice
+		public async Task Start<T>(TestArgs dudArgs = null, Action<IDependencyBuilder> configurator = null,
+			Func<IDependencyProviderScope, Task> perServiceInitializer = null) where T : Microservice
 		{
 			var args = dudArgs ?? new TestArgs();
 
@@ -78,14 +80,14 @@ namespace microserviceTests.microservice
 				.OverrideConfig(c =>
 				{
 					c.Args = args;
-			c.AddLoggerProvider = (builder, _) =>
-			{
-				builder.ClearProviders();
-				var testLogs = new LoggingUtil.TestLogs();
-				builder.SetMinimumLevel(LogLevel.Trace);
-				builder.AddZLoggerLogProcessor(testLogs);
-				return null;
-			};
+					if (perServiceInitializer != null) c.PerServiceInitializers.Add(perServiceInitializer);
+					c.AddLoggerProvider = (builder, _) =>
+					{
+						builder.ClearProviders();
+						builder.SetMinimumLevel(LogLevel.Trace);
+						builder.AddZLoggerLogProcessor(StartupLogs);
+						return null;
+					};
 					c.FirstConnectionHandler = (service) =>
 					{
 						Service = service;
