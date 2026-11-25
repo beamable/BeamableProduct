@@ -33,6 +33,8 @@ namespace Beamable.Editor.Config
 		
 		static bool DoDrawDefaultInspector(SerializedObject obj)
 		{
+			if (obj.targetObject is Beamable.Content.ContentConfiguration configuration)
+				ContentConfigurationEditor.DrawLocalMode(configuration);
 			EditorGUI.BeginChangeCheck();
 			obj.UpdateIfRequiredOrScript();
 			SerializedProperty iterator = obj.GetIterator();

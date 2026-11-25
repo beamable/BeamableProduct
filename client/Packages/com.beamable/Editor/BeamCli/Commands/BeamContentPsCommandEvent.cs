@@ -8,6 +8,7 @@ namespace Beamable.Editor.BeamCli.Commands
     public partial class BeamContentPsCommandEvent
     {
         public int EventType;
+        public bool LocalModeExitActivated;
         public System.Collections.Generic.List<Beamable.Common.BeamCli.Contracts.LocalContentManifest> RelevantManifestsAgainstLatest;
         public System.Collections.Generic.List<Beamable.Common.BeamCli.Contracts.LocalContentManifest> ToRemoveLocalEntries;
         public string PublisherEmail;

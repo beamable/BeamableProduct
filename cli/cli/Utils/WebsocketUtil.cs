@@ -78,7 +78,7 @@ public class WebsocketUtil
 	/// Takes a <see cref="ClientWebSocket"/> configured via <see cref="ConfigureWebSocketForServerNotifications"/> and keeps listening for events while the connection is open.
 	/// </summary>
 	public static async Task<ClientWebSocket> RunServerNotificationListenLoop(WebsocketConnectionHandle handle, Action<ServerNotificationMessage> onNotification, CancellationToken cancellationToken,
-		bool nackCallbackExceptions = false)
+		bool nackCallbackExceptions = false, Action onReconnecting = null)
 	{
 		var ws = await handle.Socket;
 		do
@@ -128,6 +128,7 @@ public class WebsocketUtil
 			}
 			catch (WebSocketException ex) when (ex.Message.Contains("remote party closed the WebSocket connection without completing the close handshake"))
 			{
+				onReconnecting?.Invoke();
 				handle.ResetSocket();
 				Log.Debug("websocket connection was closed by Beamable host. Reconnecting... ");
 				ws = await handle.Socket;

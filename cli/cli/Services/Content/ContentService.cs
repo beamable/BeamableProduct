@@ -489,8 +489,14 @@ public partial class ContentService
 		}
 	}
 
-	public async IAsyncEnumerable<RemoteContentPublished> ListenToRemoteContentPublishes(CommandArgs args, string manifestId = "global", [EnumeratorCancellation] CancellationToken token = default, bool autoSync = true)
+	public IAsyncEnumerable<RemoteContentPublished> ListenToRemoteContentPublishes(CommandArgs args, string manifestId = "global", CancellationToken token = default, bool autoSync = true) =>
+		ListenToRemoteContentPublishes(args, manifestId, token, autoSync, null);
+
+	internal async IAsyncEnumerable<RemoteContentPublished> ListenToRemoteContentPublishes(CommandArgs args, string manifestId,
+		[EnumeratorCancellation] CancellationToken token, bool autoSync, LocalModeExitActivation activation)
 	{
+		// A guarded watcher must only process publications received by its own subscription.
+		var publications = activation == null ? _channelRemoteContentPublishes : Channel.CreateUnbounded<RemoteContentPublished>();
 		await using var watch = new ContentWatchScope(token);
 		token = watch.Token;
 		// Subscribe to the content refresh notification for the realm we are targeting.
@@ -499,21 +505,39 @@ public partial class ContentService
 			try
 			{
 				var handle = WebsocketUtil.ConfigureWebSocketForServerNotifications(args, new[] { "content.manifest" }, token);
+				if (activation != null)
+				{
+					await handle.Socket;
+					activation.Subscribed.TrySetResult();
+				}
+
 				await WebsocketUtil.RunServerNotificationListenLoop(handle, message =>
 				{
-					Log.Verbose("Received Content Publish Notification");
-					watch.Run(async () => await OnContentPublished(message.body, args.Lifecycle));
-				}, token);
+					var manifest = ((JObject)message.body).Property("manifest")!.Value.ToObject<JObject>();
+					if (manifest.Property("id")!.Value.ToObject<string>() != manifestId)
+						return;
+					var uid = manifest.Property("uid")!.Value.ToObject<string>();
+					var publisherAccountId = manifest.Property("publisherAccountId")!.Value.ToObject<long>();
+					if (activation == null || activation.ShouldProcessPublication(uid))
+						watch.Run(() => OnContentPublished(uid, publisherAccountId));
+				}, token, onReconnecting: activation == null ? null : activation.OnReconnecting);
+
+				if (activation != null && !token.IsCancellationRequested)
+					throw new CliException("The Local Mode exit publication watcher disconnected. Refresh and try again.");
 			}
 			catch (Exception e)
 			{
 				Console.WriteLine(e);
 				throw;
 			}
+			finally
+			{
+				activation?.OnDisconnected();
+			}
 		});
 
 		// Loop while we are listing to the published changes on this realm and emit an event out of this enumerable every time we get one. 
-		var reader = _channelRemoteContentPublishes.Reader;
+		var reader = publications.Reader;
 		while (true)
 		{
 			// Break if a cancellation request came in.
@@ -541,70 +565,54 @@ public partial class ContentService
 
 		yield break;
 
-		async Task OnContentPublished(object o, AppLifecycle lifecycle)
+		async Task OnContentPublished(string manifestUid, long publisherAccountId)
 		{
-			Log.Verbose("Responding to Content Publish Notification");
-			var payload = (JObject)o;
-			var categories = payload.Property("categories")!.Value.Values<string>().ToArray();
-			var manifestInfo = payload.Property("manifest")!.Value.ToObject<JObject>();
+			Log.Verbose("Fetching Manifest Data. MANIFEST_ID={0}, UID={1}", manifestId, manifestUid);
+			var emailFetchTask = GetAccountEmail(publisherAccountId);
+			var manifestFetchTask = GetManifest(manifestId, manifestUid, replaceLatest: true);
 
-			var publishedManifestId = manifestInfo.Property("id")!.Value.ToObject<string>();
-			var manifestUid = manifestInfo.Property("uid")!.Value.ToObject<string>();
-			var manifestChecksum = manifestInfo.Property("checksum")!.Value.ToObject<string>();
-			var createdTimestamp = manifestInfo.Property("created")!.Value.ToObject<long>();
-			var publisherAccountId = manifestInfo.Property("publisherAccountId")!.Value.ToObject<long>();
+			await Task.WhenAll(emailFetchTask, manifestFetchTask);
+			var email = await emailFetchTask;
+			var newManifest = await manifestFetchTask;
 
+			Log.Verbose("Found Email for Publisher. MANIFEST_ID={0}, EMAIL={1}", manifestId, email);
+			Log.Verbose("Found New Published Manifest. MANIFEST_ID={0}, UID={1}", manifestId, manifestFetchTask.Result.uid.GetOrElse(""));
 
-			// We only emit an event if the published manifest matches the id we care about.
-			if (manifestId == publishedManifestId)
+			try
 			{
-				Log.Verbose("Fetching Manifest Data. MANIFEST_ID={0}, UID={1}", manifestId, manifestUid);
-				var emailFetchTask = GetAccountEmail(publisherAccountId);
-				var manifestFetchTask = GetManifest(publishedManifestId, manifestUid, replaceLatest: true);
-
-				await Task.WhenAll(emailFetchTask, manifestFetchTask);
-				var email = await emailFetchTask;
-				var newManifest = await manifestFetchTask;
-
-				Log.Verbose("Found Email for Publisher. MANIFEST_ID={0}, EMAIL={1}", manifestId, email);
-				Log.Verbose("Found New Published Manifest. MANIFEST_ID={0}, UID={1}", manifestId, manifestFetchTask.Result.uid.GetOrElse(""));
-
-				try
+				ContentSyncReport syncReport = null;
+				if (autoSync)
 				{
-					ContentSyncReport syncReport = null;
-					if (autoSync)
-					{
-						// Preserve the existing selective sync policy unless this listener is observation-only.
-						Log.Verbose("Sync'ing manifest. MANIFEST_ID={0}, UID={1}", manifestId, manifestUid);
-						syncReport = await SyncLocalContent(newManifest, manifestId, syncCreated: false, syncModified: false, forceSyncConflicts: false, syncDeleted: false, cancellationToken: token);
-					}
-
-					// Put this on the channel so it gets picked up below.
-					_channelRemoteContentPublishes.Writer.TryWrite(new RemoteContentPublished()
-					{
-						OwnerCid = _requester.Cid,
-						OwnerPid = _requester.Pid,
-						PublisherAccountId = publisherAccountId.ToString(),
-						PublisherEmail = email,
-						AutoSyncReport = syncReport,
-						ReferenceUid = manifestUid,
-					});
-				}
-				catch (Exception e)
-				{
-					if (e is AggregateException ae)
-					{
-						foreach (var aeInnerException in ae.InnerExceptions)
-						{
-							Log.Error(aeInnerException, "Error when auto-sync'ing when publishing");
-						}
-					}
-
-					throw;
+					// Preserve the existing selective sync policy unless this listener is observation-only.
+					Log.Verbose("Sync'ing manifest. MANIFEST_ID={0}, UID={1}", manifestId, manifestUid);
+					syncReport = await SyncLocalContent(newManifest, manifestId, syncCreated: false, syncModified: false, forceSyncConflicts: false, syncDeleted: false, cancellationToken: token);
 				}
 
-				Log.Verbose("Processed published manifest. Sending out event. MANIFEST_ID={0}, UID={1}", manifestId, manifestFetchTask.Result.uid.GetOrElse(""));
+				// Put this on the channel so it gets picked up below.
+				publications.Writer.TryWrite(new RemoteContentPublished()
+				{
+					OwnerCid = _requester.Cid,
+					OwnerPid = _requester.Pid,
+					PublisherAccountId = publisherAccountId.ToString(),
+					PublisherEmail = email,
+					AutoSyncReport = syncReport,
+					ReferenceUid = manifestUid,
+				});
 			}
+			catch (Exception e)
+			{
+				if (e is AggregateException ae)
+				{
+					foreach (var aeInnerException in ae.InnerExceptions)
+					{
+						Log.Error(aeInnerException, "Error when auto-sync'ing when publishing");
+					}
+				}
+
+				throw;
+			}
+
+			Log.Verbose("Processed published manifest. Sending out event. MANIFEST_ID={0}, UID={1}", manifestId, manifestFetchTask.Result.uid.GetOrElse(""));
 		}
 	}
 
@@ -2092,7 +2100,9 @@ public partial class ContentService
 		if (replaceLatest)
 			_cachedManifests.Remove(latestCacheKey, out _);
 
-		if (!_cachedManifests.TryGetValue(cacheKey, out var manifest) && !cachedOnly)
+		_cachedManifests.TryGetValue(cacheKey, out var manifest);
+		// Revalidation must fetch the realm even if a concurrent listener just filled the latest cache again.
+		if (!cachedOnly && (manifest == null || (replaceLatest && string.IsNullOrEmpty(manifestUid))))
 		{
 			if (string.IsNullOrEmpty(manifestUid))
 			{

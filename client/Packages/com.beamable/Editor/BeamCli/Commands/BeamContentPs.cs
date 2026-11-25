@@ -10,6 +10,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public bool watch;
         /// <summary>Observe content changes without automatically updating local content files</summary>
         public bool noAutoSync;
+        /// <summary>Enable auto-sync after a subscribed, read-only Local Mode exit check</summary>
+        public bool guardLocalModeExit;
         /// <summary>Inform a subset of ','-separated manifest ids for which to return data. By default, will return just the global manifest</summary>
         public string[] manifestIds;
         /// <summary>Listens to the given process id. Terminates this long-running command when the it no longer is running</summary>
@@ -28,6 +30,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.noAutoSync != default(bool)))
             {
                 genBeamCommandArgs.Add(("--no-auto-sync=" + this.noAutoSync));
+            }
+            // If the guardLocalModeExit value was not default, then add it to the list of args.
+            if ((this.guardLocalModeExit != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--guard-local-mode-exit=" + this.guardLocalModeExit));
             }
             // If the manifestIds value was not default, then add it to the list of args.
             if ((this.manifestIds != default(string[])))
