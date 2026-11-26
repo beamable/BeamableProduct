@@ -35,6 +35,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A failed or blocked websocket send now closes the connection and reconnects, instead of silently stalling it. Shutdown no longer hangs on a blocked send.
 - Content, realm config and other realm-wide requests and events keep working when the first instance's connection breaks.
 - Faulted background tasks are logged.
+- A reconnect that fails to authenticate or register no longer ends the whole process with exit code 12, which also stopped the instances that were still serving. The connection is replaced, with backoff, until one works.
+- During startup, an authenticated instance has two minutes of combined platform reply waits. On expiry it retries its connection with backoff while a sibling is serving. With no serving sibling, startup exits 12. Eager content manifest requests and their retry delays count toward this budget. Item downloads, user initialization and custom event hooks keep their existing lifetimes.
+- After a socket loss during eager content preload, a replacement that reconnects in time completes any pending preload before running initialization hooks and serving traffic. Time spent finishing item downloads after the close counts toward the two-minute reconnect window. If preload already succeeded, the replacement can serve while its manifest refresh is pending.
+- Each scheduled manifest retry logs the manifest ID, status, next attempt and delay.
+- After a startup socket closes, successive reconnect attempts share two minutes for backoff, connection and authentication before exit 12. If a replacement authenticates and a missing platform reply triggers another retry while a sibling serves, that retry starts a fresh two-minute reconnect window.
+- A connection that closes while it is being set up stops that setup, so it can no longer finish later alongside the replacement's.
+- A reconnect whose setup is still waiting for a reply after 3 minutes is dropped and replaced, instead of keeping its instance out of service for as long as the connection stays open.
 - Generate valid OpenAPI component keys and references for tuple callable types, while preserving C# type metadata. Invalid generated schemas now report their validation errors directly.
 - Content downloads no longer fail when `HOST` is more than one label under `beamable.com` (for example `wss://dev.ms-local.beamable.com/socket`) or includes a port. The content host check now parses `HOST` as a URI, and any `HOST` under `beamable.com` accepts content from `*.beamable.com`.
 

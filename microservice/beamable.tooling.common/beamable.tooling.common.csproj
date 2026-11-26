@@ -46,6 +46,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <InternalsVisibleTo Include="BeamableMicroserviceBase" />
         <EmbeddedResource Include="Microservice\VersionManagement\collector-version.json" />
     </ItemGroup>
 

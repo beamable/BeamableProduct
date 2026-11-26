@@ -14,6 +14,12 @@ namespace Beamable.Editor.BeamCli.Commands
         public string[] contentProperties;
         /// <summary>When this is set, this will ignore your local state and save the properties directly to disk</summary>
         public bool force;
+        /// <summary>Base64 UTF8 loaded JSON files, parallel to content ids, for lossless model edits</summary>
+        public string[] originalFiles;
+        /// <summary>Loaded model properties, parallel to content ids</summary>
+        public string[] modelProperties;
+        /// <summary>SHA256 file-text hashes for explicitly reviewed replacements</summary>
+        public string[] expectedFileHashes;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -50,6 +56,33 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.force != default(bool)))
             {
                 genBeamCommandArgs.Add(("--force=" + this.force));
+            }
+            // If the originalFiles value was not default, then add it to the list of args.
+            if ((this.originalFiles != default(string[])))
+            {
+                for (int i = 0; (i < this.originalFiles.Length); i = (i + 1))
+                {
+                    // The parameter allows multiple values
+                    genBeamCommandArgs.Add(("--original-files=" + this.originalFiles[i]));
+                }
+            }
+            // If the modelProperties value was not default, then add it to the list of args.
+            if ((this.modelProperties != default(string[])))
+            {
+                for (int i = 0; (i < this.modelProperties.Length); i = (i + 1))
+                {
+                    // The parameter allows multiple values
+                    genBeamCommandArgs.Add(("--model-properties=" + this.modelProperties[i]));
+                }
+            }
+            // If the expectedFileHashes value was not default, then add it to the list of args.
+            if ((this.expectedFileHashes != default(string[])))
+            {
+                for (int i = 0; (i < this.expectedFileHashes.Length); i = (i + 1))
+                {
+                    // The parameter allows multiple values
+                    genBeamCommandArgs.Add(("--expected-file-hashes=" + this.expectedFileHashes[i]));
+                }
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

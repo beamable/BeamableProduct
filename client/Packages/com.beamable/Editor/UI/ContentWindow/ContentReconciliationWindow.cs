@@ -211,7 +211,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			_error = null;
 			_loading = true;
 			var generation = _generation;
-			try { await _service.Reload(); }
+			try { await _service.ReloadAfterReconciliation(_scope); }
 			catch (Exception error)
 			{
 				if (this != null && generation == _generation) { _error = error.Message; _loading = false; }

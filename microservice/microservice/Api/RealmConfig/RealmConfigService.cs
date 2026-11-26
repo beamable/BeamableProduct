@@ -131,9 +131,12 @@ namespace Beamable.Server.Api.RealmConfig
 	      return RealmConfig.From(nameSpaceToSettings);
       }
       
-      public async Promise<RealmConfig> GetRealmConfigSettings()
+      public Promise<RealmConfig> GetRealmConfigSettings() => GetRealmConfigSettings(null);
+
+      internal async Promise<RealmConfig> GetRealmConfigSettings(PlatformReplyWait replies)
       {
-	      var latest = await GetRealmConfig();
+	      // ConfigChanged subscribers run after the platform has already answered.
+	      var latest = replies == null ? await GetRealmConfig() : await replies.Wait("realm config", GetRealmConfig);
 	      _config = Add(latest.config, null);
 	      ConfigChanged?.Invoke(_config);
 	      return _config;

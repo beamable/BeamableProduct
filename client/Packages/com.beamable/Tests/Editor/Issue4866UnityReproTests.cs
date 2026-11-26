@@ -82,7 +82,7 @@ namespace Beamable.Editor.Tests
 
         [TestCase(true)]
         [TestCase(false)]
-        public void NewModelJsonLoadedByOldModel_OnlyValidationEnabledIssuesLossySave(bool validationEnabled)
+        public void NewModelJsonLoadedByOldModel_NeverSavesOnLoad(bool validationEnabled)
         {
             _config.validateSchemaDifference = validationEnabled;
             var producerJson = ClientContentSerializer.SerializeContent(_new);
@@ -90,14 +90,7 @@ namespace Beamable.Editor.Tests
             File.WriteAllText(_path, producerJson);
             Invoke("LoadContentObject", Entry(), _old);
             Assert.That(_old.damage, Is.EqualTo(20));
-            Assert.That(_commands.Saves.Count, Is.EqualTo(validationEnabled ? 1 : 0));
-            if (validationEnabled)
-            {
-                Assert.That(_commands.Saves[0].contentIds, Is.EqualTo(new[] { Id }));
-                Assert.That(_commands.Saves[0].contentProperties[0], Does.Contain("damage"));
-                Assert.That(_commands.Saves[0].contentProperties[0], Does.Not.Contain("newModelOnly"));
-                TestContext.WriteLine("CONFIRMED command-boundary loss: producer newModelOnly=37 is absent from automatic ContentSave payload.");
-            }
+            Assert.That(_commands.Saves, Is.Empty);
             // Capture-only commands deliberately do not write: this assertion bounds the evidence.
             Assert.That(File.ReadAllText(_path), Is.EqualTo(producerJson));
         }

@@ -174,6 +174,44 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
 		}
 
 		[Test]
+		[TimeoutWithTeardown(15_000)]
+		public async Task StartupDeadlineDuringReauthenticationPreservesTheAttemptToken()
+		{
+			allowErrorLogs = true;
+			var nonceRequested = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+			var releaseNonce = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+			using var h = new RequesterHarness(s => s
+				.AddMessageHandler(MessageMatcher.WithRouteContains(Route), MessageResponder.Custom(req => req.AuthFailure()),
+					MessageFrequency.OnlyOnce(), requiresAuth: false)
+				.AddMessageHandler(MessageMatcher.WithRouteContains("gateway/nonce"), MessageResponder.CustomAsync(async req =>
+				{
+					nonceRequested.TrySetResult(true);
+					await releaseNonce.Task;
+					return req.Succeed(new MicroserviceNonceResponse { nonce = "n" });
+				}), MessageFrequency.OnlyOnce(), requiresAuth: false)
+				.AddMessageHandler(MessageMatcher.WithRouteContains("gateway/auth"),
+					MessageResponder.Success(new MicroserviceAuthResponse { result = "ok" }), MessageFrequency.OnlyOnce(), requiresAuth: false));
+			using var deadline = new CancellationTokenSource();
+			var wait = new PlatformReplyWait(CancellationToken.None, TimeSpan.FromMinutes(2));
+			Promise<CommonResponse> request = null;
+			var setup = wait.WaitForStartupReply("config", () => request = Get(h), deadline.Token);
+			try
+			{
+				await nonceRequested.Task.WaitAsync(TimeSpan.FromSeconds(5));
+				deadline.Cancel();
+				Assert.ThrowsAsync<StartupPlatformReplyTimeoutException>(async () => await setup);
+				var cause = await request.FinishWithin(TimeSpan.FromSeconds(5), "startup request waiting for reauthentication");
+				Assert.That(cause, Is.InstanceOf<OperationCanceledException>());
+				Assert.That(((OperationCanceledException)cause).CancellationToken, Is.EqualTo(deadline.Token));
+			}
+			finally
+			{
+				releaseNonce.TrySetResult(true);
+				await h.Context.WaitForAuthorization(TimeSpan.FromSeconds(5), "test cleanup");
+			}
+		}
+
+		[Test]
 		[TimeoutWithTeardown(30 * 1000)]
 		public async Task ReauthenticationFinishingAfterDeadline_DoesNotSendExpiredRetry()
 		{
