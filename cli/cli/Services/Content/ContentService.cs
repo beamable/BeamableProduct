@@ -122,7 +122,35 @@ public partial class ContentService
 	private const int CONTENT_DOWNLOAD_RETRY_BASE_DELAY_MS = 250;
 	private const int CONTENT_DOWNLOAD_RETRY_JITTER_MS = 250;
 	private const int CONTENT_FILE_READ_MAX_ATTEMPTS = 5;
-	private const int CONTENT_FILE_READ_RETRY_DELAY_MS = 25;
+	private const int CONTENT_FILE_READ_RETRY_DELAY_MS = 250;
+
+	/// <summary>Allows concurrent writers to finish without retrying corrupt files forever.</summary>
+	internal static async Task<string> ReadContentFileTextAsync(string path,
+		Func<string, Task<string>> read = null, Func<int, Task> delay = null)
+	{
+		read ??= filePath => File.ReadAllTextAsync(filePath);
+		delay ??= milliseconds => Task.Delay(milliseconds);
+		for (var attempt = 1; ; attempt++)
+		{
+			IOException readError = null;
+			try
+			{
+				var text = await read(path);
+				if (!string.IsNullOrEmpty(text)) return text;
+			}
+			catch (FileNotFoundException) { throw; }
+			catch (DirectoryNotFoundException) { throw; }
+			catch (IOException error)
+			{
+				readError = error;
+			}
+
+			if (attempt == CONTENT_FILE_READ_MAX_ATTEMPTS)
+				throw new IOException($"Content file remained empty or unreadable after {attempt} attempts: {path}", readError);
+
+			await delay(CONTENT_FILE_READ_RETRY_DELAY_MS);
+		}
+	}
 
 	/// <summary>
 	/// Shared client for CDN content-file downloads during sync.
@@ -683,48 +711,10 @@ public partial class ContentService
 				// Load the files that passed the filter into memory
 				.Select(async fp =>
 				{
-					// Content files may be temporarily locked or empty while another process writes them.
-					// A file deleted during this scan is no longer a local entry and must not block recovery.
-					string text = null;
-					for (var attempt = 1; attempt <= CONTENT_FILE_READ_MAX_ATTEMPTS; attempt++)
-					{
-						try
-						{
-							text = await File.ReadAllTextAsync(fp);
-							if (!string.IsNullOrEmpty(text))
-							{
-								break;
-							}
-						}
-						catch (FileNotFoundException)
-						{
-							return (ContentFile?)null;
-						}
-						catch (DirectoryNotFoundException)
-						{
-							return (ContentFile?)null;
-						}
-						catch (IOException) when (attempt < CONTENT_FILE_READ_MAX_ATTEMPTS)
-						{
-							// Retry transient sharing violations and other short-lived I/O failures.
-						}
-
-						if (!File.Exists(fp))
-						{
-							return (ContentFile?)null;
-						}
-
-						if (attempt == CONTENT_FILE_READ_MAX_ATTEMPTS)
-						{
-							throw new IOException($"Content file remained unreadable after {CONTENT_FILE_READ_MAX_ATTEMPTS} attempts: {fp}");
-						}
-
-						await Task.Delay(CONTENT_FILE_READ_RETRY_DELAY_MS);
-					}
-
 					var id = Path.GetFileNameWithoutExtension(fp);
 					try
 					{
+						var text = await ReadContentFileTextAsync(fp);
 						var json = JsonSerializer.Deserialize<JsonElement>(text, GetContentFileSerializationOptions());
 						var referenceContent = localFiles.TargetManifest.entries.FirstOrDefault(e => e.contentId == id);
 						var properties = json.GetProperty(ContentFile.JSON_NAME_PROPERTIES);
@@ -742,6 +732,19 @@ public partial class ContentService
 						contentFile.PropertiesChecksum = CalculateChecksum(in contentFile);
 
 						return (ContentFile?)contentFile;
+					}
+					catch (FileNotFoundException)
+					{
+						return (ContentFile?)null;
+					}
+					catch (DirectoryNotFoundException)
+					{
+						return (ContentFile?)null;
+					}
+					catch (IOException) when (!File.Exists(fp))
+					{
+						// A file deleted during this scan is no longer a local entry.
+						return (ContentFile?)null;
 					}
 					catch (Exception e)
 					{
@@ -1644,25 +1647,9 @@ public partial class ContentService
 		var contentFolder = EnsureContentPathForRealmExists(out _, _requester.Pid, manifestId);
 		var parseContentFiles = Directory.EnumerateFiles(contentFolder).Select(async fp =>
 		{
-			// We got to do this so that we don't collide with other software editing the files on disk. 
-			string text = "";
-			bool readText = false;
-			while (!readText || text == "")
-			{
-				try
-				{
-					text = await File.ReadAllTextAsync(fp);
-					readText = true;
-				}
-				catch (IOException)
-				{
-					readText = false;
-					text = "";
-				}
-			}
-
 			try
 			{
+				var text = await ReadContentFileTextAsync(fp);
 				// Deserialize ContentFile to pass it's values to the new ContentFileSnapshot.
 				var contentFile = JsonSerializer.Deserialize<ContentFile>(text, GetContentFileSerializationOptions());
 

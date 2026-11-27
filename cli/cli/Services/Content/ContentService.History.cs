@@ -645,7 +645,7 @@ public partial class ContentService
 	/// <remarks>
 	/// Edge cases:
 	/// - Uses semaphore to prevent concurrent file system access
-	/// - Retries file reads in a busy-wait loop if IOException occurs (file locked by another process)
+	/// - Retries empty reads and I/O failures up to five times with a delay between attempts
 	/// - Returns empty page if no entries match the filters
 	/// - Throws if any entry file fails to deserialize (logs errors for AggregateException)
 	/// - All files must have .json extension
@@ -690,25 +690,9 @@ public partial class ContentService
 					// Load the files that passed the filter into memory
 					.Select(async fp =>
 					{
-						// We got to do this so that we don't collide with other software editing the files on disk.
-						var text = "";
-						var readText = false;
-						while (!readText || text == "")
-						{
-							try
-							{
-								text = await File.ReadAllTextAsync(fp);
-								readText = true;
-							}
-							catch (IOException)
-							{
-								readText = false;
-								text = "";
-							}
-						}
-
 						try
 						{
+							var text = await ReadContentFileTextAsync(fp);
 							var json = JsonSerializer.Deserialize<JsonElement>(text, GetContentFileSerializationOptions());
 							var entryFile = new ContentHistoryEntry()
 							{
@@ -959,7 +943,7 @@ public partial class ContentService
 	/// <remarks>
 	/// Edge cases:
 	/// - Uses semaphore to prevent concurrent file system access
-	/// - Retries file reads in a busy-wait loop if IOException occurs (file locked by another process)
+	/// - Retries empty reads and I/O failures up to five times with a delay between attempts
 	/// - Returns empty page if no changelists match the filters
 	/// - Throws if any changelist file fails to deserialize (logs errors for AggregateException)
 	/// - All files must have .json extension
@@ -994,25 +978,9 @@ public partial class ContentService
 					// Load the files that passed the filter into memory
 					.Select(async fp =>
 					{
-						// We got to do this so that we don't collide with other software editing the files on disk.
-						var text = "";
-						var readText = false;
-						while (!readText || text == "")
-						{
-							try
-							{
-								text = await File.ReadAllTextAsync(fp);
-								readText = true;
-							}
-							catch (IOException)
-							{
-								readText = false;
-								text = "";
-							}
-						}
-
 						try
 						{
+							var text = await ReadContentFileTextAsync(fp);
 							var changelist = JsonSerializer.Deserialize<ContentHistoryChangelist>(text, GetContentFileSerializationOptions());
 							return changelist;
 						}
@@ -1585,14 +1553,14 @@ public partial class ContentService
 
 	/// <summary>
 	/// Loads and deserializes a single content file from disk asynchronously.
-	/// Retries reads in a busy-wait loop to avoid collisions with other processes modifying the file.
+	/// Briefly retries empty reads and I/O failures while other processes modify the file.
 	/// Extracts the content ID from the filename and populates ContentFile.Id and LocalFilePath.
 	/// </summary>
 	/// <param name="fp">The full file path to the content JSON file</param>
 	/// <returns>A tuple containing the content ID and the deserialized ContentFile</returns>
 	/// <remarks>
 	/// Edge cases:
-	/// - Retries file reads in an infinite loop until successful or text is non-empty (busy-wait on IOException)
+	/// - Fails after five unsuccessful reads, with 250 ms between attempts
 	/// - Content ID is derived from filename without extension (e.g., "items.MyItem.json" → "items.MyItem")
 	/// - Throws and logs error if deserialization fails
 	/// - Does not handle null or invalid file paths (will throw ArgumentException)
@@ -1600,25 +1568,9 @@ public partial class ContentService
 	/// </remarks>
 	private async Task<(string contentId, ContentFile file)> LoadContentFileAsync(string fp)
 	{
-		// We got to do this so that we don't collide with other software editing the files on disk.
-		var text = "";
-		var readText = false;
-		while (!readText || text == "")
-		{
-			try
-			{
-				text = await File.ReadAllTextAsync(fp);
-				readText = true;
-			}
-			catch (IOException)
-			{
-				readText = false;
-				text = "";
-			}
-		}
-
 		try
 		{
+			var text = await ReadContentFileTextAsync(fp);
 			var contentId = Path.GetFileNameWithoutExtension(fp);
 			var contentFile = JsonSerializer.Deserialize<ContentFile>(text, GetContentFileSerializationOptions());
 			contentFile.Id = contentId;

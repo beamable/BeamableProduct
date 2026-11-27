@@ -100,6 +100,20 @@ public class ContentPsNoAutoSyncTests
         Assert.That(command.Result.SyncReports, Is.Empty);
     }
 
+    [Test]
+    public async Task Empty_content_file_fails_startup_without_a_full_rebuild_result()
+    {
+        before = after = new ClientManifestJsonResponse { uid = "after", entries = Array.Empty<ClientContentInfoJson>() };
+        var path = Path.Combine(folder, "items.empty.json");
+        await File.WriteAllTextAsync(path, "");
+        var command = new CapturingCommand();
+
+        var error = Assert.ThrowsAsync<IOException>(() => command.Handle(args).WaitAsync(TimeSpan.FromSeconds(5)));
+
+        Assert.That(error!.Message, Does.Contain(path));
+        Assert.That(command.Result, Is.Null);
+    }
+
     private sealed class CapturingCommand : ContentPsCommand
     {
         public ContentPsCommandEvent? Result;
