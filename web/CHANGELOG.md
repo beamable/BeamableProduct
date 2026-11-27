@@ -46,6 +46,14 @@
 - `amount` is now always a real quantity. A loot roll is `1` roll, not `0` of a prize; a store that
   cannot enumerate its payout leaves `rewards` empty instead.
 
+### Added
+
+- Zone segment property types: `customersGetZonesSegmentsPropertyTypes` lists a zone's custom types
+  (`PropertyType`: name, storage, spreadsheet-style `format`), and `customersPostZonesSegmentsPropertyTypes`
+  sets and removes them in one batch, with a result per item. `ZoneStat.typeId` names the type a catalog
+  stat reads through; `ZoneStatPreset` names its built-in preset.
+- `campaignsGet` takes `segment`: only the submitted campaign versions that read that segment.
+
 ### Changed
 
 - **Claiming IS the purchase.** The provider spends on the player's behalf, so `redeem` is one call —

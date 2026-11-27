@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **`BeamDatePicker` ranges.** `min` and `max` disable the days outside them; `range-start` /
+  `range-end` mark the other end of a range picked with two pickers, shading the days between it and
+  the value (or the day under the pointer); `show()` opens the calendar. A date-only picker now closes
+  once a day is picked.
+- **`BeamKpiCard` `loading`.** A skeleton stands in for the value, and the change is hidden, while it
+  is computed.
+- **`BeamSelect` search.** A search field shows in the dropdown from 8 options; `without-search` hides it.
 - **`context.scope`.** Every mount context carries the scope of its Host: `'realm'` on
   `ExtensionContext`, `'zone'` on `ZoneExtensionContext`, the same value the window registration
   already carries. Narrow on it to reach `realm` or `zid`.

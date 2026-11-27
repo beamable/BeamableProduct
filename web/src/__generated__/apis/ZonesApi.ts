@@ -24,6 +24,7 @@ import type { ApiCustomersZonesSegmentsJobsGetZonesResponse } from '@/__generate
 import type { CreateSegmentRequest } from '@/__generated__/schemas/CreateSegmentRequest';
 import type { CreateZoneRequest } from '@/__generated__/schemas/CreateZoneRequest';
 import type { EmptyMessage } from '@/__generated__/schemas/EmptyMessage';
+import type { ExplicitListSource } from '@/__generated__/schemas/enums/ExplicitListSource';
 import type { HttpRequester } from '@/network/http/types/HttpRequester';
 import type { HttpResponse } from '@/network/http/types/HttpResponse';
 import type { ListForcedBundlesResponse } from '@/__generated__/schemas/ListForcedBundlesResponse';
@@ -40,6 +41,7 @@ import type { SegmentJobsRequest } from '@/__generated__/schemas/SegmentJobsRequ
 import type { SegmentJobsResponse } from '@/__generated__/schemas/SegmentJobsResponse';
 import type { SegmentMemberCursorPagedResult } from '@/__generated__/schemas/SegmentMemberCursorPagedResult';
 import type { SegmentMembershipQueryRequest } from '@/__generated__/schemas/SegmentMembershipQueryRequest';
+import type { SegmentOverrideEntryCursorPagedResult } from '@/__generated__/schemas/SegmentOverrideEntryCursorPagedResult';
 import type { SegmentOverridesRequest } from '@/__generated__/schemas/SegmentOverridesRequest';
 import type { SegmentOverridesResponse } from '@/__generated__/schemas/SegmentOverridesResponse';
 import type { SegmentPlayerHistoryRequest } from '@/__generated__/schemas/SegmentPlayerHistoryRequest';
@@ -60,6 +62,9 @@ import type { SetSegmentIconRequest } from '@/__generated__/schemas/SetSegmentIc
 import type { SetSegmentStatesRequest } from '@/__generated__/schemas/SetSegmentStatesRequest';
 import type { SetZoneRoleRequest } from '@/__generated__/schemas/SetZoneRoleRequest';
 import type { UpdateSegmentRequest } from '@/__generated__/schemas/UpdateSegmentRequest';
+import type { ZonePropertyTypesRequest } from '@/__generated__/schemas/ZonePropertyTypesRequest';
+import type { ZonePropertyTypesResponse } from '@/__generated__/schemas/ZonePropertyTypesResponse';
+import type { ZonePropertyTypesWriteResponse } from '@/__generated__/schemas/ZonePropertyTypesWriteResponse';
 import type { ZonesResponse } from '@/__generated__/schemas/ZonesResponse';
 import type { ZoneStatsCatalogResponse } from '@/__generated__/schemas/ZoneStatsCatalogResponse';
 import type { ZoneStatsRequest } from '@/__generated__/schemas/ZoneStatsRequest';
@@ -855,6 +860,56 @@ export async function customersPostZonesSegmentsStats(requester: HttpRequester, 
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
+ * @param customerId - The `customerId` parameter to include in the API request.
+ * @param zoneId - The `zoneId` parameter to include in the API request.
+ * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * 
+ */
+export async function customersGetZonesSegmentsPropertyTypes(requester: HttpRequester, customerId: string, zoneId: string, gamertag?: string): Promise<HttpResponse<ZonePropertyTypesResponse>> {
+  let endpoint = "/api/customers/{customerId}/zones/{zoneId}/segments/property-types".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(zoneIdPlaceholder, endpointEncoder(zoneId));
+  
+  // Make the API request
+  return makeApiRequest<ZonePropertyTypesResponse>({
+    r: requester,
+    e: endpoint,
+    m: GET,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `ZonePropertyTypesRequest` instance to use for the API request
+ * @param customerId - The `customerId` parameter to include in the API request.
+ * @param zoneId - The `zoneId` parameter to include in the API request.
+ * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * 
+ */
+export async function customersPostZonesSegmentsPropertyTypes(requester: HttpRequester, customerId: string, zoneId: string, payload: ZonePropertyTypesRequest, gamertag?: string): Promise<HttpResponse<ZonePropertyTypesWriteResponse>> {
+  let endpoint = "/api/customers/{customerId}/zones/{zoneId}/segments/property-types".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(zoneIdPlaceholder, endpointEncoder(zoneId));
+  
+  // Make the API request
+  return makeApiRequest<ZonePropertyTypesWriteResponse, ZonePropertyTypesRequest>({
+    r: requester,
+    e: endpoint,
+    m: POST,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `SegmentJobsRequest` instance to use for the API request
  * @param customerId - The `customerId` parameter to include in the API request.
  * @param zoneId - The `zoneId` parameter to include in the API request.
@@ -1056,6 +1111,41 @@ export async function customersGetZonesSegmentsMembers(requester: HttpRequester,
       cursor,
       limit,
       realmId
+    },
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param customerId - The `customerId` parameter to include in the API request.
+ * @param segmentId - The `segmentId` parameter to include in the API request.
+ * @param zoneId - The `zoneId` parameter to include in the API request.
+ * @param cursor - The `cursor` parameter to include in the API request.
+ * @param limit - The `limit` parameter to include in the API request.
+ * @param realmId - The `realmId` parameter to include in the API request.
+ * @param source - The `source` parameter to include in the API request.
+ * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * 
+ */
+export async function customersGetZonesSegmentsOverrides(requester: HttpRequester, customerId: string, segmentId: string, zoneId: string, cursor?: string, limit?: number, realmId?: string, source?: ExplicitListSource, gamertag?: string): Promise<HttpResponse<SegmentOverrideEntryCursorPagedResult>> {
+  let endpoint = "/api/customers/{customerId}/zones/{zoneId}/segments/{segmentId}/overrides".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(segmentIdPlaceholder, endpointEncoder(segmentId)).replace(zoneIdPlaceholder, endpointEncoder(zoneId));
+  
+  // Make the API request
+  return makeApiRequest<SegmentOverrideEntryCursorPagedResult>({
+    r: requester,
+    e: endpoint,
+    m: GET,
+    q: {
+      cursor,
+      limit,
+      realmId,
+      source
     },
     g: gamertag,
     w: true

@@ -7,4 +7,5 @@ export type SegmentMembershipQueryRequest = {
   playerIds: (bigint | string)[]; 
   realmId: string; 
   segmentIds?: string[] | null; 
+  withSources?: boolean; 
 };
