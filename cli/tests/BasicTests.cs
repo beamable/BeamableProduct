@@ -34,6 +34,17 @@ public class Tests : CLITest
 		Assert.AreEqual(0, status);
 	}
 
+	[TestCase(@"{""status"":400,""error"":""BundleArtifactsInvalid"",""description"":""image tag is missing""}", "[/api/beamo/releases] request failed with status 400: BundleArtifactsInvalid: image tag is missing")]
+	[TestCase(@"{""status"":400,""service"":""gateway"",""error"":""InvalidScopeError"",""message"":""Invalid scope""}", "[/api/beamo/releases] request failed with status 400: InvalidScopeError: Invalid scope")]
+	[TestCase("", "[/api/beamo/releases] request failed with status 400.")]
+	[TestCase("Bad Gateway", "[/api/beamo/releases] request failed with status 400: Bad Gateway")]
+	public void DescribeRequestError_ShowsTheServerCodeAndDescription(string payload, string expected)
+	{
+		var error = new Beamable.Common.Api.RequesterException("Cli", "POST", "/api/beamo/releases", 400, payload);
+
+		Assert.AreEqual(expected, App.DescribeRequestError(error));
+	}
+
 	[Test]
 	public void NamingPass()
 	{

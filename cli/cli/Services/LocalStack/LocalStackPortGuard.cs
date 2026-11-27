@@ -401,8 +401,8 @@ public static class LocalStackPortGuard
 	/// </summary>
 	private static string ReapCommand() =>
 		OperatingSystem.IsWindows()
-			? "Get-CimInstance Win32_Process | ? { $_.CommandLine -match 'beamable-toolchain\\\\jdk8|BeamableGateway|BeamableCampaignRuntime|BeamableMessageRailRuntime' } | % { Stop-Process -Id $_.ProcessId -Force }"
-			: "pkill -f 'beamable-toolchain/jdk8.*java'; pkill -f 'BeamableGateway|BeamableCampaignRuntime|BeamableMessageRailRuntime'";
+			? "Get-CimInstance Win32_Process | ? { $_.CommandLine -match 'beamable-toolchain\\\\jdk8|BeamableGateway|BeamableCampaignRuntime|BeamableMessageRailRuntime|BeamableBundleRuntime' } | % { Stop-Process -Id $_.ProcessId -Force }"
+			: "pkill -f 'beamable-toolchain/jdk8.*java'; pkill -f 'BeamableGateway|BeamableCampaignRuntime|BeamableMessageRailRuntime|BeamableBundleRuntime'";
 
 	private static int TryGetOwnerPid(int port)
 	{
@@ -490,7 +490,7 @@ public static class LocalStackPortGuard
 	/// </summary>
 	private static readonly string[] StackProcessNames =
 	{
-		"java", "node", "BeamableGateway", "BeamableCampaignRuntime", "BeamableMessageRailRuntime"
+		"java", "node", "BeamableGateway", "BeamableCampaignRuntime", "BeamableMessageRailRuntime", "BeamableBundleRuntime"
 	};
 
 	/// <summary>

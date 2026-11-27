@@ -64,6 +64,7 @@ Load a skill before attempting complex tasks:
 - `beam-offer-federation` — build a virtual offer provider (resolve, deliver, undo the offers Beamable grants) and use the player/operator offer routes
 - `beam-diagnose-project` — troubleshoot common local dev issues
 - `beam-build-and-deploy` — Docker build and cloud deployment
+- `beam-bundles` — publish marketplace bundles, and acquire, install, override and update them on zones
 - `beam-create-portal-extension` — portal UI extensions
 - `beam-login-auth` — authentication flows
 - `beam-content-types` — create and manage content types

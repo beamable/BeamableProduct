@@ -672,7 +672,41 @@ public static class UnityHelper
 					break;
 				case ParameterLocation.Query:
 
-					if (param.Required)
+					if (param.Schema?.Type == "array")
+					{
+						// One escaped name=value per item (page=a&page=b); ToString() on the array would send "System.String[]".
+						CodeExpression arrayExpr = param.Required
+							? paramRef
+							: new CodeFieldReferenceExpression(paramRef, nameof(Optional<int>.Value));
+						var indexRef = new CodeVariableReferenceExpression("gsIndex");
+						var itemEscaped = new CodeMethodInvokeExpression(requesterReference,
+							nameof(IBeamableRequester.EscapeURL),
+							new CodeMethodInvokeExpression(new CodeArrayIndexerExpression(arrayExpr, indexRef), nameof(object.ToString)));
+						var addItem = new CodeMethodInvokeExpression(queryListRef, nameof(List<string>.Add),
+							new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(string)),
+								nameof(string.Concat), new CodePrimitiveExpression($"{param.Name}="), itemEscaped));
+						CodeStatement loop = new CodeIterationStatement(
+							new CodeVariableDeclarationStatement(typeof(int), indexRef.VariableName, new CodePrimitiveExpression(0)),
+							new CodeBinaryOperatorExpression(indexRef, CodeBinaryOperatorType.LessThan,
+								new CodePropertyReferenceExpression(arrayExpr, nameof(Array.Length))),
+							new CodeAssignStatement(indexRef,
+								new CodeBinaryOperatorExpression(indexRef, CodeBinaryOperatorType.Add, new CodePrimitiveExpression(1))),
+							new CodeExpressionStatement(addItem));
+
+						if (!param.Required)
+						{
+							var arrayIsNotNull = new CodeBinaryOperatorExpression(paramRef,
+								CodeBinaryOperatorType.IdentityInequality,
+								new CodeDefaultValueExpression(new GenSchema(param.Schema).GetOptionalTypeReference()));
+							loop = new CodeConditionStatement(
+								new CodeBinaryOperatorExpression(arrayIsNotNull, CodeBinaryOperatorType.BooleanAnd,
+									new CodeFieldReferenceExpression(paramRef, nameof(Optional.HasValue))),
+								loop);
+						}
+
+						queryStatements.Add(loop);
+					}
+					else if (param.Required)
 					{
 						var toStringExpr =
 							new CodeMethodInvokeExpression(new CodeVariableReferenceExpression(param.Name),

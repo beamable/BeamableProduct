@@ -93,6 +93,8 @@ public static class LocalStackTemplate
 		// BeamableScheduler function profiles (Loader, Dispatcher) already default to --port 5050, the same
 		// collision that sent the campaign runtime to 5045. 5055 is unused across BeamableAPI and this CLI.
 		public string segmentationRuntimeUrl = "http://localhost:5055";
+		// The bundle runtime, on the port its own launchSettings.json declares.
+		public string bundleRuntimeUrl = "http://localhost:5060";
 		public string apiDir;
 		public string scalaDir;
 		public string portalDir;
@@ -678,6 +680,13 @@ public static class LocalStackTemplate
 		AddDotnetHost(config, apiDir, "c# analytics loader", "BeamableAnalyticsLoader",
 			o.analyticsLoaderUrl, o.analyticsLoaderUrl, LocalStackDependencies.GatewayStep);
 
+		// The bundle runtime — runs the bundle lifecycle the gateway only records: the sweep that auto-updates
+		// installations (keep current, end of life, security advisories), the update runs, realm reconciliation
+		// and source deliveries. Without it an installation with auto-update on never moves. Joins the actor
+		// cluster as a Client of the actors the C# gateway hosts, and calls the Scala gateway.
+		AddDotnetHost(config, apiDir, BundleRuntimeStepName, "BeamableBundleRuntime",
+			o.bundleRuntimeUrl, o.bundleRuntimeUrl, ScalaGatewayStep, LocalStackDependencies.GatewayStep);
+
 		// 2. Portal frontend (Vite dev server). Placed BEFORE the Scala group because it only serves the
 		//    frontend (the browser talks to the backend at runtime) — so it comes up in ~1s instead of waiting
 		//    behind the Scala services' readiness.
@@ -1006,6 +1015,9 @@ public static class LocalStackTemplate
 	/// <summary>BeamableAPI's compose: Mongo, Redis, ActiveMQ, Caddy, and the observability services (the collector,
 	/// Loki, Tempo, Prometheus, Grafana).</summary>
 	public const string ApiDepsStepName = "docker: api deps + caddy";
+
+	/// <summary>The bundle runtime's run step. It deploys manifests like the gateway, so it takes the same Beamo settings.</summary>
+	public const string BundleRuntimeStepName = "c# bundle runtime";
 
 	/// <summary>The compose project <c>scala: redis</c> runs BeamableBackend's compose file under.</summary>
 	public const string ScalaRedisProject = "beam_backend_scala";

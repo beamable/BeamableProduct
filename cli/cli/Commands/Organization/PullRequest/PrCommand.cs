@@ -12,7 +12,7 @@ public class PrCommand : CommandGroup
 	}
 
 	/// <summary>
-	/// Render a server-computed manifest diff (component and bundle-reference changes) to the user.
+	/// Render a server-computed manifest diff (component changes; pull requests carry only inline components) to the user.
 	/// Shared by the <c>diff</c> and <c>merge</c> commands. Modeled on <c>BundleDiff.Print</c>.
 	/// </summary>
 	public static void PrintDiff(ManifestDiffResponse diff)
@@ -24,9 +24,7 @@ public class PrCommand : CommandGroup
 		}
 
 		var components = (diff.components.HasValue ? diff.components.Value : null) ?? System.Array.Empty<ManifestDiffEntry>();
-		var references = (diff.references.HasValue ? diff.references.Value : null) ?? System.Array.Empty<ReferenceDiffEntry>();
-
-		if (components.Length == 0 && references.Length == 0)
+		if (components.Length == 0)
 		{
 			Log.Information("This pull request makes no changes to the current manifest.");
 			return;
@@ -35,20 +33,6 @@ public class PrCommand : CommandGroup
 		PrintComponentChanges(components, ManifestDiffChange.Added, "Adding");
 		PrintComponentChanges(components, ManifestDiffChange.Changed, "Changing");
 		PrintComponentChanges(components, ManifestDiffChange.Removed, "Removing");
-
-		if (references.Length > 0)
-		{
-			var sb = new StringBuilder();
-			sb.AppendLine(references.Length == 1 ? "1 bundle reference change" : $"{references.Length} bundle reference changes");
-			foreach (var reference in references)
-			{
-				var bundleName = reference.bundleName.GetOrElse("<unknown>");
-				var oldChecksum = reference.oldChecksum.GetOrElse("(none)");
-				var newChecksum = reference.newChecksum.GetOrElse("(none)");
-				sb.AppendLine($" - {bundleName}: {oldChecksum} -> {newChecksum}");
-			}
-			Log.Warning(sb.ToString());
-		}
 	}
 
 	/// <summary>Log the high-level fields of a pull request (id, status, source, submitter).</summary>

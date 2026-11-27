@@ -1,3 +1,4 @@
+using cli.BundleCommands;
 using cli.Commands.LocalStack;
 using cli.DeploymentCommands;
 using cli.Services.Bundles;
@@ -20,82 +21,141 @@ namespace tests.BundleTests;
 /// </summary>
 public class BundleJobRunnerTests
 {
-	static string[] Build(string op, string bundle = "", string tag = "", string checksum = "", string comment = "",
-		string acl = "", string scope = "", bool flag = false) =>
-		BundlesApi.BuildArgs(op, bundle, tag, checksum, comment, acl, scope, flag);
+	static string[] Build(string op, string bundle = "", string tag = "", string version = "", string scope = "",
+		bool flag = false) =>
+		BundlesApi.BuildArgs(new JObject
+		{
+			["op"] = op, ["bundle"] = bundle, ["tag"] = tag, ["version"] = version, ["scope"] = scope, ["flag"] = flag,
+		}).args;
+
+	static string[] Build(string json) => BundlesApi.BuildArgs(JObject.Parse(json)).args;
 
 	[Test]
-	public void Publish_PassesCommentAsASingleArgument()
+	public void InstallPlan_StopsAtThePlan()
 	{
-		var args = Build("publish", "@beam-project/zone-core", tag: "stable", comment: "fix \"quotes\" --and flags",
-			acl: "org", flag: true);
+		var args = Build(@"{""op"":""install"",""bundle"":""@acme/vip"",""tag"":""stable"",""componentGroups"":[""default"",""leaderboards""],
+			""realms"":""none"",""autoUpdate"":false,""planOnly"":true}");
 
 		Assert.That(args, Is.EqualTo(new[]
 		{
-			"bundles", "publish", "@beam-project/zone-core", "--from-latest-plan", "--tag", "stable", "--acl", "org",
-			"--comment=fix \"quotes\" --and flags"
+			"bundles", "install", "@acme/vip", "--tag", "stable", "--component-groups=default,leaderboards", "--realms", "none",
+			"--auto-update=false", "--plan-only",
 		}));
 	}
 
 	[Test]
-	public void CommentOption_KeepsALeadingDashAsText()
+	public void InstallApply_NeedsThePlanHash()
 	{
-		var commentOption = new Option<string>(new[] { "--comment", "-c" });
-		var quietOption = new Option<bool>("--quiet");
-		var root = new RootCommand { commentOption, quietOption };
-		var comment = Build("deploy-plan", scope: "realm", comment: "--quiet please").Last();
-
-		var result = root.Parse(new[] { comment });
-
-		Assert.That(result.Errors, Is.Empty);
-		Assert.That(result.GetValueForOption(commentOption), Is.EqualTo("--quiet please"));
-		Assert.That(result.GetValueForOption(quietOption), Is.False);
+		Assert.That(Build(@"{""op"":""install"",""bundle"":""@acme/vip"",""version"":""3"",""planHash"":""abc123""}"),
+			Is.EqualTo(new[] { "bundles", "install", "@acme/vip", "--version", "3", "--plan-hash", "abc123" }));
+		Assert.That(() => Build(@"{""op"":""install"",""bundle"":""@acme/vip""}"), Throws.TypeOf<LocalWebRequestException>());
+		Assert.That(() => Build(@"{""op"":""uninstall"",""bundle"":""@acme/vip"",""planHash"":""--quiet""}"), Throws.TypeOf<LocalWebRequestException>());
 	}
 
 	[Test]
-	public void Install_PrefersChecksumOverTag()
+	public void InstallWithNoComponentGroups_TurnsThemAllOff()
 	{
-		var args = Build("install", "vip", tag: "stable", checksum: "sha256:abcdef0123456789");
+		var args = Build(@"{""op"":""install"",""bundle"":""@acme/vip"",""componentGroups"":[],""planOnly"":true}");
 
-		Assert.That(args, Is.EqualTo(new[] { "bundles", "install", "vip", "--checksum", "sha256:abcdef0123456789" }));
+		Assert.That(args, Does.Contain("--no-component-groups"));
+		Assert.That(args, Does.Contain("--plan-only"));
 	}
 
 	[Test]
-	public void Tag_AcceptsAChecksumReference()
+	public void NoComponentGroups_SendsAnEmptyList()
 	{
-		var args = Build("tag", "vip@sha256:abcdef0123456789", tag: "stable");
+		var request = new InstallBundleCommandArgs { noComponentGroups = true }.Request("@acme/vip");
 
-		Assert.That(args, Is.EqualTo(new[] { "bundles", "tag", "vip@sha256:abcdef0123456789", "stable" }));
+		Assert.That(request.componentGroups.HasValue, Is.True);
+		Assert.That(request.componentGroups.Value, Is.Empty);
 	}
 
 	[Test]
-	public void DeployRelease_UsesTheLatestPlan()
+	public void ComponentGroups_RefuseAnOptionTakenAsAGroup()
 	{
-		Assert.That(Build("deploy-release", scope: "zone", comment: "ship it"),
-			Is.EqualTo(new[] { "deploy", "release", "--from-latest-plan", "--scope", "zone", "--comment=ship it" }));
+		Assert.That(() => new InstallBundleCommandArgs { componentGroups = new List<string> { "--plan-only" } }.Request("@acme/vip"),
+			Throws.TypeOf<cli.CliException>());
+		Assert.That(() => new InstallBundleCommandArgs { componentGroups = new List<string> { "a" }, noComponentGroups = true }.Request("@acme/vip"),
+			Throws.TypeOf<cli.CliException>());
+	}
+
+	[TestCase("'@acme/core' (1 or later) is a hard dependency", "@acme/core", true)]
+	[TestCase("Acquire '@acme/core' first: it is a hard dependency", "@acme/core", true)]
+	[TestCase("acquire @acme/core.", "@acme/core", true)]
+	[TestCase("'@acme/core-extras' is missing", "@acme/core", false)]
+	[TestCase("'@acme/core/x' is missing", "@acme/core", false)]
+	[TestCase("'@other@acme/core' is missing", "@acme/core", false)]
+	public void IsNamedIn_MatchesWholeBundleNames(string text, string bundle, bool expected)
+	{
+		Assert.That(BundleNamespace.IsNamedIn(text, bundle), Is.EqualTo(expected));
+	}
+
+	[TestCase(@"{""op"":""install"",""bundle"":""vip"",""componentGroups"":[""--quiet""],""planOnly"":true}")]
+	[TestCase(@"{""op"":""install"",""bundle"":""vip"",""realms"":""some"",""planOnly"":true}")]
+	[TestCase(@"{""op"":""visibility"",""bundle"":""vip"",""visibility"":""secret""}")]
+	public void InvalidInstallValues_AreRejected(string json)
+	{
+		Assert.That(() => Build(json), Throws.TypeOf<LocalWebRequestException>());
+	}
+
+	[Test]
+	public void Visibility_UpdatesTheListing()
+	{
+		Assert.That(Build(@"{""op"":""visibility"",""bundle"":""vip"",""visibility"":""public""}"),
+			Is.EqualTo(new[] { "bundles", "update", "vip", "--visibility", "public" }));
+	}
+
+	[Test]
+	public void Publish_UsesTheLatestPlanAndTag()
+	{
+		var args = Build("publish", "@beam-project/zone-core", tag: "stable", flag: true);
+
+		Assert.That(args, Is.EqualTo(new[]
+		{
+			"bundles", "publish", "@beam-project/zone-core", "--from-latest-plan", "--tag", "stable",
+		}));
+	}
+
+	[Test]
+	public void Tag_PointsAtAVersion()
+	{
+		var args = Build("tag", "@acme/vip", tag: "stable", version: "4");
+
+		Assert.That(args, Is.EqualTo(new[] { "bundles", "tag", "@acme/vip", "stable", "4" }));
+	}
+
+	[TestCase("0")]
+	[TestCase("-1")]
+	[TestCase("4; rm")]
+	[TestCase("")]
+	public void InvalidVersion_IsRejected(string version)
+	{
+		Assert.That(() => Build("yank", "vip", version: version), Throws.TypeOf<LocalWebRequestException>());
 	}
 
 	[TestCase("plan", "--help")]
 	[TestCase("plan", "vip; rm -rf /")]
 	[TestCase("plan", "")]
-	[TestCase("yank", "vip@sha256 x")]
+	[TestCase("yank", "vip@sha256:abc")]
 	public void InvalidBundle_IsRejected(string op, string bundle)
 	{
 		Assert.That(() => Build(op, bundle), Throws.TypeOf<LocalWebRequestException>());
 	}
 
-	[TestCase("acl", "vip", "realm", "")]
-	[TestCase("deploy-plan", "", "", "galaxy")]
-	[TestCase("unknown", "vip", "", "")]
-	public void UnknownValues_AreRejected(string op, string bundle, string acl, string scope)
+	[TestCase("acl", "vip", "")]
+	[TestCase("get", "vip", "")]
+	[TestCase("prune-yanked", "", "")]
+	[TestCase("deploy-plan", "", "realm")]
+	[TestCase("unknown", "vip", "")]
+	public void UnknownValues_AreRejected(string op, string bundle, string scope)
 	{
-		Assert.That(() => Build(op, bundle, acl: acl, scope: scope), Throws.TypeOf<LocalWebRequestException>());
+		Assert.That(() => Build(op, bundle, scope: scope), Throws.TypeOf<LocalWebRequestException>());
 	}
 
 	[Test]
 	public void InvalidTag_IsRejected()
 	{
-		Assert.That(() => Build("tag", "vip@sha256:abcdef0123456789", tag: "--quiet x"), Throws.TypeOf<LocalWebRequestException>());
+		Assert.That(() => Build("tag", "vip", tag: "--quiet x", version: "2"), Throws.TypeOf<LocalWebRequestException>());
 	}
 
 	[Test]

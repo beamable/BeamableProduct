@@ -1,5 +1,9 @@
+using Beamable.Common.Api;
 using Beamable.Server;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace cli.Services.Bundles;
@@ -74,9 +78,59 @@ public static class BundleNamespace
 		return (null, raw);
 	}
 
+	/// <summary>
+	/// The full <c>@&lt;namespace&gt;/&lt;bundle-name&gt;</c> name for a command's bundle argument: kept as it is
+	/// when it already names a namespace, otherwise qualified with the workspace's own.
+	/// </summary>
+	public static async Task<string> FullName(CommandArgs args, string raw)
+	{
+		var (explicitNs, name) = SplitName(raw);
+		BundleWorkspace.ValidateName(name);
+		return Qualify(await Resolve(args, explicitNs), name);
+	}
+
+	/// <summary>Whether <paramref name="text"/> names the bundle <paramref name="fullName"/> on its own, not as part of a longer name.</summary>
+	public static bool IsNamedIn(string text, string fullName) =>
+		!string.IsNullOrEmpty(text) && !string.IsNullOrEmpty(fullName) &&
+		Regex.IsMatch(text, $@"(?<![\w@/.-]){Regex.Escape(fullName)}(?![\w/-]|\.\w)");
+
 	/// <summary>The catalog namespace for a customer alias: <c>@&lt;alias&gt;</c>.</summary>
 	public static string FromAlias(string alias) => "@" + alias.TrimStart('@');
 
 	/// <summary>The catalog's fully-qualified bundle name, <c>@&lt;alias&gt;/&lt;short-name&gt;</c>.</summary>
 	public static string Qualify(string ns, string shortName) => $"{ns}/{shortName}";
+
+	/// <summary>
+	/// Runs a bundle request, turning the server's refusal into a CLI error with its reason. The gateway's
+	/// bundle errors carry the reason in <c>description</c>, which the CLI's generic request error doesn't show.
+	/// </summary>
+	public static async Task<T> Send<T>(Func<Task<T>> call)
+	{
+		try
+		{
+			return await call();
+		}
+		catch (RequesterException e) when (e.Status >= 400 && e.Status < 500)
+		{
+			throw new CliException(RefusalOf(e));
+		}
+	}
+
+	public static string RefusalOf(RequesterException e)
+	{
+		try
+		{
+			var body = JObject.Parse(e.Payload ?? "");
+			var reason = body.Value<string>("description") ?? body.Value<string>("message");
+			if (!string.IsNullOrWhiteSpace(reason))
+			{
+				return reason;
+			}
+		}
+		catch (JsonReaderException)
+		{
+		}
+
+		return $"The server refused the request (status {e.Status}).";
+	}
 }
