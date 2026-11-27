@@ -10,7 +10,7 @@ namespace Beamable.Editor.BeamCli.Commands
         public string name;
         public string kind;
         public string change;
-        public string localChecksum;
-        public string publishedChecksum;
+        public string local;
+        public string published;
     }
 }

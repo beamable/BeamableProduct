@@ -8,7 +8,6 @@ namespace Beamable.Editor.BeamCli.Commands
     public partial class BeamPromoteBundleTagCommandOutput
     {
         public string name;
-        public string tag;
-        public string checksum;
+        public Beamable.Common.BeamCli.Contracts.BundleTagInfo[] tags;
     }
 }

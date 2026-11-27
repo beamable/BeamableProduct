@@ -8,6 +8,7 @@ namespace Beamable.Editor.BeamCli.Commands
     public partial class BeamYankBundleCommandOutput
     {
         public string name;
-        public string checksum;
+        public long version;
+        public long latestVersion;
     }
 }

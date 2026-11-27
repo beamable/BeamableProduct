@@ -6,10 +6,12 @@ namespace Beamable.Editor.BeamCli.Commands
     
     public partial class ContentResolveArgs : Beamable.Common.BeamCli.IBeamCommandArgs
     {
-        /// <summary>Preview one selected item's local and realm values without reconciling.</summary>
+        /// <summary>Preview one selected item's local and realm values without reconciling</summary>
         public bool preview;
-        /// <summary>Reject reconciliation if the reviewed local file or realm values changed.</summary>
+        /// <summary>Reject reconciliation if the reviewed local file or realm values changed</summary>
         public string expectedLocalRevision;
+        /// <summary>Reject reconciliation if the reviewed publication is no longer latest</summary>
+        public string expectedManifestUid;
         /// <summary>Inform a subset of ','-separated manifest ids for which to return data. By default, will return just the global manifest</summary>
         public string[] manifestIds;
         /// <summary>Defines the semantics for the `filter` argument. When no filters are given, affects all existing content.
@@ -24,15 +26,26 @@ namespace Beamable.Editor.BeamCli.Commands
         ///This applies to ALL matching elements of the filter that are conflicted.
         ///Value must be "local" or "realm"</summary>
         public string use;
-        /// <summary>Reject reconciliation if the reviewed publication is no longer latest.</summary>
-        public string expectedManifestUid;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
-            if (this.preview) genBeamCommandArgs.Add("--preview=True");
-            if (this.expectedLocalRevision != null) genBeamCommandArgs.Add("--expected-local-revision=" + this.expectedLocalRevision);
+            // If the preview value was not default, then add it to the list of args.
+            if ((this.preview != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--preview=" + this.preview));
+            }
+            // If the expectedLocalRevision value was not default, then add it to the list of args.
+            if ((this.expectedLocalRevision != default(string)))
+            {
+                genBeamCommandArgs.Add(("--expected-local-revision=" + this.expectedLocalRevision));
+            }
+            // If the expectedManifestUid value was not default, then add it to the list of args.
+            if ((this.expectedManifestUid != default(string)))
+            {
+                genBeamCommandArgs.Add(("--expected-manifest-uid=" + this.expectedManifestUid));
+            }
             // If the manifestIds value was not default, then add it to the list of args.
             if ((this.manifestIds != default(string[])))
             {
@@ -57,7 +70,6 @@ namespace Beamable.Editor.BeamCli.Commands
             {
                 genBeamCommandArgs.Add(("--use=" + this.use));
             }
-            if (this.expectedManifestUid != null) genBeamCommandArgs.Add("--expected-manifest-uid=" + this.expectedManifestUid);
             string genBeamCommandStr = "";
             // Join all the args with spaces
             genBeamCommandStr = string.Join(" ", genBeamCommandArgs);

@@ -8,5 +8,6 @@ namespace Beamable.Editor.BeamCli.Commands
     public partial class BeamRemotePortalConfiguration
     {
         public System.Collections.Generic.List<BeamMountSiteConfig> mountSites;
+        public System.Collections.Generic.List<BeamSiteConfig> sites;
     }
 }
