@@ -44,8 +44,54 @@ namespace Beamable.Content
 		[Tooltip("When enabled, content checksum will be calculated based on default object property order.")]
 		public bool EnablePropertyOrderDependenceForContentChecksum = true;
 
-		[Tooltip("In Play Mode, resolve the namespace selected in the Content window from a read-only snapshot of the local JSON working copy, including unpublished items. Other namespaces use realm content. Restart Play Mode after changing this setting, namespace, or local files. Missing local content fails without realm fallback. Changing this setting stops active content and history watchers, waits for their CLI work to finish, then restarts them. While enabled, these watchers do not auto-sync the working copy. Does not affect player builds.")]
-		public bool EnableLocalContentInEditor = false;
+		// Local Mode is a per-developer, per-project preference, never part of the shared asset:
+		// pulling a teammate's configuration must not change this developer's content source.
+		// Without a saved preference, Local Mode is off. Unsaved instances keep the value in memory.
+		[NonSerialized] private bool _transientLocalContent;
+#if UNITY_EDITOR
+		[NonSerialized] private bool _isProjectAsset;
+		// One Editor per project and the setter is the only writer, so the value can be cached.
+		private static string _localContentPreferenceKey;
+		private static bool? _localContentPreference;
+#endif
+		public bool EnableLocalContentInEditor
+		{
+			get
+			{
+#if UNITY_EDITOR
+				if (IsProjectAsset)
+					return _localContentPreference ??= UnityEditor.EditorPrefs.GetBool(LocalContentPreferenceKey, false);
+#endif
+				return _transientLocalContent;
+			}
+			set
+			{
+#if UNITY_EDITOR
+				if (IsProjectAsset)
+				{
+					UnityEditor.EditorPrefs.SetBool(LocalContentPreferenceKey, value);
+					_localContentPreference = value;
+					return;
+				}
+#endif
+				_transientLocalContent = value;
+			}
+		}
+
+#if UNITY_EDITOR
+		// An asset stays an asset for its lifetime; only unsaved instances keep asking.
+		private bool IsProjectAsset => _isProjectAsset || (_isProjectAsset = UnityEditor.AssetDatabase.Contains(this));
+		internal static string LocalContentPreferenceKey =>
+			_localContentPreferenceKey ??= LocalContentPreferenceKeyFor(Application.dataPath);
+		// For tests that write EditorPrefs directly.
+		internal static void ResetLocalContentPreferenceCache() => _localContentPreference = null;
+		internal static string LocalContentPreferenceKeyFor(string projectAssetsPath)
+		{
+			var path = System.IO.Path.GetFullPath(projectAssetsPath).Replace('\\', '/').TrimEnd('/');
+			if (Application.platform == RuntimePlatform.WindowsEditor) path = path.ToLowerInvariant();
+			return "Beamable.Content.LocalMode." + Hash128.Compute(path);
+		}
+#endif
 
 		[Tooltip("When using Local Content Mode In Editor, simulate how long each content reference will take to fetch.")]
 		public OptionalFloat LocalContentReferenceDelaySeconds;
@@ -62,7 +108,7 @@ namespace Beamable.Content
 			set => _runtimeManifestID = ValidateManifestID(value);
 		}
 		
-		[Tooltip("When enabled, the Beamable SDK will validate that the content schema is the same between the C# Definition and JSON data.")]
+		[Tooltip("Show schema mismatch notices for the local C# model. Turning this off hides notices only. Unsupported fields remain protected during normal edits, and an edit refused for that reason still offers the schema review.")]
 		public bool validateSchemaDifference = true;
 
 		[Tooltip("When enabled, the SDK asks the backend to omit content tags from the public manifest. This reduces manifest download size for games that use tags only for backend organization. Note: client-side tag-based ContentQuery filtering (e.g. \"tag:weapon\") will return no results when this is enabled, because the manifest does not carry tag data.")]

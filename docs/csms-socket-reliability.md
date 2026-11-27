@@ -143,7 +143,8 @@ the timeout is disabled. The daemon's retry loop exists for failed attempts, and
 | Service auth request deadline | derived | `min(outbound, 15 s)` | always enforced |
 | Service auth wait per send attempt | `WaitForAuthorization` | 10 s × 10 attempts | requests only, not replies |
 | Service startup auth wait | `SetupWebsocket` | 2 min, then exit 12 | initial authentication failure exits |
-| Startup socket lost before readiness | from first disconnect | 2 min shared, then exit 12 | includes all replacement backoff, connect and authentication waits. User initialization hooks keep their existing lifetime. |
+| Startup socket lost before readiness | from the first socket close or a retry after a missing platform reply | 2 min shared, then exit 12 | Backoff, connection and authentication share this window across successive socket closes. |
+| Startup platform replies after authentication | per authenticated attempt | 2 min shared | Realm config and the eager content manifest (realm services), logging config (realm and zone), basic provider, federation and built-in event registration. Expiry replaces this connection with backoff when a sibling is serving, or exits 12 when none is serving. |
 | Service reconnect auth wait | `SetupWebsocket` | 2 min, then the connection is replaced | ends at once if the connection closes; a failed setup after initialization never exits (#4958) |
 | Service reconnect setup, as a whole | fixed | 3 min, then the connection is replaced | also ends at once if the connection closes; bounds the steps that wait for a reply while enforcement is off; not applied while starting |
 | **Service send blocked** | `WS_SEND_TIMEOUT_SECONDS` | **30 s**, 0 = off | |
@@ -151,6 +152,14 @@ the timeout is disabled. The daemon's retry loop exists for failed attempts, and
 | Service graceful close | fixed | 5 s, then abort | |
 | Service keep-alive | `KeepAliveInterval` fixed 20 s; `WS_KEEPALIVE_TIMEOUT_SECONDS` | 0 = unsolicited pong only | net9+ only |
 | Service reconnect backoff | `_retryIntervalsInSeconds` | 5, 5, 10, 10, 15, 45, 60 s | between failed connects, and between failed setups of a replacement |
+
+The startup reply clock runs while startup waits for a platform response. Overlapping registration waits count once. For eager content, the manifest wait includes backoff between transient failures. Item downloads, user initialization, service setup callbacks and custom event hooks run outside the platform reply budget.
+
+If the socket closes during item downloads, startup waits for the downloads to return. The two-minute reconnect window starts at the first socket close. If that window has expired by the time the downloads return, the process exits with code 12. Otherwise the replacement uses the remaining time for backoff, connection and authentication.
+
+On the replacement, the first instance refreshes previously loaded manifests. If eager preload still needs the manifest, it waits for that refresh under the replacement's startup reply budget before running initialization hooks. Expiry ends the startup wait. A refresh already in flight can still receive its reply until the connection is cleaned up. If preload already succeeded, the instance can finish initialization and serve while the refresh is still pending.
+
+If a replacement authenticates and then times out waiting for a platform reply while a sibling serves, the next replacement gets a fresh two-minute window for backoff, connection and authentication, even if the original socket-loss window has elapsed. Each authenticated attempt gets its own platform reply budget. With socket enforcement enabled, an individual request can still fail earlier under its configured outbound deadline. A missing startup reply at that deadline follows the same sibling rule. Explicit platform error responses keep their existing handling.
 
 **Ordering.** The outbound deadline (30 s) is below the reply stall (60 s), so one slow request expires before the
 connection is condemned. The stall is below the 120 s relay timeout seen in production, so a broken connection is

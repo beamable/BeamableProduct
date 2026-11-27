@@ -56,6 +56,7 @@ public class DefaultEventSubscriptionConfiguration : IEventSubscriptionConfigura
 
 public class CreateSubscriptionArgs
 {
+    internal PlatformReplyWait PlatformReplies { get; init; }
     public IDependencyProvider Provider { get; init; }
     public IMicroserviceAttributes Attributes { get; init; }
     public MicroserviceRequester Requester { get; init; }
@@ -87,7 +88,9 @@ public class DefaultEventSubscription : IEventSubscriptionHook
 
         // subscribe to all the known events. 
         var data = args.Configuration.GetSubscriptions();
-        await args.Requester.InitializeSubscription(data.EventNames, data.UniqueBindings);
+        Promise<Beamable.Common.Api.EmptyResponse> Register() => args.Requester.InitializeSubscription(data.EventNames, data.UniqueBindings);
+        if (args.PlatformReplies == null) await Register();
+        else await args.PlatformReplies.Wait("event provider registration", Register);
     }
 }
 

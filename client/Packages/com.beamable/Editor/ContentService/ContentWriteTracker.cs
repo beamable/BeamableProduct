@@ -20,6 +20,7 @@ namespace Beamable.Editor.ContentService
 		private readonly Dictionary<string, List<PendingWrite>> _writes = new();
 		private readonly Dictionary<string, Promise> _deletions = new();
 
+		public bool HasActivity => _writes.Count > 0 || _deletions.Count > 0;
 		public bool IsDeleting(string key) => _deletions.ContainsKey(key);
 		public bool HasWrites(string key) => _writes.ContainsKey(key);
 

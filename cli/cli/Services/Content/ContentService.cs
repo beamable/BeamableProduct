@@ -489,8 +489,14 @@ public partial class ContentService
 		}
 	}
 
-	public async IAsyncEnumerable<RemoteContentPublished> ListenToRemoteContentPublishes(CommandArgs args, string manifestId = "global", [EnumeratorCancellation] CancellationToken token = default, bool autoSync = true)
+	public IAsyncEnumerable<RemoteContentPublished> ListenToRemoteContentPublishes(CommandArgs args, string manifestId = "global", CancellationToken token = default, bool autoSync = true) =>
+		ListenToRemoteContentPublishes(args, manifestId, token, autoSync, null);
+
+	internal async IAsyncEnumerable<RemoteContentPublished> ListenToRemoteContentPublishes(CommandArgs args, string manifestId,
+		[EnumeratorCancellation] CancellationToken token, bool autoSync, LocalModeExitActivation activation)
 	{
+		// A guarded watcher must only process publications received by its own subscription.
+		var publications = activation == null ? _channelRemoteContentPublishes : Channel.CreateUnbounded<RemoteContentPublished>();
 		await using var watch = new ContentWatchScope(token);
 		token = watch.Token;
 		// Subscribe to the content refresh notification for the realm we are targeting.
@@ -499,21 +505,39 @@ public partial class ContentService
 			try
 			{
 				var handle = WebsocketUtil.ConfigureWebSocketForServerNotifications(args, new[] { "content.manifest" }, token);
+				if (activation != null)
+				{
+					await handle.Socket;
+					activation.Subscribed.TrySetResult();
+				}
+
 				await WebsocketUtil.RunServerNotificationListenLoop(handle, message =>
 				{
-					Log.Verbose("Received Content Publish Notification");
-					watch.Run(async () => await OnContentPublished(message.body, args.Lifecycle));
-				}, token);
+					var manifest = ((JObject)message.body).Property("manifest")!.Value.ToObject<JObject>();
+					if (manifest.Property("id")!.Value.ToObject<string>() != manifestId)
+						return;
+					var uid = manifest.Property("uid")!.Value.ToObject<string>();
+					var publisherAccountId = manifest.Property("publisherAccountId")!.Value.ToObject<long>();
+					if (activation == null || activation.ShouldProcessPublication(uid))
+						watch.Run(() => OnContentPublished(uid, publisherAccountId));
+				}, token, onReconnecting: activation == null ? null : activation.OnReconnecting);
+
+				if (activation != null && !token.IsCancellationRequested)
+					throw new CliException("The Local Mode exit publication watcher disconnected. Refresh and try again.");
 			}
 			catch (Exception e)
 			{
 				Console.WriteLine(e);
 				throw;
 			}
+			finally
+			{
+				activation?.OnDisconnected();
+			}
 		});
 
 		// Loop while we are listing to the published changes on this realm and emit an event out of this enumerable every time we get one. 
-		var reader = _channelRemoteContentPublishes.Reader;
+		var reader = publications.Reader;
 		while (true)
 		{
 			// Break if a cancellation request came in.
@@ -541,70 +565,54 @@ public partial class ContentService
 
 		yield break;
 
-		async Task OnContentPublished(object o, AppLifecycle lifecycle)
+		async Task OnContentPublished(string manifestUid, long publisherAccountId)
 		{
-			Log.Verbose("Responding to Content Publish Notification");
-			var payload = (JObject)o;
-			var categories = payload.Property("categories")!.Value.Values<string>().ToArray();
-			var manifestInfo = payload.Property("manifest")!.Value.ToObject<JObject>();
+			Log.Verbose("Fetching Manifest Data. MANIFEST_ID={0}, UID={1}", manifestId, manifestUid);
+			var emailFetchTask = GetAccountEmail(publisherAccountId);
+			var manifestFetchTask = GetManifest(manifestId, manifestUid, replaceLatest: true);
 
-			var publishedManifestId = manifestInfo.Property("id")!.Value.ToObject<string>();
-			var manifestUid = manifestInfo.Property("uid")!.Value.ToObject<string>();
-			var manifestChecksum = manifestInfo.Property("checksum")!.Value.ToObject<string>();
-			var createdTimestamp = manifestInfo.Property("created")!.Value.ToObject<long>();
-			var publisherAccountId = manifestInfo.Property("publisherAccountId")!.Value.ToObject<long>();
+			await Task.WhenAll(emailFetchTask, manifestFetchTask);
+			var email = await emailFetchTask;
+			var newManifest = await manifestFetchTask;
 
+			Log.Verbose("Found Email for Publisher. MANIFEST_ID={0}, EMAIL={1}", manifestId, email);
+			Log.Verbose("Found New Published Manifest. MANIFEST_ID={0}, UID={1}", manifestId, manifestFetchTask.Result.uid.GetOrElse(""));
 
-			// We only emit an event if the published manifest matches the id we care about.
-			if (manifestId == publishedManifestId)
+			try
 			{
-				Log.Verbose("Fetching Manifest Data. MANIFEST_ID={0}, UID={1}", manifestId, manifestUid);
-				var emailFetchTask = GetAccountEmail(publisherAccountId);
-				var manifestFetchTask = GetManifest(publishedManifestId, manifestUid, replaceLatest: true);
-
-				await Task.WhenAll(emailFetchTask, manifestFetchTask);
-				var email = await emailFetchTask;
-				var newManifest = await manifestFetchTask;
-
-				Log.Verbose("Found Email for Publisher. MANIFEST_ID={0}, EMAIL={1}", manifestId, email);
-				Log.Verbose("Found New Published Manifest. MANIFEST_ID={0}, UID={1}", manifestId, manifestFetchTask.Result.uid.GetOrElse(""));
-
-				try
+				ContentSyncReport syncReport = null;
+				if (autoSync)
 				{
-					ContentSyncReport syncReport = null;
-					if (autoSync)
-					{
-						// Preserve the existing selective sync policy unless this listener is observation-only.
-						Log.Verbose("Sync'ing manifest. MANIFEST_ID={0}, UID={1}", manifestId, manifestUid);
-						syncReport = await SyncLocalContent(newManifest, manifestId, syncCreated: false, syncModified: false, forceSyncConflicts: false, syncDeleted: false, cancellationToken: token);
-					}
-
-					// Put this on the channel so it gets picked up below.
-					_channelRemoteContentPublishes.Writer.TryWrite(new RemoteContentPublished()
-					{
-						OwnerCid = _requester.Cid,
-						OwnerPid = _requester.Pid,
-						PublisherAccountId = publisherAccountId.ToString(),
-						PublisherEmail = email,
-						AutoSyncReport = syncReport,
-						ReferenceUid = manifestUid,
-					});
-				}
-				catch (Exception e)
-				{
-					if (e is AggregateException ae)
-					{
-						foreach (var aeInnerException in ae.InnerExceptions)
-						{
-							Log.Error(aeInnerException, "Error when auto-sync'ing when publishing");
-						}
-					}
-
-					throw;
+					// Preserve the existing selective sync policy unless this listener is observation-only.
+					Log.Verbose("Sync'ing manifest. MANIFEST_ID={0}, UID={1}", manifestId, manifestUid);
+					syncReport = await SyncLocalContent(newManifest, manifestId, syncCreated: false, syncModified: false, forceSyncConflicts: false, syncDeleted: false, cancellationToken: token);
 				}
 
-				Log.Verbose("Processed published manifest. Sending out event. MANIFEST_ID={0}, UID={1}", manifestId, manifestFetchTask.Result.uid.GetOrElse(""));
+				// Put this on the channel so it gets picked up below.
+				publications.Writer.TryWrite(new RemoteContentPublished()
+				{
+					OwnerCid = _requester.Cid,
+					OwnerPid = _requester.Pid,
+					PublisherAccountId = publisherAccountId.ToString(),
+					PublisherEmail = email,
+					AutoSyncReport = syncReport,
+					ReferenceUid = manifestUid,
+				});
 			}
+			catch (Exception e)
+			{
+				if (e is AggregateException ae)
+				{
+					foreach (var aeInnerException in ae.InnerExceptions)
+					{
+						Log.Error(aeInnerException, "Error when auto-sync'ing when publishing");
+					}
+				}
+
+				throw;
+			}
+
+			Log.Verbose("Processed published manifest. Sending out event. MANIFEST_ID={0}, UID={1}", manifestId, manifestFetchTask.Result.uid.GetOrElse(""));
 		}
 	}
 
@@ -868,55 +876,83 @@ public partial class ContentService
 	///
 	/// For updates of existing files, there are no restrictions. 
 	/// </summary>
-	public async Task BulkSaveLocalContent(LocalContentFiles localCache, string[] contentIds, string[] contentProperties, CancellationToken cancellationToken = default)
-	{
-		var createdOrUpdatedDocs = new List<ContentFile>(contentIds.Length);
-		for (int i = 0; i < contentIds.Length; i++)
-		{
-			// This command does not create new content objects; so, we check if the given id already exists before proceeding.
-			string id = contentIds[i];
-			var newProperties = contentProperties[i];
-
-			if (!localCache.PerIdContentFiles.TryGetValue(id, out ContentFile file))
-			{
-				file = new ContentFile();
-				file.Id = id;
-				file.LocalFilePath = GetPathForContentId(id, localCache.ManifestId);
-				file.FetchedFromManifestUid = localCache.TargetManifest.uid.GetOrElse("");
-				file.ReferenceContent = null;
-				file.Tags = JsonSerializer.SerializeToElement(Array.Empty<string>(), GetContentFileSerializationOptions());
-			}
-
-			// Make sure this is serialized properly and sorted
-			var newPropsJson = JsonSerializer.Deserialize<JsonElement>(newProperties);
-			newPropsJson = JsonSerializer.SerializeToElement(newPropsJson, GetContentFileSerializationOptions());
-
-			// Set this as the new JsonElement for the content file.
-			file.Properties = newPropsJson;
-			file.PropertiesChecksum = CalculateChecksum(file);
-
-			// Store the content file
-			createdOrUpdatedDocs.Add(file);
-		}
-
-		// Save the actual created or updated content
-		await _fileSystemOperationSemaphore.WaitAsync(cancellationToken);
-		try
-		{
-			var contentFolder = EnsureContentPathForRealmExists(out _, _requester.Pid, localCache.ManifestId);
-			var updateTasks = createdOrUpdatedDocs.Select(d => SaveContentFile(contentFolder, d, cancellationToken));
-			await Task.WhenAll(updateTasks);
-		}
-		catch (Exception e)
-		{
-			var err = $"Failed to save Content. Errors:{e.Message}";
-			throw new CliException(err, 5, true);
-		}
-		finally
-		{
-			_fileSystemOperationSemaphore.Release();
-		}
-	}
+    public async Task BulkSaveLocalContent(LocalContentFiles localCache, string[] contentIds, string[] contentProperties,
+        CancellationToken cancellationToken = default, string[] originalFiles = null, string[] modelProperties = null, string[] expectedFileHashes = null)
+    {
+        var patch = originalFiles?.Length > 0 || modelProperties?.Length > 0;
+        var reviewed = expectedFileHashes?.Length > 0;
+        if (contentIds.Length != contentProperties.Length ||
+            patch && (originalFiles?.Length != contentIds.Length || modelProperties?.Length != contentIds.Length) ||
+            reviewed && (expectedFileHashes.Length != contentIds.Length || patch))
+        {
+            throw new CliException("Content save requires parallel properties and review/baseline arrays.");
+        }
+        await _fileSystemOperationSemaphore.WaitAsync(cancellationToken);
+        try
+        {
+            var contentFolder = EnsureContentPathForRealmExists(out _, _requester.Pid, localCache.ManifestId);
+            var updates = new List<ContentFile>();
+            for (var i = 0; i < contentIds.Length; i++)
+            {
+                var id = contentIds[i];
+                var path = GetPathForContentId(id, localCache.ManifestId);
+                var text = File.Exists(path) ? await File.ReadAllTextAsync(path, cancellationToken) : null;
+                if ((patch || reviewed) && text == null)
+                {
+                    throw new CliException("Content was deleted. Reload before saving.");
+                }
+                if (reviewed && (string.IsNullOrEmpty(expectedFileHashes[i]) ||
+                    Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text))).ToLowerInvariant() != expectedFileHashes[i]))
+                {
+                    throw new CliException("Content changed after migration preview. Review the item again.");
+                }
+                var file = text == null ? new ContentFile
+                {
+                    Tags = JsonSerializer.SerializeToElement(Array.Empty<string>()),
+                    FetchedFromManifestUid = localCache.TargetManifest?.uid.GetOrElse("")
+                } : JsonSerializer.Deserialize<ContentFile>(text, GetContentFileSerializationOptions());
+                file.Id = id;
+                file.LocalFilePath = path;
+                var properties = contentProperties[i];
+                if (patch)
+                {
+                    var original = System.Text.Json.Nodes.JsonNode.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(originalFiles[i])));
+                    properties = ContentPropertyEdits.Apply(original["properties"],
+                        System.Text.Json.Nodes.JsonNode.Parse(modelProperties[i]),
+                        System.Text.Json.Nodes.JsonNode.Parse(properties),
+                        System.Text.Json.Nodes.JsonNode.Parse(file.Properties.GetRawText())).ToJsonString();
+                }
+                var proposed = JsonSerializer.Deserialize<JsonElement>(properties);
+                if (proposed.ValueKind != JsonValueKind.Object)
+                {
+                    throw new CliException("Content properties must be an object.");
+                }
+                var previousChecksum = text == null ? null : CalculateChecksum(file);
+                file.Properties = proposed;
+                file.PropertiesChecksum = CalculateChecksum(file);
+                if (previousChecksum == file.PropertiesChecksum)
+                {
+                    continue;
+                }
+                updates.Add(file);
+            }
+            // Validate the complete request before writing any item. This lock coordinates service writers;
+            // external processes can still race filesystem writes, as with other content operations.
+            try
+            {
+                foreach (var file in updates)
+                {
+                    await SaveContentFile(contentFolder, file, cancellationToken);
+                }
+            }
+            catch (Exception e)
+            {
+                // Keep the exit code and message this command has always used for a failed write.
+                throw new CliException($"Failed to save Content. Errors:{e.Message}", 5, true);
+            }
+        }
+        finally { _fileSystemOperationSemaphore.Release(); }
+    }
 
 	/// <summary>
 	/// Publishes the local changes made to the given <paramref name="manifestId"/> to the current <see cref="IAppContext.Pid"/>.
@@ -2064,7 +2100,9 @@ public partial class ContentService
 		if (replaceLatest)
 			_cachedManifests.Remove(latestCacheKey, out _);
 
-		if (!_cachedManifests.TryGetValue(cacheKey, out var manifest) && !cachedOnly)
+		_cachedManifests.TryGetValue(cacheKey, out var manifest);
+		// Revalidation must fetch the realm even if a concurrent listener just filled the latest cache again.
+		if (!cachedOnly && (manifest == null || (replaceLatest && string.IsNullOrEmpty(manifestUid))))
 		{
 			if (string.IsNullOrEmpty(manifestUid))
 			{

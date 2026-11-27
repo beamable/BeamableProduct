@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
@@ -10,17 +11,19 @@ using Beamable.Common.Api.Realms;
 using Beamable.Common.BeamCli;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content.Validation;
+using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Content;
 using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.ContentService;
+using Beamable.Editor.UI.ContentWindow;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
 
 namespace Beamable.Editor.Tests
 {
-    public class ContentWatcherSwitchingTests
+    public partial class ContentWatcherSwitchingTests
     {
         const BindingFlags Fields = BindingFlags.Instance | BindingFlags.NonPublic;
         CliContentService service;
@@ -50,11 +53,350 @@ namespace Beamable.Editor.Tests
             Set(service, "_beamContext", context);
             Set(service, "_provider", provider);
             Set(service, "_contentConfiguration", config);
+            Set(service, "<CurrentProgress>k__BackingField", new ContentOperationProgress());
+            var writes = typeof(CliContentService).GetField("_contentWrites", Fields);
+            writes.SetValue(service, Activator.CreateInstance(writes.FieldType));
             Set(service, "_contentHistoryChangesRequest", new ContentHistoryRequestSlot<ContentHistorySyncChangelistWrapper>(request => request.Cancel()));
             Set(service, "_contentHistoryPreviewRequest", new ContentHistoryRequestSlot<ContentHistorySyncContentWrapper>(request => request.Cancel()));
             var cache = typeof(CliContentService).GetField("_contentHistoryEntryCache", Fields);
             cache.SetValue(service, Activator.CreateInstance(cache.FieldType));
             service.manifestIdOverride = "global";
+        }
+
+        [TestCase(ContentChangeKind.IncomingAddition)]
+        [TestCase(ContentChangeKind.IncomingChange)]
+        [TestCase(ContentChangeKind.IncomingDeletion)]
+        [TestCase(ContentChangeKind.Conflict)]
+        [TestCase(ContentChangeKind.Unknown)]
+        public void Exit_rechecks_incoming_content_even_when_editor_cache_is_empty(ContentChangeKind kind)
+        {
+            config.EnableLocalContentInEditor = true;
+            commands.ExitEntries = new[] { new LocalContentManifestEntry { FullId = "currency.incoming", ChangeKind = (int)kind, IsInConflict = kind == ContentChangeKind.Conflict } };
+            Exception error = null;
+            Exit().Error(e => error = e);
+            Assert.That(error, Is.Not.Null);
+            Assert.That(error.Message, Does.Contain("need review"));
+            Assert.That(config.EnableLocalContentInEditor, Is.True);
+            Assert.That(commands.Content, Is.Empty);
+            Assert.That(commands.Checks.Single().Local, Is.True);
+        }
+
+        [TestCase(ContentChangeKind.UpToDate)]
+        [TestCase(ContentChangeKind.LocalEdit)]
+        public void Exit_preserves_unrelated_local_edits_and_accepts_reconciled_content(ContentChangeKind kind)
+        {
+            config.EnableLocalContentInEditor = true;
+            commands.ExitEntries = new[] { new LocalContentManifestEntry { FullId = "currency.local", ChangeKind = (int)kind } };
+            var exit = Exit();
+            Assert.That(exit.IsCompleted, Is.True);
+            exit.GetResult();
+            Assert.That(config.EnableLocalContentInEditor, Is.False);
+            Assert.That(commands.Content, Is.Empty, "An inactive watcher must not be activated by exit.");
+            Assert.That(commands.Checks.Single().Local, Is.True);
+        }
+
+        [TestCase(true)]
+        [TestCase(false)]
+        public void Exit_does_not_resume_after_cancellation_or_scope_change_during_check(bool cancel)
+        {
+            config.EnableLocalContentInEditor = true;
+            commands.DelayExitCheck = true;
+            var closed = false;
+            Exception error = null;
+            var exit = Exit(() => closed).Error(e => error = e);
+            if (cancel) closed = true;
+            else service.manifestIdOverride = "other";
+            commands.Checks.Single().Emit();
+            commands.Checks.Single().Completion.CompleteSuccess();
+            Assert.That(exit.IsCompleted, Is.True);
+            Assert.That(error, Is.Not.Null);
+            Assert.That(config.EnableLocalContentInEditor, Is.True);
+            Assert.That(commands.Content, Is.Empty);
+        }
+
+        [Test]
+        public void Exit_rejects_wrong_scope_or_failed_snapshot()
+        {
+            config.EnableLocalContentInEditor = true;
+            commands.ExitManifestId = "other";
+            Exception error = null;
+            Exit().Error(e => error = e);
+            Assert.That(error, Is.Not.Null);
+            Assert.That(config.EnableLocalContentInEditor, Is.True);
+            commands.ExitManifestId = "global";
+            commands.DelayExitCheck = true;
+            error = null;
+            Exit().Error(e => error = e);
+            commands.Checks.Last().ReportError();
+            commands.Checks.Last().Emit();
+            commands.Checks.Last().Completion.CompleteSuccess();
+            Assert.That(error, Is.Not.Null);
+            Assert.That(config.EnableLocalContentInEditor, Is.True);
+        }
+
+        [Test]
+        public void Exit_requires_an_explicit_guarded_activation_acknowledgement()
+        {
+            config.EnableLocalContentInEditor = true;
+            commands.AcknowledgeActivation = false;
+            Exception error = null;
+            Exit().Error(e => error = e);
+            Assert.That(error?.Message, Does.Contain("confirm guarded"));
+            Assert.That(config.EnableLocalContentInEditor, Is.True);
+            Assert.That(commands.Checks.Single().Cancelled, Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator Exit_waits_for_both_paused_watchers_before_resuming()
+        {
+            config.EnableLocalContentInEditor = true;
+            yield return Wait(service.Reload());
+            yield return Wait(service.StartContentHistory());
+            var exit = Exit();
+            Assert.That(commands.Content[0].Cancelled, Is.True);
+            Assert.That(commands.History[0].Cancelled, Is.True);
+            Assert.That(commands.Content.Count, Is.EqualTo(1));
+            Assert.That(config.EnableLocalContentInEditor, Is.True, "Preference stays local until shutdown and final review succeed.");
+            Assert.That(commands.Checks, Is.Empty, "The authoritative check must follow watcher shutdown.");
+            commands.Content[0].Completion.CompleteSuccess();
+            yield return null;
+            Assert.That(commands.Content.Count, Is.EqualTo(1));
+            commands.History[0].Completion.CompleteSuccess();
+            yield return Wait(exit);
+            exit.GetResult();
+            Assert.That(commands.Content.Count, Is.EqualTo(1));
+            Assert.That(commands.Checks.Single().Cancelled, Is.False, "The guarded command remains the active watcher.");
+            Assert.That(commands.History[1].Local, Is.False);
+            Assert.That(config.EnableLocalContentInEditor, Is.False);
+        }
+
+        [UnityTest]
+        public IEnumerator Failed_exit_restart_restores_local_preference_and_paused_watcher()
+        {
+            config.EnableLocalContentInEditor = true;
+            yield return Wait(service.Reload());
+            commands.FailNextContentStart = true;
+            Exception error = null;
+            var exit = Exit().Error(e => error = e);
+            commands.Content[0].Completion.CompleteSuccess();
+            yield return Wait(exit);
+            Assert.That(error, Is.Not.Null);
+            Assert.That(config.EnableLocalContentInEditor, Is.True);
+            Assert.That(commands.Content.Last().Local, Is.True);
+            AssertMode("Paused");
+        }
+
+        [UnityTest]
+        public IEnumerator Cancelling_while_watchers_stop_never_starts_auto_sync()
+        {
+            config.EnableLocalContentInEditor = true;
+            yield return Wait(service.Reload());
+            var cancelled = false;
+            Exception error = null;
+            var exit = Exit(() => cancelled).Error(e => error = e);
+            cancelled = true;
+            commands.Content[0].Completion.CompleteSuccess();
+            yield return Wait(exit);
+            Assert.That(error, Is.Not.Null);
+            Assert.That(config.EnableLocalContentInEditor, Is.True);
+            Assert.That(commands.Checks, Is.Empty);
+            Assert.That(commands.Content.All(command => command.Local), Is.True);
+        }
+
+        [Test]
+        public void Exit_and_refresh_reject_pending_inspector_edits_without_clearing_caches()
+        {
+            config.EnableLocalContentInEditor = true;
+            service.EntriesCache["currency.local"] = new LocalContentManifestEntry { FullId = "currency.local" };
+            Set(service, "HasPendingInspectorEdits", new Func<string, bool>(_ => true));
+            Exception error = null;
+            Exit().Error(e => error = e);
+            Assert.That(error, Is.Not.Null);
+            error = null;
+            var refresh = (Promise)typeof(CliContentService).GetMethod("RefreshLocalModeExit", Fields)
+                .Invoke(service, new object[] { "test/realm/global", null });
+            refresh.Error(e => error = e);
+            Assert.That(error, Is.Not.Null);
+            Assert.That(service.EntriesCache.ContainsKey("currency.local"), Is.True);
+            Assert.That(commands.Content, Is.Empty);
+            Assert.That(commands.Checks, Is.Empty);
+            Assert.That(config.EnableLocalContentInEditor, Is.True);
+        }
+
+        Promise Exit(Func<bool> cancelled = null) => (Promise)typeof(CliContentService)
+            .GetMethod("ExitLocalMode", Fields).Invoke(service, new object[] { "test/realm/global", cancelled });
+
+        [UnityTest]
+        public IEnumerator Cancelling_stalled_exit_check_stops_command_and_restores_watchers_without_a_response()
+        {
+            config.EnableLocalContentInEditor = true;
+            yield return Wait(service.Reload());
+            commands.DelayExitCheck = true;
+            var cancelled = false;
+            Exception error = null;
+            var exit = Exit(() => cancelled).Error(e => error = e);
+            commands.Content[0].Completion.CompleteSuccess();
+            yield return null;
+            Assert.That(commands.Checks.Count, Is.EqualTo(1));
+            cancelled = true;
+            // No response and no manual completion of the exit check: cancellation must settle it.
+            yield return Wait(exit);
+            Assert.That(error, Is.TypeOf<OperationCanceledException>());
+            Assert.That(commands.Checks[0].Cancelled, Is.True);
+            Assert.That(config.EnableLocalContentInEditor, Is.True);
+            Assert.That(commands.Content.Last().Local, Is.True);
+            AssertMode("Paused");
+            var resumed = commands.Content.Last();
+            resumed.OnCancel = () => resumed.Completion.CompleteSuccess();
+            yield return Wait(service.Reload());
+            AssertMode("Paused");
+        }
+
+        [UnityTest]
+        public IEnumerator Stalled_exit_check_times_out_and_restores_paused_watchers()
+        {
+            config.EnableLocalContentInEditor = true;
+            commands.DelayExitCheck = true;
+            Set(service, "_localModeExitTimeoutMs", 25);
+            Exception error = null;
+            var exit = Exit().Error(e => error = e);
+            yield return Wait(exit);
+            Assert.That(error, Is.TypeOf<TimeoutException>());
+            Assert.That(commands.Checks[0].Cancelled, Is.True);
+            Assert.That(config.EnableLocalContentInEditor, Is.True);
+            AssertMode("Paused");
+            commands.DelayExitCheck = false;
+            var retry = Exit();
+            yield return Wait(retry);
+            retry.GetResult();
+            Assert.That(config.EnableLocalContentInEditor, Is.False);
+        }
+
+        [UnityTest]
+        public IEnumerator Failed_exit_check_stop_releases_gate_but_keeps_cleanup_ownership_for_retry()
+        {
+            config.EnableLocalContentInEditor = true;
+            commands.DelayExitCheck = true;
+            commands.CompleteExitCheckOnCancel = false;
+            Set(service, "_localModeExitTimeoutMs", 25);
+            Set(service, "_watcherStopTimeoutMs", 25);
+            Exception error = null;
+            var exit = Exit().Error(e => error = e);
+            yield return Wait(exit);
+            Assert.That(error, Is.TypeOf<TimeoutException>());
+            Assert.That(config.EnableLocalContentInEditor, Is.True);
+            AssertMode("Failed");
+            Assert.That(commands.Content, Is.Empty);
+            commands.Checks[0].Completion.CompleteSuccess();
+            var retry = service.Reload();
+            yield return Wait(retry);
+            retry.GetResult();
+            Assert.That(commands.Content.Single().Local, Is.True);
+            AssertMode("Paused");
+        }
+
+        [UnityTest]
+        public IEnumerator Stalled_exit_check_is_stopped_when_service_is_disposed()
+        {
+            config.EnableLocalContentInEditor = true;
+            commands.DelayExitCheck = true;
+            var exit = Exit().Error(_ => { });
+            var dispose = service.OnDispose();
+            yield return Wait(dispose);
+            yield return Wait(exit);
+            dispose.GetResult();
+            Assert.That(commands.Checks[0].Cancelled, Is.True);
+            Assert.That(commands.Content, Is.Empty);
+            Assert.That(config.EnableLocalContentInEditor, Is.True);
+        }
+
+        [Test]
+        public void Assembly_reload_cancels_owned_exit_check_without_restarting_watchers()
+        {
+            config.EnableLocalContentInEditor = true;
+            commands.DelayExitCheck = true;
+            var exit = Exit().Error(_ => { });
+            typeof(CliContentService).GetMethod("PrepareForAssemblyReload", Fields).Invoke(service, null);
+            Assert.That(commands.Checks[0].Cancelled, Is.True);
+            Assert.That(exit.IsCompleted, Is.True);
+            Assert.That(exit.IsFailed, Is.True);
+            Assert.That(config.EnableLocalContentInEditor, Is.True);
+            Assert.That(commands.Content, Is.Empty);
+        }
+
+        [UnityTest]
+        public IEnumerator Exit_check_cancellation_waits_for_server_acknowledgement_before_restarting()
+        {
+            config.EnableLocalContentInEditor = true;
+            yield return Wait(service.Reload());
+            var transport = new BeamWebCommandStopTests.Fixture(transports);
+            commands.ExitCheckWebCommand = transport.Command;
+            var cancelled = false;
+            var exit = Exit(() => cancelled).Error(_ => { });
+            commands.Content[0].Completion.CompleteSuccess();
+            transport.Discover();
+            transport.AllowHeaders.TrySetResult(true);
+            cancelled = true;
+            var deadline = UnityEditor.EditorApplication.timeSinceStartup + 10;
+            while (!transport.StopReceived.Task.IsCompleted && UnityEditor.EditorApplication.timeSinceStartup < deadline)
+            {
+                UnityEditor.EditorApplication.QueuePlayerLoopUpdate();
+                yield return null;
+            }
+            Assert.That(transport.StopReceived.Task.IsCompleted, Is.True);
+            Assert.That(exit.IsCompleted, Is.False);
+            Assert.That(commands.Content.Count, Is.EqualTo(1));
+            transport.ReleaseWorker.TrySetResult(true);
+            transport.AllowAcknowledgement.TrySetResult(true);
+            yield return Wait(exit);
+            Assert.That(exit.IsFailed, Is.True);
+            Assert.That(config.EnableLocalContentInEditor, Is.True);
+            Assert.That(commands.Content.Last().Local, Is.True);
+            AssertMode("Paused");
+        }
+
+        [TestCase(0, false)]
+        [TestCase(30, false)]
+        [TestCase(30, true)]
+        public void Exit_review_keeps_actions_visible_with_long_errors_and_pending_items(int count, bool error)
+        {
+            var type = typeof(CliContentService).Assembly.GetType("Beamable.Editor.UI.ContentWindow.ContentLocalModeExitWindow");
+            var window = (UnityEditor.EditorWindow)ScriptableObject.CreateInstance(type);
+            var oldEvent = Event.current;
+            const BindingFlags statics = BindingFlags.Static | BindingFlags.NonPublic;
+            try
+            {
+                config.EnableLocalContentInEditor = true;
+                window.position = new Rect(0, 0, 560, 340);
+                Set(window, "_service", service);
+                Set(window, "_configuration", config);
+                Set(window, "_scope", "test/realm/global");
+                if (error) Set(window, "_error", new string('x', 4000));
+                for (var i = 0; i < count; i++)
+                {
+                    var id = "currency." + new string('w', 250) + i;
+                    service.EntriesCache[id] = new LocalContentManifestEntry { FullId = id, ChangeKind = (int)ContentChangeKind.IncomingChange };
+                }
+                foreach (var eventType in new[] { EventType.Layout, EventType.Repaint })
+                {
+                    typeof(GUIUtility).GetMethod("BeginContainerFromOwner", statics).Invoke(null, new object[] { window });
+                    try
+                    {
+                        Event.current = new Event { type = eventType };
+                        typeof(GUIUtility).GetMethod("BeginGUI", statics).Invoke(null, new object[] { 1, window.GetInstanceID(), 1 });
+                        type.GetMethod("OnGUI", Fields).Invoke(window, null);
+                        if (eventType == EventType.Layout)
+                            typeof(GUILayoutUtility).GetMethod("LayoutFromContainer", statics).Invoke(null, new object[] { 560f, 340f });
+                        else Assert.That(GUILayoutUtility.GetLastRect().yMax, Is.LessThanOrEqualTo(340), "Exit and cancellation actions must remain visible.");
+                    }
+                    finally { typeof(GUIUtility).GetMethod("EndContainer", statics).Invoke(null, null); }
+                }
+            }
+            finally
+            {
+                Event.current = oldEvent;
+                UnityEngine.Object.DestroyImmediate(window);
+            }
         }
 
         [UnityTest] public IEnumerator NormalToLocalWaitsForBothWatchers() => Switch(false, true);
@@ -252,8 +594,20 @@ namespace Beamable.Editor.Tests
             first.Error(_ => { });
             if (switching) commands.History[0].Completion.CompleteSuccess();
             transport.ReleaseWorker.TrySetResult(true);
+            if (!history)
+            {
+                var stream = (Promise)transport.Command.GetType().GetField("_runPromise", Fields).GetValue(transport.Command);
+                yield return Wait(stream);
+                yield return null;
+                Assert.That(initial.IsCompleted, Is.False, "Stream EOF alone cannot confirm the retired watcher's shutdown.");
+            }
             transport.AllowAcknowledgement.TrySetResult(true);
             yield return Wait(first);
+            if (!history)
+            {
+                yield return Wait(initial);
+                Assert.That(initial.IsFailed, Is.True, "The old reload also receives the shutdown rejection.");
+            }
             Assert.That(first.IsFailed, Is.True);
             AssertMode("Failed");
             Assert.That(commands.Content.Count + commands.History.Count, Is.EqualTo(switching ? 1 : 0));
@@ -360,6 +714,268 @@ namespace Beamable.Editor.Tests
         }
 
         [UnityTest]
+        public IEnumerator SilentContentStartupFailsAndRetryWaitsForShutdown()
+        {
+            double now = 0;
+            service.ContentWatcherClock = () => now;
+            Set(service, "_watcherStopTimeoutMs", 25);
+            commands.DelayInitialContent = true;
+            commands.DelayManifests = true;
+            Exception error = null;
+            var loading = service.Reload().Error(e => error = e);
+            var stalled = commands.Content.Single();
+            now = 31;
+            yield return Wait(loading);
+            Assert.That(error, Is.TypeOf<TimeoutException>());
+            Assert.That(error.Message, Does.Contain("Refresh Content"));
+            Assert.That(service.isReloading, Is.False);
+            Assert.That(stalled.Cancelled, Is.True);
+            AssertMode("Failed");
+
+            // A retry also has a deadline if the retiring command never acknowledges its stop.
+            error = null;
+            var retry = service.Reload().Error(e => error = e);
+            yield return Wait(retry);
+            Assert.That(error, Is.TypeOf<TimeoutException>());
+            Assert.That(commands.Content.Count, Is.EqualTo(1));
+            Assert.That(service.isReloading, Is.False);
+
+            stalled.Completion.CompleteSuccess();
+            commands.DelayInitialContent = false;
+            var recovered = service.Reload();
+            yield return Wait(recovered);
+            recovered.GetResult();
+            Assert.That(commands.Content.Count, Is.EqualTo(2));
+            AssertMode("Enabled");
+
+            var version = service.ManifestChangedCount;
+            stalled.Emit();
+            stalled.ReportProgress(5);
+            commands.Manifests[0].Emit();
+            Assert.That(service.ManifestChangedCount, Is.EqualTo(version));
+            Assert.That(service.LatestProgressUpdate.completed, Is.Zero);
+            Assert.That(service.RemoteManifestsLoaded, Is.False);
+        }
+
+        // Supply the fixture's editor context instead of binding the window to the developer's account.
+        private sealed class StartupWindow : ContentWindow
+        {
+            public override void OnEnable() { }
+            public void BuildContent() => Build();
+        }
+
+        [UnityTest]
+        public IEnumerator FirstContentWindowLoadExposesRetryAfterTimeout() => CheckFirstWindowFailure(true);
+
+        [UnityTest]
+        public IEnumerator FirstContentWindowLoadShowsEarlyWatcherExitAndAllowsRetry() => CheckFirstWindowFailure(false);
+
+        IEnumerator CheckFirstWindowFailure(bool timeout)
+        {
+            double now = 0;
+            service.ContentWatcherClock = () => now;
+            commands.DelayInitialContent = true;
+            var context = new BeamEditorContext();
+            Set(context, "<ServiceScope>k__BackingField", new DependencyBuilder().AddSingleton(service).AddSingleton(config).Build());
+            var window = ScriptableObject.CreateInstance<StartupWindow>();
+            try
+            {
+                window.ActiveContext = context;
+                window.BuildContent();
+                var status = typeof(ContentWindow).GetField("_windowStatus", Fields);
+                Assert.That(status.GetValue(window).ToString(), Is.EqualTo("Building"));
+                var expected = timeout ? CliContentService.ContentStartupTimeoutMessage : "Content watcher ended before its initial content response.";
+                LogAssert.Expect(LogType.Exception, new Regex(Regex.Escape(expected)));
+                if (timeout) now = 31;
+                else commands.Content.Single().Completion.CompleteSuccess();
+                yield return null;
+                yield return null;
+                Assert.That(status.GetValue(window).ToString(), Is.EqualTo("Normal"), "The header contains Refresh and Retry.");
+                AssertMode("Failed");
+                Assert.That(service.ContentWatcherError, Is.EqualTo(expected));
+                if (timeout) commands.Content.Single().Completion.CompleteSuccess();
+                commands.DelayInitialContent = false;
+                var retry = service.ApplyLocalContentMode();
+                yield return Wait(retry);
+                retry.GetResult();
+                AssertMode("Enabled");
+                Assert.That(service.ContentWatcherError, Is.Null);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(window); }
+        }
+
+        [UnityTest]
+        public IEnumerator WatcherSetupFailureShowsReasonAndAllowsRetry()
+        {
+            commands.FailNextContentStart = true;
+            Exception observed = null;
+            yield return Wait(service.Reload().Error(error => observed = error));
+            Assert.That(observed, Is.TypeOf<IOException>());
+            Assert.That(service.ContentWatcherError, Is.EqualTo(observed.Message));
+            AssertMode("Failed");
+            var retry = service.ApplyLocalContentMode();
+            yield return Wait(retry);
+            retry.GetResult();
+            AssertMode("Enabled");
+            Assert.That(service.ContentWatcherError, Is.Null);
+        }
+
+        [UnityTest]
+        public IEnumerator MissingRealmDuringFirstSnapshotShowsReasonAndAllowsRetry()
+        {
+            commands.DelayInitialContent = true;
+            var context = (BeamEditorContext)typeof(CliContentService).GetField("_beamContext", Fields).GetValue(service);
+            var loading = service.Reload();
+            Exception observed = null;
+            loading.Error(error => observed = error);
+            var watcher = commands.Content.Single();
+            context.BeamCli.latestConfig.pid = "missing";
+            watcher.Emit();
+            yield return Wait(loading);
+            Assert.That(observed?.Message, Does.Contain("no active realm"));
+            Assert.That(service.ContentWatcherError, Is.EqualTo(observed.Message));
+            Assert.That(watcher.Cancelled, Is.True);
+            watcher.Completion.CompleteSuccess();
+            context.BeamCli.latestConfig.pid = "realm";
+            commands.DelayInitialContent = false;
+            var retry = service.ApplyLocalContentMode();
+            yield return Wait(retry);
+            retry.GetResult();
+            Assert.That(service.ContentWatcherError, Is.Null);
+            AssertMode("Enabled");
+        }
+
+        [UnityTest]
+        public IEnumerator EarlyExitUsesTheCliErrorReceivedBeforeEof()
+        {
+            commands.DelayInitialContent = true;
+            Exception observed = null;
+            var loading = service.Reload().Error(error => observed = error);
+            var watcher = commands.Content.Single();
+            watcher.ReportError("Manifest download failed");
+            Assert.That(service.ContentWatcherError, Is.Null);
+            watcher.Completion.CompleteSuccess();
+            yield return Wait(loading);
+            Assert.That(observed?.Message, Is.EqualTo("Manifest download failed"));
+            Assert.That(service.ContentWatcherError, Is.EqualTo(observed.Message));
+        }
+
+        [UnityTest]
+        public IEnumerator OnlyAdvancingSyncProgressExtendsContentStartup()
+        {
+            double now = 0;
+            service.ContentWatcherClock = () => now;
+            commands.DelayInitialContent = true;
+            Exception error = null;
+            var loading = service.Reload().Error(e => error = e);
+            var watcher = commands.Content.Single();
+            now = 25;
+            watcher.ReportProgress(1);
+            now = 45;
+            yield return null;
+            Assert.That(service.isReloading, Is.True);
+            Assert.That(watcher.Cancelled, Is.False);
+            watcher.ReportProgress(1);
+            now = 56;
+            yield return Wait(loading);
+            Assert.That(error, Is.TypeOf<TimeoutException>());
+            Assert.That(watcher.Cancelled, Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator HealthyWatcherCanStayQuietAfterItsFirstSnapshot()
+        {
+            double now = 0;
+            service.ContentWatcherClock = () => now;
+            commands.DelayInitialContent = true;
+            var loading = service.Reload();
+            var watcher = commands.Content.Single();
+            now = 25;
+            watcher.ReportProgress(1);
+            now = 45;
+            yield return null;
+            watcher.Emit();
+            yield return Wait(loading);
+            loading.GetResult();
+            now = 100;
+            yield return null;
+            Assert.That(watcher.Cancelled, Is.False);
+            AssertMode("Enabled");
+        }
+
+        [UnityTest]
+        public IEnumerator ReplacingAWatcherNearItsDeadlineWaitsForShutdown()
+        {
+            double now = 0;
+            service.ContentWatcherClock = () => now;
+            commands.DelayInitialContent = true;
+            var firstLoad = service.Reload();
+            var first = commands.Content.Single();
+            now = 29;
+            commands.DelayInitialContent = false;
+            var replacement = service.Reload();
+            Assert.That(first.Cancelled, Is.True);
+
+            now = 31;
+            yield return null;
+            yield return null;
+            AssertMode("Switching");
+            Assert.That(firstLoad.IsCompleted, Is.False);
+            Assert.That(replacement.IsCompleted, Is.False);
+            Assert.That(commands.Content.Count, Is.EqualTo(1));
+
+            first.Completion.CompleteSuccess();
+            yield return Wait(firstLoad);
+            yield return Wait(replacement);
+            firstLoad.GetResult();
+            replacement.GetResult();
+            Assert.That(service.ContentWatcherError, Is.Null);
+            Assert.That(commands.Content.Count, Is.EqualTo(2));
+            AssertMode("Enabled");
+        }
+
+        [UnityTest]
+        public IEnumerator ShutdownTimeoutExposesRetryAndReleasesTheRetiredReload()
+        {
+            double now = 0;
+            service.ContentWatcherClock = () => now;
+            Set(service, "_watcherStopTimeoutMs", 25);
+            commands.DelayInitialContent = true;
+            Exception firstError = null;
+            var firstLoad = service.Reload().Error(error => firstError = error);
+            var first = commands.Content.Single();
+
+            config.EnableLocalContentInEditor = true;
+            Exception stopError = null;
+            var toggle = ApplyMode().Error(error => stopError = error);
+            yield return Wait(toggle);
+            yield return Wait(firstLoad);
+            Assert.That(stopError, Is.TypeOf<TimeoutException>());
+            Assert.That(stopError.Message, Does.Contain("shutdown"));
+            Assert.That(firstError, Is.SameAs(stopError));
+            Assert.That(service.ContentWatcherError, Is.EqualTo(stopError.Message));
+            Assert.That(service.isReloading, Is.False);
+            AssertMode("Failed");
+
+            // A late acknowledgement permits a retry. It cannot complete the failed mode transition by itself.
+            first.Completion.CompleteSuccess();
+            now = 90;
+            yield return null;
+            Assert.That(commands.Content.Count, Is.EqualTo(1));
+            Assert.That(service.ContentWatcherError, Is.EqualTo(stopError.Message));
+            AssertMode("Failed");
+
+            commands.DelayInitialContent = false;
+            var retry = ApplyMode();
+            yield return Wait(retry);
+            retry.GetResult();
+            Assert.That(commands.Content.Count, Is.EqualTo(2));
+            Assert.That(commands.Content[1].Local, Is.True);
+            Assert.That(service.ContentWatcherError, Is.Null);
+            AssertMode("Paused");
+        }
+
+        [UnityTest]
         public IEnumerator SwitchingCanStopAWatcherStillWaitingForInitialContent()
         {
             commands.DelayInitialContent = true;
@@ -424,6 +1040,51 @@ namespace Beamable.Editor.Tests
                 Assert.That(dispatcher.IsForceStopped, Is.True);
             }
             finally { dispatcher.OnDispose(); command.Completion.CompleteSuccess(); }
+        }
+
+        [UnityTest]
+        public IEnumerator DisposalDrainsStalledContentBeforeStoppingTheDispatcher()
+        {
+            double now = 0;
+            service.ContentWatcherClock = () => now;
+            Set(service, "_watcherStopTimeoutMs", 25);
+            commands.DelayInitialContent = true;
+            var reload = service.Reload();
+            var dispatcher = new BeamableDispatcher();
+            var scope = new DependencyBuilder().AddSingleton(service).AddSingleton(dispatcher).Build();
+            scope.GetService<CliContentService>();
+            scope.GetService<BeamableDispatcher>();
+            var command = commands.Content.Single();
+            try
+            {
+                var dispose = scope.Dispose();
+                now = 60;
+                var until = UnityEditor.EditorApplication.timeSinceStartup + 0.1;
+                while (UnityEditor.EditorApplication.timeSinceStartup < until) yield return null;
+                Assert.That(command.Cancelled, Is.True);
+                Assert.That(dispose.IsCompleted, Is.False);
+                Assert.That(dispatcher.IsForceStopped, Is.False);
+                dispatcher.Schedule(() => command.Completion.CompleteSuccess());
+                yield return Wait(dispose);
+                dispose.GetResult();
+                reload.GetResult();
+                Assert.That(dispatcher.IsForceStopped, Is.True);
+            }
+            finally { dispatcher.OnDispose(); command.Completion.CompleteSuccess(); }
+        }
+
+        [UnityTest]
+        public IEnumerator AssemblyReloadDoesNotReportAContentSnapshotBeforeTheCommandStops()
+        {
+            commands.DelayInitialContent = true;
+            var reload = service.Reload();
+            var watcher = commands.Content.Single();
+            service.PrepareForAssemblyReload();
+            Assert.That(watcher.Cancelled, Is.True);
+            Assert.That(reload.IsCompleted, Is.False);
+            watcher.Completion.CompleteSuccess();
+            yield return Wait(reload);
+            reload.GetResult();
         }
 
         [UnityTest]
@@ -518,6 +1179,7 @@ namespace Beamable.Editor.Tests
             foreach (var command in commands.Content.ToArray()) command.Completion.CompleteSuccess();
             foreach (var command in commands.History.ToArray()) command.Completion.CompleteSuccess();
             foreach (var command in commands.Manifests.ToArray()) command.Completion.CompleteSuccess();
+            foreach (var command in commands.Checks.ToArray()) command.Completion.CompleteSuccess();
             var cleanup = BeamWebCommandStopTests.CleanupFixtures(transports);
             try
             {
@@ -532,11 +1194,19 @@ namespace Beamable.Editor.Tests
         }
         static void Set(object target, string name, object value) => target.GetType().GetField(name, Fields).SetValue(target, value);
 
-        class Commands : BeamCommands
+        internal class Commands : BeamCommands
         {
             public readonly List<HeldCommand> Content = new();
             public readonly List<HeldCommand> History = new();
             public readonly List<HeldCommand> Manifests = new();
+            public readonly List<HeldCommand> Checks = new();
+            public readonly List<LocalContentManifest> WatchedManifests = new();
+            public LocalContentManifestEntry[] ExitEntries = Array.Empty<LocalContentManifestEntry>();
+            public string ExitManifestId = "global";
+            public bool DelayExitCheck;
+            public bool AcknowledgeActivation = true;
+            public bool CompleteExitCheckOnCancel = true;
+            public BeamCli.BeamWebCommand ExitCheckWebCommand;
             public bool DelayInitialContent;
             public bool DelayManifests;
             public bool FailNextContentStart;
@@ -549,6 +1219,30 @@ namespace Beamable.Editor.Tests
                     FailNextContentStart = false;
                     throw new IOException("Controlled watcher startup failure");
                 }
+                if (args.guardLocalModeExit)
+                {
+                    Assert.That(args.watch && args.noAutoSync, Is.True);
+                    if (ExitCheckWebCommand != null)
+                    {
+                        var web = ExitCheckWebCommand;
+                        ExitCheckWebCommand = null;
+                        return new ContentPsWrapper { Command = web };
+                    }
+                    // Mirrors the CLI producer CreateFullRebuildEvent: one scoped manifest, even when empty.
+                    var check = new HeldCommand(args.noAutoSync, new BeamContentPsCommandEvent
+                    {
+                        EventType = 0,
+                        LocalModeExitActivated = AcknowledgeActivation,
+                        RelevantManifestsAgainstLatest = WatchedManifests.Count > 0 ? WatchedManifests : new List<LocalContentManifest>
+                        {
+                            new LocalContentManifest { OwnerCid = "test", OwnerPid = "realm", ManifestId = ExitManifestId, Entries = ExitEntries }
+                        },
+                        ToRemoveLocalEntries = new List<LocalContentManifest>()
+                    }) { DelayInitial = DelayExitCheck || DelayInitialContent };
+                    if (CompleteExitCheckOnCancel) check.OnCancel = () => check.Completion.CompleteSuccess();
+                    Checks.Add(check);
+                    return new ContentPsWrapper { Command = check };
+                }
                 if (FirstWebCommand != null)
                 {
                     var web = FirstWebCommand;
@@ -557,7 +1251,7 @@ namespace Beamable.Editor.Tests
                 }
                 var command = new HeldCommand(args.noAutoSync, new BeamContentPsCommandEvent
                 {
-                    EventType = 0, RelevantManifestsAgainstLatest = new List<LocalContentManifest>(),
+                    EventType = 0, RelevantManifestsAgainstLatest = WatchedManifests,
                     ToRemoveLocalEntries = new List<LocalContentManifest>()
                 });
                 command.DelayInitial = DelayInitialContent;
@@ -585,7 +1279,7 @@ namespace Beamable.Editor.Tests
                 return new ContentListManifestsWrapper { Command = command };
             }
         }
-        class HeldCommand : IBeamCommand
+        internal class HeldCommand : IBeamCommand
         {
             public readonly Promise Completion = new();
             public readonly bool Local;
@@ -600,10 +1294,14 @@ namespace Beamable.Editor.Tests
             public void SetCommand(string command) { }
             public Promise Run() { if (!DelayInitial) { Emit(); if (finite) Completion.CompleteSuccess(); } return Completion; }
             public void Emit() => emit();
-            public void ReportError() => error?.Invoke(new ReportDataPoint<ErrorOutput> { data = new ErrorOutput { message = "namespace request failed" } });
+            Action<BeamContentPsProgressMessage> progress;
+            public void ReportProgress(int completed) => progress?.Invoke(new BeamContentPsProgressMessage { completed = completed, total = 10 });
+            public void ReportError(string message = "namespace request failed") => error?.Invoke(new ReportDataPoint<ErrorOutput> { data = new ErrorOutput { message = message } });
             public void Cancel() { Cancelled = true; OnCancel?.Invoke(); }
             public IBeamCommand On<T>(string type, Action<ReportDataPoint<T>> callback)
             {
+                if (type == "progressStream" && callback is Action<ReportDataPoint<BeamContentPsProgressMessage>> onProgress)
+                    progress = update => onProgress(new ReportDataPoint<BeamContentPsProgressMessage> { data = update });
                 if (data is T value) emit += () => callback(new ReportDataPoint<T> { data = value });
                 return this;
             }

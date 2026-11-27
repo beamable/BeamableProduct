@@ -34,8 +34,8 @@ namespace Beamable.Editor.UI.ContentWindow
 			: "Auto-sync is enabled; reconciliation may still be pending.";
 
 		public static string GetStatusLabel(LocalContentManifestEntry entry, bool isInvalid = false, bool schemaMismatch = false, bool isRenamed = false) =>
-			isInvalid ? "Validation Error" : schemaMismatch && GetChangeKind(entry) != ContentChangeKind.Conflict ? "Schema mismatch" :
-			isRenamed && !schemaMismatch && GetChangeKind(entry) == ContentChangeKind.LocalEdit ? "Renamed" : GetChangeKind(entry) switch
+			isInvalid ? "Validation Error" :
+			isRenamed && GetChangeKind(entry) == ContentChangeKind.LocalEdit ? "Renamed" : GetChangeKind(entry) switch
 		{
 			ContentChangeKind.UpToDate => "Up to date",
 			ContentChangeKind.LocalEdit when entry.StatusEnum == ContentStatus.Deleted => "Deleted",
@@ -54,7 +54,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			if (affectedCount == 0 || difference == SchemaDifference.None) return string.Empty;
 			var message = multiSelection
 				? $"Schema mismatch\n{affectedCount} selected item(s) were loaded with a different local C# content schema. Inspect each item for details."
-				: "Schema mismatch\nThe content JSON did not match the local C# content type when loaded.";
+				: ContentSchemaNotice.Title;
 			if (!multiSelection)
 			{
 				if ((difference & SchemaDifference.UnknownFieldsInJson) != 0)
@@ -62,8 +62,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				if ((difference & SchemaDifference.MissingFieldsInJson) != 0)
 					message += "\nMissingFieldsInJson: The local C# type defines fields missing from the JSON.";
 			}
-			return message + "\nUpdate the C# content type to match the JSON, or intentionally publish the local schema. " +
-				"The loader saves fields supported by the local type; publishing can remove unrecognized fields from the realm.";
+			return message + "\n" + ContentSchemaNotice.Description;
 		}
 
 		public static string GetStatusDescription(LocalContentManifestEntry entry, bool localMode) => GetChangeKind(entry) switch
@@ -151,7 +150,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			if (isInvalid || isConflicted) messages.Add("Publishing is blocked.");
 			if (renamedFrom != null) messages.Add($"Renamed from \"{renamedFrom}\".");
 			messages.Add(GetStatusDescription(entry, ContentConfiguration.Instance.EnableLocalContentInEditor));
-			return new GUIContent(string.Empty, isInvalid || (schemaDifference != SchemaDifference.None && !isConflicted)
+			return new GUIContent(string.Empty, isInvalid
 				? BeamGUI.iconStatusInvalid : GetStatusIcon(entry, renamedFrom != null), string.Join("\n", messages));
 		}
 	}
