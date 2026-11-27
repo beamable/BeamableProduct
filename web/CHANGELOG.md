@@ -2,6 +2,8 @@
 
 ### Breaking
 
+- `campaignsGet` takes `segment` between `realm` and `skip`: a caller passing `skip`, `sort`, `tag` or
+  `gamertag` by position must pass `undefined` for `segment` first, or its value is read as the segment.
 - `account.confirmPasswordUpdate` requires `email`, the address the reset code was sent to
   (`ConfirmPasswordUpdateParams`). The backend will soon reject password reset confirmations without it.
 - **Offers are Beamable's, not a provider's.** `CampaignOfferService` (`beam.campaignOffer`) becomes
