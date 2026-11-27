@@ -8,6 +8,10 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         /// <summary>The bundle name, optionally namespaced as @<namespace>/<bundle-name></summary>
         public string bundleName;
+        /// <summary>How many entries to show</summary>
+        public int limit;
+        /// <summary>The zone to act on (its zone id). Defaults to the workspace's zone</summary>
+        public string targetZone;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -15,6 +19,16 @@ namespace Beamable.Editor.BeamCli.Commands
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
             // Add the bundleName value to the list of args.
             genBeamCommandArgs.Add(this.bundleName.ToString());
+            // If the limit value was not default, then add it to the list of args.
+            if ((this.limit != default(int)))
+            {
+                genBeamCommandArgs.Add(("--limit=" + this.limit));
+            }
+            // If the targetZone value was not default, then add it to the list of args.
+            if ((this.targetZone != default(string)))
+            {
+                genBeamCommandArgs.Add(("--target-zone=" + this.targetZone));
+            }
             string genBeamCommandStr = "";
             // Join all the args with spaces
             genBeamCommandStr = string.Join(" ", genBeamCommandArgs);
@@ -46,7 +60,7 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public partial class BundlesHistoryWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
     {
-        public virtual BundlesHistoryWrapper OnStreamBundleHistoryCommandOutput(System.Action<ReportDataPoint<BeamBundleHistoryCommandOutput>> cb)
+        public virtual BundlesHistoryWrapper OnStreamInstallationHistoryCommandOutput(System.Action<ReportDataPoint<BeamInstallationHistoryCommandOutput>> cb)
         {
             this.Command.On("stream", cb);
             return this;

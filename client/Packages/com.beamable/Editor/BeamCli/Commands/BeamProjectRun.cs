@@ -16,6 +16,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public string[] withoutGroup;
         /// <summary>A set of BeamServiceGroup tags that will include the associated services</summary>
         public string[] withGroup;
+        /// <summary>Authored bundles (the <name> of a <name>.beam.bundle.json file) whose services and portal extensions will be run, with those of the hard dependencies authored in this workspace</summary>
+        public string[] withBundle;
         /// <summary>With this flag, we restart any running services. Without it, we skip running services</summary>
         public bool force;
         /// <summary>With this flag, the service will run the background after it has reached basic startup</summary>
@@ -64,6 +66,15 @@ namespace Beamable.Editor.BeamCli.Commands
                 {
                     // The parameter allows multiple values
                     genBeamCommandArgs.Add(("--with-group=" + this.withGroup[i]));
+                }
+            }
+            // If the withBundle value was not default, then add it to the list of args.
+            if ((this.withBundle != default(string[])))
+            {
+                for (int i = 0; (i < this.withBundle.Length); i = (i + 1))
+                {
+                    // The parameter allows multiple values
+                    genBeamCommandArgs.Add(("--with-bundle=" + this.withBundle[i]));
                 }
             }
             // If the force value was not default, then add it to the list of args.

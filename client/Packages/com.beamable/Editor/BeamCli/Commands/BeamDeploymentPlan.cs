@@ -29,6 +29,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public bool merge;
         /// <summary>Create a Release that completely overrides the existing remote services. Existing deployed services that are not present locally will be removed (default)</summary>
         public bool replace;
+        /// <summary>An overridden bundle component to give back to its bundle on this site (repeatable). The bundle's build runs there again</summary>
+        public string[] endOverride;
         /// <summary>Which manifest to operate against: 'realm' (default) builds and plans the realm manifest (cid.pid) and ignores zone-scoped services; 'zone' ignores all realm-scoped services and operates against the zone manifest (cid.zid)</summary>
         public string scope;
         /// <summary>Specify an output path where a new docker-compose project will be created. The compose file can be used to run services locally. (Note, existing files in this folder will be overwritten)</summary>
@@ -100,6 +102,15 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.replace != default(bool)))
             {
                 genBeamCommandArgs.Add(("--replace=" + this.replace));
+            }
+            // If the endOverride value was not default, then add it to the list of args.
+            if ((this.endOverride != default(string[])))
+            {
+                for (int i = 0; (i < this.endOverride.Length); i = (i + 1))
+                {
+                    // The parameter allows multiple values
+                    genBeamCommandArgs.Add(("--end-override=" + this.endOverride[i]));
+                }
             }
             // If the scope value was not default, then add it to the list of args.
             if ((this.scope != default(string)))

@@ -8,7 +8,7 @@ namespace Beamable.Editor.BeamCli.Commands
     public partial class BeamBundleDiffResult
     {
         public bool isNoOp;
-        public string publishedChecksum;
+        public long publishedVersion;
         public System.Collections.Generic.List<BeamBundleComponentChange> changes;
     }
 }

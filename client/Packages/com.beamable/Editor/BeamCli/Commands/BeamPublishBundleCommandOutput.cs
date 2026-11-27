@@ -9,7 +9,9 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         public string name;
         public string checksum;
-        public bool isNew;
+        public bool isNewVersion;
+        public long version;
+        public string[] warnings;
         public BeamBundleDiffResult diff;
     }
 }

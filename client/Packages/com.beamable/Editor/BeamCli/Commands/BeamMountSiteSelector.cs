@@ -9,5 +9,7 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         public string selector;
         public string type;
+        public string presentation;
+        public string description;
     }
 }

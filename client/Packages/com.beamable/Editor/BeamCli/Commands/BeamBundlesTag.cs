@@ -6,19 +6,23 @@ namespace Beamable.Editor.BeamCli.Commands
     
     public partial class BundlesTagArgs : Beamable.Common.BeamCli.IBeamCommandArgs
     {
-        /// <summary>The bundle checksum reference, e.g. <bundle-name>@sha256:<checksum> (optionally namespaced as @<namespace>/<bundle-name>@sha256:<checksum>)</summary>
-        public string bundleRef;
-        /// <summary>The tag to advance, e.g. stable</summary>
+        /// <summary>The bundle name, optionally namespaced as @<namespace>/<bundle-name></summary>
+        public string bundleName;
+        /// <summary>The tag to move, e.g. stable or latest</summary>
         public string tag;
+        /// <summary>The release version the tag points at</summary>
+        public long version;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
-            // Add the bundleRef value to the list of args.
-            genBeamCommandArgs.Add(this.bundleRef.ToString());
+            // Add the bundleName value to the list of args.
+            genBeamCommandArgs.Add(this.bundleName.ToString());
             // Add the tag value to the list of args.
             genBeamCommandArgs.Add(this.tag.ToString());
+            // Add the version value to the list of args.
+            genBeamCommandArgs.Add(this.version.ToString());
             string genBeamCommandStr = "";
             // Join all the args with spaces
             genBeamCommandStr = string.Join(" ", genBeamCommandArgs);

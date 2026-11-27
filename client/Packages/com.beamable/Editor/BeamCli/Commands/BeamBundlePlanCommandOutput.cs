@@ -9,7 +9,7 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         public string name;
         public bool isNoOp;
-        public string publishedChecksum;
+        public long publishedVersion;
         public System.Collections.Generic.List<BeamBundleComponentChange> changes;
         public string planPath;
     }

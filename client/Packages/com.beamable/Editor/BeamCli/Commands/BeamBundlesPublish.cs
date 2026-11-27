@@ -37,10 +37,12 @@ namespace Beamable.Editor.BeamCli.Commands
         public string fromPlan;
         /// <summary>Use the most recent plan generated for this bundle from the `bundles plan` command</summary>
         public bool fromLatestPlan;
-        /// <summary>An additional tag to advance to the published checksum</summary>
+        /// <summary>A tag to point at the new version, besides latest</summary>
         public string tag;
-        /// <summary>Widen the published checksum's visibility tier (each tier is a superset of the previous, not a list of realms): 'realm' = only this realm; 'org' = every realm in your customer; 'public' = every realm in every customer. A literal <cid>.<pid> / <cid> / * is also accepted</summary>
-        public string scope;
+        /// <summary>The oldest version a component of this release is compatible with, as <component>=<version>, so auto-update can apply it. Repeat for each component. A changed component without one counts as breaking</summary>
+        public string[] compatibleSince;
+        /// <summary>This release changes stored data in a way a rollback can't undo. Auto-update never applies it</summary>
+        public bool irreversibleDataChange;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -127,10 +129,19 @@ namespace Beamable.Editor.BeamCli.Commands
             {
                 genBeamCommandArgs.Add(("--tag=" + this.tag));
             }
-            // If the scope value was not default, then add it to the list of args.
-            if ((this.scope != default(string)))
+            // If the compatibleSince value was not default, then add it to the list of args.
+            if ((this.compatibleSince != default(string[])))
             {
-                genBeamCommandArgs.Add(("--scope=" + this.scope));
+                for (int i = 0; (i < this.compatibleSince.Length); i = (i + 1))
+                {
+                    // The parameter allows multiple values
+                    genBeamCommandArgs.Add(("--compatible-since=" + this.compatibleSince[i]));
+                }
+            }
+            // If the irreversibleDataChange value was not default, then add it to the list of args.
+            if ((this.irreversibleDataChange != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--irreversible-data-change=" + this.irreversibleDataChange));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces
