@@ -14,5 +14,7 @@ export enum SegmentationOperation {
   ExcludeRemove = "ExcludeRemove",
   Release = "Release",
   ZoneStatSet = "ZoneStatSet",
-  ZoneStatRemove = "ZoneStatRemove"
+  ZoneStatRemove = "ZoneStatRemove",
+  PropertyTypeSet = "PropertyTypeSet",
+  PropertyTypeRemove = "PropertyTypeRemove"
 }

@@ -6,6 +6,7 @@
 import type { Rule } from './Rule';
 import type { SegmentCount } from './SegmentCount';
 import type { SegmentIconView } from './SegmentIconView';
+import type { SegmentLastSync } from './SegmentLastSync';
 import type { SegmentOverrideCounts } from './SegmentOverrideCounts';
 import type { SegmentSync } from './SegmentSync';
 import type { SegmentState } from './enums/SegmentState';
@@ -29,6 +30,7 @@ export type SegmentResponse = {
   createdBy?: string | null; 
   dependents?: string[] | null; 
   icon?: SegmentIconView; 
+  lastSync?: SegmentLastSync; 
   managedBy?: string | null; 
   overrides?: Record<string, SegmentOverrideCounts> | null; 
   realms?: string[] | null; 

@@ -4,9 +4,11 @@
  */
 
 import type { SegmentEntered } from './SegmentEntered';
+import type { MembershipSource } from './enums/MembershipSource';
 
 export type SegmentMember = { 
   accountId: bigint | string; 
   entered?: SegmentEntered; 
   playerId?: bigint | string | null; 
+  source?: MembershipSource; 
 };

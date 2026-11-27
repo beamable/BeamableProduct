@@ -16646,6 +16646,122 @@
           "members": [
             {
               "kind": "field",
+              "name": "withoutSearch",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "attribute": "without-search",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "searchField",
+              "type": {
+                "text": "HTMLDivElement | undefined"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "searchInput",
+              "type": {
+                "text": "HTMLInputElement | undefined"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "emptyLine",
+              "type": {
+                "text": "HTMLDivElement | undefined"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "wa",
+              "type": {
+                "text": "any"
+              },
+              "privacy": "private",
+              "readonly": true
+            },
+            {
+              "kind": "method",
+              "name": "options",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "Option[]"
+                }
+              }
+            },
+            {
+              "kind": "field",
+              "name": "searchable",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "private",
+              "readonly": true
+            },
+            {
+              "kind": "method",
+              "name": "openSearch",
+              "privacy": "private"
+            },
+            {
+              "kind": "method",
+              "name": "resetSearch",
+              "privacy": "private"
+            },
+            {
+              "kind": "method",
+              "name": "applySearch",
+              "privacy": "private"
+            },
+            {
+              "kind": "method",
+              "name": "moveTo",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "option",
+                  "type": {
+                    "text": "Option"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "handleSearchKey",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "KeyboardEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "pick",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "option",
+                  "type": {
+                    "text": "Option"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "field",
               "name": "css",
               "type": {
                 "text": "CSSResultGroup | undefined"
@@ -17766,19 +17882,13 @@
               "name": "input",
               "type": {
                 "text": "InputEvent"
-              },
-              "description": "Emitted when the control receives input.",
-              "reactName": "onInput",
-              "eventName": "InputEvent"
+              }
             },
             {
               "name": "change",
               "type": {
                 "text": "Event"
-              },
-              "description": "Emitted when the control's value changes.",
-              "reactName": "onChange",
-              "eventName": "ChangeEvent"
+              }
             },
             {
               "description": "Emitted when the control gains focus.",
@@ -17830,6 +17940,15 @@
             }
           ],
           "attributes": [
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Hides the search field whatever the number of options.",
+              "name": "without-search",
+              "default": "false",
+              "fieldName": "withoutSearch"
+            },
             {
               "name": "name",
               "type": {
@@ -18040,7 +18159,7 @@
             "name": "WebAwesomeFormAssociatedElement",
             "module": "/src/internal/webawesome-form-associated-element.js"
           },
-          "summary": "Selects allow you to choose items from a menu of predefined options.",
+          "summary": "Web Awesome's select, with a search field in the dropdown from 8 options.",
           "jsDoc": "/**\n * @summary Selects allow you to choose items from a menu of predefined options.\n * @documentation https://webawesome.com/docs/components/select\n * @status stable\n * @since 2.0\n *\n * @dependency wa-icon\n * @dependency wa-popup\n * @dependency wa-tag\n * @dependency wa-option\n *\n * @slot - The listbox options. Must be `<wa-option>` elements. You can use `<wa-divider>` to group items visually.\n * @slot label - The input's label. Alternatively, you can use the `label` attribute.\n * @slot start - An element, such as `<wa-icon>`, placed at the start of the combobox.\n * @slot end - An element, such as `<wa-icon>`, placed at the end of the combobox.\n * @slot clear-icon - An icon to use in lieu of the default clear icon.\n * @slot expand-icon - The icon to show when the control is expanded and collapsed. Rotates on open and close.\n * @slot hint - Text that describes how to use the input. Alternatively, you can use the `hint` attribute.\n *\n * @event change - Emitted when the control's value changes.\n * @event input - Emitted when the control receives input.\n * @event focus - Emitted when the control gains focus.\n * @event blur - Emitted when the control loses focus.\n * @event wa-clear - Emitted when the control's value is cleared.\n * @event wa-show - Emitted when the select's menu opens.\n * @event wa-after-show - Emitted after the select's menu opens and all animations are complete.\n * @event wa-hide - Emitted when the select's menu closes.\n * @event wa-after-hide - Emitted after the select's menu closes and all animations are complete.\n * @event wa-invalid - Emitted when the form control has been checked for validity and its constraints aren't satisfied.\n *\n * @csspart form-control - The form control that wraps the label, input, and hint.\n * @csspart form-control-label - The label's wrapper.\n * @csspart form-control-input - The select's wrapper.\n * @csspart hint - The hint's wrapper.\n * @csspart combobox - The container the wraps the start, end, value, clear icon, and expand button.\n * @csspart start - The container that wraps the `start` slot.\n * @csspart end - The container that wraps the `end` slot.\n * @csspart display-input - The element that displays the selected option's label, an `<input>` element.\n * @csspart listbox - The listbox container where options are slotted.\n * @csspart tags - The container that houses option tags when `multiselect` is used.\n * @csspart tag - The individual tags that represent each multiselect option.\n * @csspart tag__content - The tag's content part.\n * @csspart tag__remove-button - The tag's remove button.\n * @csspart tag__remove-button__base - The tag's remove button base part.\n * @csspart clear-button - The clear button.\n * @csspart expand-icon - The container that wraps the expand icon.\n *\n * @cssproperty [--show-duration=100ms] - The duration of the show animation.\n * @cssproperty [--hide-duration=100ms] - The duration of the hide animation.\n * @cssproperty [--tag-max-size=10ch] - When using `multiple`, the max size of tags before their content is truncated.\n *\n * @cssstate blank - The select is empty.\n */",
           "status": "stable",
           "since": "2.0",
@@ -32529,6 +32648,79 @@
     },
     {
       "kind": "javascript-module",
+      "path": "src/beam-components/beam-select.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "SEARCH_MIN_OPTIONS",
+          "type": {
+            "text": "number"
+          },
+          "default": "8",
+          "description": "The options from which the search field shows."
+        },
+        {
+          "kind": "function",
+          "name": "filterOptions",
+          "return": {
+            "type": {
+              "text": "Option[]"
+            }
+          },
+          "parameters": [
+            {
+              "name": "options",
+              "type": {
+                "text": "Option[]"
+              }
+            },
+            {
+              "name": "query",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "description": "Hides the options whose label doesn't contain the query, ignoring case; returns the ones left."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SEARCH_MIN_OPTIONS",
+          "declaration": {
+            "name": "SEARCH_MIN_OPTIONS",
+            "module": "src/beam-components/beam-select.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "filterOptions",
+          "declaration": {
+            "name": "filterOptions",
+            "module": "src/beam-components/beam-select.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "BeamSelect",
+          "declaration": {
+            "name": "BeamSelect",
+            "module": "src/beam-components/beam-select.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "beam-select",
+          "declaration": {
+            "name": "BeamSelect",
+            "module": "src/beam-components/beam-select.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
       "path": "src/beam-components/beam-change-bar.ts",
       "declarations": [
         {
@@ -33237,7 +33429,7 @@
               "type": {
                 "text": "'positive' | 'negative' | 'neutral'"
               },
-              "description": "Coloring for the change text. `positive` → success green,\r\n`negative` → error red, `neutral` → muted gray. Defaults to\r\n`neutral`.",
+              "description": "Coloring for the change text. `positive` → success green,\n`negative` → error red, `neutral` → muted gray. Defaults to\n`neutral`.",
               "default": "'neutral'",
               "attribute": "tone"
             },
@@ -33247,9 +33439,20 @@
               "type": {
                 "text": "string"
               },
-              "description": "Shortcut for the `icon` slot — set this to a Font Awesome name\r\n(e.g. `\"bolt\"`, `\"file-lines\"`) and the card renders a softly-tinted\r\n`<beam-icon>` for you. Slotted content always wins.",
+              "description": "Shortcut for the `icon` slot — set this to a Font Awesome name\n(e.g. `\"bolt\"`, `\"file-lines\"`) and the card renders a softly-tinted\n`<beam-icon>` for you. Slotted content always wins.",
               "default": "''",
               "attribute": "icon"
+            },
+            {
+              "kind": "field",
+              "name": "loading",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "The value is still being computed: a pulsing skeleton replaces it and the change.",
+              "default": "false",
+              "attribute": "loading",
+              "reflects": true
             }
           ],
           "attributes": [
@@ -33294,7 +33497,7 @@
               "type": {
                 "text": "'positive' | 'negative' | 'neutral'"
               },
-              "description": "Coloring for the change text. `positive` → success green,\r\n`negative` → error red, `neutral` → muted gray. Defaults to\r\n`neutral`.",
+              "description": "Coloring for the change text. `positive` → success green,\n`negative` → error red, `neutral` → muted gray. Defaults to\n`neutral`.",
               "default": "'neutral'",
               "fieldName": "tone"
             },
@@ -33303,9 +33506,18 @@
               "type": {
                 "text": "string"
               },
-              "description": "Shortcut for the `icon` slot — set this to a Font Awesome name\r\n(e.g. `\"bolt\"`, `\"file-lines\"`) and the card renders a softly-tinted\r\n`<beam-icon>` for you. Slotted content always wins.",
+              "description": "Shortcut for the `icon` slot — set this to a Font Awesome name\n(e.g. `\"bolt\"`, `\"file-lines\"`) and the card renders a softly-tinted\n`<beam-icon>` for you. Slotted content always wins.",
               "default": "''",
               "fieldName": "icon"
+            },
+            {
+              "name": "loading",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "The value is still being computed: a pulsing skeleton replaces it and the change.",
+              "default": "false",
+              "fieldName": "loading"
             }
           ],
           "superclass": {
@@ -33314,7 +33526,7 @@
           },
           "tagName": "beam-kpi-card",
           "customElement": true,
-          "summary": "Compact card showing a single key performance indicator — a\r\nbig value, a short label, an optional subtitle, an icon in the top-left,\r\nand a delta indicator in the top-right."
+          "summary": "Compact card showing a single key performance indicator — a\nbig value, a short label, an optional subtitle, an icon in the top-left,\nand a delta indicator in the top-right."
         }
       ],
       "exports": [
@@ -33742,7 +33954,7 @@
           },
           "tagName": "beam-card-tree",
           "customElement": true,
-          "summary": "Always-expanded tree of rows joined by connector lines — for\nbrowsing a hierarchy where every node is something you open (realms, zones,\ngames)."
+          "summary": "Always-expanded tree of rows joined by connector lines — for\r\nbrowsing a hierarchy where every node is something you open (realms, zones,\r\ngames)."
         },
         {
           "kind": "class",
@@ -33994,7 +34206,7 @@
           },
           "tagName": "beam-card-tree-item",
           "customElement": true,
-          "summary": "A single row inside `beam-card-tree`. Nest items to build the\nhierarchy."
+          "summary": "A single row inside `beam-card-tree`. Nest items to build the\r\nhierarchy."
         }
       ],
       "exports": [
@@ -34319,7 +34531,7 @@
               "type": {
                 "text": "string"
               },
-              "description": "The selected value: `YYYY-MM-DDTHH:mm`, or `YYYY-MM-DD` when `without-time` is\r\nset. Empty string means nothing selected. Same format as a native\r\n`datetime-local` / `date` input, so this is a drop-in replacement for one.",
+              "description": "The selected value: `YYYY-MM-DDTHH:mm`, or `YYYY-MM-DD` when `without-time` is\nset. Empty string means nothing selected. Same format as a native\n`datetime-local` / `date` input, so this is a drop-in replacement for one.",
               "default": "''",
               "attribute": "value"
             },
@@ -34356,12 +34568,62 @@
             },
             {
               "kind": "field",
+              "name": "min",
+              "type": {
+                "text": "string"
+              },
+              "description": "First day that can be picked (`YYYY-MM-DD`; a time is ignored). Earlier days are disabled.",
+              "default": "''",
+              "attribute": "min"
+            },
+            {
+              "kind": "field",
+              "name": "max",
+              "type": {
+                "text": "string"
+              },
+              "description": "Last day that can be picked (`YYYY-MM-DD`; a time is ignored). Later days are disabled.",
+              "default": "''",
+              "attribute": "max"
+            },
+            {
+              "kind": "field",
+              "name": "rangeStart",
+              "type": {
+                "text": "string"
+              },
+              "description": "The start of a range this picker ends: highlighted, with the days up to the value shaded.",
+              "default": "''",
+              "attribute": "range-start"
+            },
+            {
+              "kind": "field",
+              "name": "rangeEnd",
+              "type": {
+                "text": "string"
+              },
+              "description": "The end of a range this picker starts: highlighted, with the days from the value shaded.",
+              "default": "''",
+              "attribute": "range-end"
+            },
+            {
+              "kind": "field",
               "name": "_open",
               "type": {
                 "text": "boolean"
               },
               "privacy": "private",
               "default": "false"
+            },
+            {
+              "kind": "field",
+              "name": "_hoverDay",
+              "type": {
+                "text": "string | null"
+              },
+              "privacy": "private",
+              "description": "The day under the pointer, to shade a range before it is picked.",
+              "default": "null"
             },
             {
               "kind": "field",
@@ -34402,6 +34664,16 @@
             },
             {
               "kind": "method",
+              "name": "show",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "description": "Opens the calendar."
+            },
+            {
+              "kind": "method",
               "name": "_openPanel",
               "privacy": "private",
               "return": {
@@ -34424,7 +34696,7 @@
               "kind": "field",
               "name": "_handleDocumentPointerDown",
               "privacy": "private",
-              "description": "Close on a click outside. `composedPath` rather than `contains`, because the\r\npanel lives in this element's shadow root — `contains` on the host would be\r\ntrue for a shadow descendant but the check needs to survive the extension's\r\nown shadow boundary above us too."
+              "description": "Close on a click outside. `composedPath` rather than `contains`, because the\npanel lives in this element's shadow root — `contains` on the host would be\ntrue for a shadow descendant but the check needs to survive the extension's\nown shadow boundary above us too."
             },
             {
               "kind": "field",
@@ -34566,7 +34838,7 @@
               "type": {
                 "text": "string"
               },
-              "description": "The selected value: `YYYY-MM-DDTHH:mm`, or `YYYY-MM-DD` when `without-time` is\r\nset. Empty string means nothing selected. Same format as a native\r\n`datetime-local` / `date` input, so this is a drop-in replacement for one.",
+              "description": "The selected value: `YYYY-MM-DDTHH:mm`, or `YYYY-MM-DD` when `without-time` is\nset. Empty string means nothing selected. Same format as a native\n`datetime-local` / `date` input, so this is a drop-in replacement for one.",
               "default": "''",
               "fieldName": "value"
             },
@@ -34595,6 +34867,42 @@
               "description": "Date only — hides the time field and drops the time from the value.",
               "default": "false",
               "fieldName": "withoutTime"
+            },
+            {
+              "name": "min",
+              "type": {
+                "text": "string"
+              },
+              "description": "First day that can be picked (`YYYY-MM-DD`; a time is ignored). Earlier days are disabled.",
+              "default": "''",
+              "fieldName": "min"
+            },
+            {
+              "name": "max",
+              "type": {
+                "text": "string"
+              },
+              "description": "Last day that can be picked (`YYYY-MM-DD`; a time is ignored). Later days are disabled.",
+              "default": "''",
+              "fieldName": "max"
+            },
+            {
+              "name": "range-start",
+              "type": {
+                "text": "string"
+              },
+              "description": "The start of a range this picker ends: highlighted, with the days up to the value shaded.",
+              "default": "''",
+              "fieldName": "rangeStart"
+            },
+            {
+              "name": "range-end",
+              "type": {
+                "text": "string"
+              },
+              "description": "The end of a range this picker starts: highlighted, with the days from the value shaded.",
+              "default": "''",
+              "fieldName": "rangeEnd"
             }
           ],
           "superclass": {

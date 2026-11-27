@@ -276,13 +276,14 @@ export async function campaignsPostNewVersion(requester: HttpRequester, campaign
  * @param publishedBefore - The `publishedBefore` parameter to include in the API request.
  * @param publishedBy - The `publishedBy` parameter to include in the API request.
  * @param realm - The `realm` parameter to include in the API request.
+ * @param segment - The `segment` parameter to include in the API request.
  * @param skip - The `skip` parameter to include in the API request.
  * @param sort - The `sort` parameter to include in the API request.
  * @param tag - The `tag` parameter to include in the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function campaignsGet(requester: HttpRequester, campaignId?: string, createdAfter?: Date, createdBefore?: Date, createdBy?: string, descending?: boolean, includeArchived?: boolean, limit?: number, name?: string, phase?: CampaignLifecycle[], publishedAfter?: Date, publishedBefore?: Date, publishedBy?: string, realm?: string, skip?: number, sort?: unknown, tag?: string, gamertag?: string): Promise<HttpResponse<CampaignSummaryDtoCampaignPageDto>> {
+export async function campaignsGet(requester: HttpRequester, campaignId?: string, createdAfter?: Date, createdBefore?: Date, createdBy?: string, descending?: boolean, includeArchived?: boolean, limit?: number, name?: string, phase?: CampaignLifecycle[], publishedAfter?: Date, publishedBefore?: Date, publishedBy?: string, realm?: string, segment?: string, skip?: number, sort?: unknown, tag?: string, gamertag?: string): Promise<HttpResponse<CampaignSummaryDtoCampaignPageDto>> {
   let endpoint = "/api/campaigns";
   
   // Make the API request
@@ -304,6 +305,7 @@ export async function campaignsGet(requester: HttpRequester, campaignId?: string
       publishedBefore,
       publishedBy,
       realm,
+      segment,
       skip,
       sort,
       tag

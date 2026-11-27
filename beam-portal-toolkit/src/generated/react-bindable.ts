@@ -468,6 +468,8 @@ BeamNumberInput.displayName = 'BeamNumberInput';
  * @event wa-invalid - Emitted when the form control has been checked for validity and its constraints aren't satisfied. (React: `onWaInvalid`)
  */
 export interface BeamSelectProps extends DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> {
+  /** Hides the search field whatever the number of options. @default false */
+  'without-search'?: boolean;
   /** The name of the select, submitted as a name/value pair with form data. @default '' */
   name?: string | null;
   /** The select's value. This will be a string for single select or an array for multi-select. */

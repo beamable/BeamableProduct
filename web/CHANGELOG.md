@@ -2,6 +2,8 @@
 
 ### Breaking
 
+- `campaignsGet` takes `segment` between `realm` and `skip`: a caller passing `skip`, `sort`, `tag` or
+  `gamertag` by position must pass `undefined` for `segment` first, or its value is read as the segment.
 - `account.confirmPasswordUpdate` requires `email`, the address the reset code was sent to
   (`ConfirmPasswordUpdateParams`). The backend will soon reject password reset confirmations without it.
 - **Offers are Beamable's, not a provider's.** `CampaignOfferService` (`beam.campaignOffer`) becomes
@@ -45,6 +47,14 @@
   Read `offer.cost[0].symbol` / `.amount` where you read `offer.listings[0].price` before.
 - `amount` is now always a real quantity. A loot roll is `1` roll, not `0` of a prize; a store that
   cannot enumerate its payout leaves `rewards` empty instead.
+
+### Added
+
+- Zone segment property types: `customersGetZonesSegmentsPropertyTypes` lists a zone's custom types
+  (`PropertyType`: name, storage, spreadsheet-style `format`), and `customersPostZonesSegmentsPropertyTypes`
+  sets and removes them in one batch, with a result per item. `ZoneStat.typeId` names the type a catalog
+  stat reads through; `ZoneStatPreset` names its built-in preset.
+- `campaignsGet` takes `segment`: only the submitted campaign versions that read that segment.
 
 ### Changed
 

@@ -1569,6 +1569,8 @@ declare global {
    * @event wa-invalid - Emitted when the form control has been checked for validity and its constraints aren't satisfied. (React: `onWaInvalid`)
    */
   interface BeamSelectElement extends HTMLElement {
+    /** @default false */
+    withoutSearch?: boolean;
     popup?: unknown;
     combobox?: unknown;
     displayInput?: HTMLInputElement;
@@ -2792,15 +2794,17 @@ declare global {
     /** Delta indicator string, e.g. "+12%" or "-5.2%". Omit to hide. @default '' */
     change?: string;
     /**
-     * Coloring for the change text. `positive` → success green, `negative` → error red, `neutral` → muted gray. Defaults to `neutral`.
+     * Coloring for the change text. `positive` → success green, `negative` → error red, `neutral` → muted gray. Defaults to `neutral`.
      * @default 'neutral'
      */
     tone?: 'positive' | 'negative' | 'neutral';
     /**
-     * Shortcut for the `icon` slot — set this to a Font Awesome name (e.g. `"bolt"`, `"file-lines"`) and the card renders a softly-tinted `<beam-icon>` for you. Slotted content always wins.
+     * Shortcut for the `icon` slot — set this to a Font Awesome name (e.g. `"bolt"`, `"file-lines"`) and the card renders a softly-tinted `<beam-icon>` for you. Slotted content always wins.
      * @default ''
      */
     icon?: string;
+    /** The value is still being computed: a pulsing skeleton replaces it and the change. @default false */
+    loading?: boolean;
   }
 
   /**
@@ -2932,7 +2936,7 @@ declare global {
    */
   interface BeamDatePickerElement extends HTMLElement {
     /**
-     * The selected value: `YYYY-MM-DDTHH:mm`, or `YYYY-MM-DD` when `without-time` is set. Empty string means nothing selected. Same format as a native `datetime-local` / `date` input, so this is a drop-in replacement for one.
+     * The selected value: `YYYY-MM-DDTHH:mm`, or `YYYY-MM-DD` when `without-time` is set. Empty string means nothing selected. Same format as a native `datetime-local` / `date` input, so this is a drop-in replacement for one.
      * @default ''
      */
     value?: string;
@@ -2942,6 +2946,20 @@ declare global {
     disabled?: boolean;
     /** Date only — hides the time field and drops the time from the value. @default false */
     withoutTime?: boolean;
+    /**
+     * First day that can be picked (`YYYY-MM-DD`; a time is ignored). Earlier days are disabled.
+     * @default ''
+     */
+    min?: string;
+    /** Last day that can be picked (`YYYY-MM-DD`; a time is ignored). Later days are disabled. @default '' */
+    max?: string;
+    /**
+     * The start of a range this picker ends: highlighted, with the days up to the value shaded.
+     * @default ''
+     */
+    rangeStart?: string;
+    /** The end of a range this picker starts: highlighted, with the days from the value shaded. @default '' */
+    rangeEnd?: string;
   }
 
   /**

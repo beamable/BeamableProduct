@@ -9,4 +9,5 @@ export type PlayerMembershipResult = {
   inSegments: string[]; 
   playerId: bigint | string; 
   entered?: Record<string, SegmentEntered> | null; 
+  included?: string[] | null; 
 };
