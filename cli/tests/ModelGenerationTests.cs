@@ -18,6 +18,35 @@ public static class TestExtensions
 
 public class ModelGenerationTests
 {
+	[TestCase("AudienceRequest", "include")]
+	[TestCase("ContentMeta", "data")]
+	[TestCase("SupportedFederation", "settings")]
+	[TestCase("FederationInfo", "settings")]
+	public void TransportSchemasKeepSuppressionPolicyOutOfModels(string model, string field)
+	{
+		var jagged = field == "include";
+		var property = jagged
+			? new OpenApiSchema { Type = "array", Items = new OpenApiSchema { Type = "array", Items = new OpenApiSchema { Type = "string" } } }
+			: new OpenApiSchema
+			{
+				Type = "object", Reference = new OpenApiReference { Id = "OptionalJsonNodeWrapper", Type = ReferenceType.Schema },
+				Extensions = { ["x-beamable-json-object"] = new OpenApiBoolean(true) }
+			};
+		var schema = new OpenApiSchema { Type = "object", Properties = { [field] = property } };
+		if (jagged) schema.Required.Add(field);
+		var context = new SwaggerService.DefaultGenerationContext
+		{
+			Documents = Array.Empty<OpenApiDocument>(),
+			OrderedSchemas = new[] { new NamedOpenApiSchema { ReferenceId = model, Schema = schema } }
+		};
+		var generated = UnityHelper.GenerateModel(context, out _).Content;
+		StringAssert.DoesNotContain("SuppressMessage", generated);
+		StringAssert.Contains(jagged ? "public string[][] include;" : $"public OptionalJsonString {field} = new OptionalJsonString();", generated);
+		StringAssert.Contains(jagged ? "s.SerializeArray(\"include\", ref include);" : $"s.SerializeNestedJson(\"{field}\", ref {field}.Value);", generated);
+		StringAssert.DoesNotContain("#pragma warning", generated);
+		StringAssert.DoesNotContain("NonSerialized", generated);
+		Assert.That(UnityHelper.GenerateModel(context, out _).Content, Is.EqualTo(generated));
+	}
 
 	[Test]
 	public void OptionalObjectType()

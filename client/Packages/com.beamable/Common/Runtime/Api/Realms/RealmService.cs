@@ -304,6 +304,8 @@ namespace Beamable.Common.Api.Realms
 		public string ProjectName;
 		public bool Archived;
 		public List<RealmView> Children = new List<RealmView>();
+		// Runtime back-reference; ProcessProjects reconstructs it from the parent pid.
+		[NonSerialized]
 		public RealmView Parent;
 		public int Depth { get; set; }
 		public string DisplayName { get => IsProduction ? $"[PROD] {ProjectName}" : ProjectName; }

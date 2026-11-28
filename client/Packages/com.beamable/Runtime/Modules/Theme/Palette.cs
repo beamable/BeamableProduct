@@ -39,6 +39,7 @@ namespace Beamable.Theme
 
 	}
 
+	[Serializable]
 	public abstract class PaletteStyle
 	{
 		[CanHide]

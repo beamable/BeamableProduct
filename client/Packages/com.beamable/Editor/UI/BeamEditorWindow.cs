@@ -58,11 +58,13 @@ namespace Beamable.Editor.UI
 		/// TODO: In order to keep this current flow working and not have to refactor everything at once, we have this promise and <see cref="GetFullyInitializedWindow()"/>.
 		/// TODO: This allows us to keep the current flow, but enables us to incrementally move away from this pattern of initializing System/Model instances inside the window initialization.
 		/// </summary>
+		[NonSerialized]
 		public Promise FullyInitializedWindowPromise;
 
 		/// <summary>
 		/// Reference to the current <see cref="BeamEditorContext"/> that is feeding this window with data.
 		/// </summary>
+		[NonSerialized]
 		public BeamEditorContext ActiveContext;
 
 		/// <summary>

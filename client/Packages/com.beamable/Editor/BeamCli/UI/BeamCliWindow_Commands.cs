@@ -530,7 +530,6 @@ namespace Beamable.Editor.BeamCli.UI
 		}
 	}
 
-	[Serializable]
 	public class CommandStringData
 	{
 		public ArrayDict arguments;

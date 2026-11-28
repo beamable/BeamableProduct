@@ -1,0 +1,9 @@
+{
+  "name": "Beamable.SteamworksCompatibility.Tests",
+  "includePlatforms": [
+    "Editor"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

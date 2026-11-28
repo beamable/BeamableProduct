@@ -1,3 +1,4 @@
+using Beamable.Common.Reflection;
 using Beamable.Avatars;
 using Beamable.Editor.Config.Model;
 using System;
@@ -59,7 +60,9 @@ namespace Beamable.Editor.Config
 		public static List<ConfigModuleDescriptor> GetConfigDescriptors()
 		{
 			var descriptors = new List<ConfigModuleDescriptor>();
-			foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+			var assemblies = AssemblyDiscovery.GetLoadedAssemblies();
+
+			foreach (var asm in assemblies)
 			{
 				try
 				{

@@ -393,9 +393,8 @@ namespace Beamable.Common.Reflection
 					perAttributeLists.AttributeMappings.Add(attributesOfInterest[i], new List<MemberAttribute>());
 				}
 			}
-
-			// TODO: Use TypeCache in editor and Unity 2019 and above... This path should go through BEAMABLE_MICROSERVICE || DB_MICROSERVICE so we can use the reflection cache stuff in the base image.
-			var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+			
+			var assemblies = AssemblyDiscovery.GetLoadedAssemblies();
 
 			// Groups by whether or not the assembly is one we care about sweeping.
 
@@ -404,7 +403,7 @@ namespace Beamable.Common.Reflection
 
 			// Check all that don't have the IgnoreFromBeamableAssemblySweepAttribute and parse them
 			{
-				for (int i = 0; i < assemblies.Length; i++)
+				for (int i = 0; i < assemblies.Count; i++)
 				{
 					if (assembliesToSweepStr.Contains("₢" + assemblies[i].GetName().Name + "₢"))
 					{
